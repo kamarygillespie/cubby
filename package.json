@@ -12,7 +12,8 @@
     "format:check": "prettier --check .",
     "db:migrate": "supabase db push --linked",
     "db:seed": "supabase db query --linked --file supabase/seed.sql",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepare": "husky"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -35,6 +36,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "supabase": "^2.117.0",
