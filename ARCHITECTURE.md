@@ -59,6 +59,13 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
 
 `item_types` has a required `category_id` foreign key — a category is a property of the item type, not something chosen independently on each item. When a user picks an item type (e.g. "Makeup"), the category ("Beauty") is derived automatically via that relationship, never stored redundantly on the item itself. This is what guarantees the category is always correct and never drifts out of sync.
 
+## Auth & Route Protection
+
+- Supabase Auth (email/password for V1) via `@supabase/ssr`, with separate browser/server clients (`lib/supabase/client.ts`, `lib/supabase/server.ts`) so Server Components, Server Actions, and Route Handlers all read the same cookie-based session.
+- `proxy.ts` (Next.js 16's renamed `middleware.ts`) revalidates the session on every request and enforces access by default: everything is protected **except** `/login`, `/signup`, and `/auth/*` — new routes don't need to opt in to protection, only explicitly opt out.
+- An authenticated user hitting `/login` or `/signup` is redirected to `/`; an unauthenticated user hitting a protected route is redirected to `/login?redirectTo=<path>` and sent back there after logging in.
+- `handle_new_user` (see `DATABASE.md`) creates the `profiles` row automatically on sign-up — the app never creates it manually.
+
 ## Rendering Strategy
 
 - Server Components for data-heavy views (category/item-type group views, totals) — fetch and aggregate close to the database.
