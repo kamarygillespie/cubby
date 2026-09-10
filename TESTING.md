@@ -41,6 +41,8 @@ Goal: real confidence when shipping changes, without building test infrastructur
 ## Error Monitoring
 
 - **Sentry** captures unhandled errors in both the client and server (Next.js API routes / server components), tagged by release. Set up from V1 — retrofitting error monitoring after real users exist means losing visibility into exactly the period you'd most want it.
+- Org `kg-s7`, project `cubby`. Client init lives in `src/instrumentation-client.ts`, server/edge in `src/sentry.server.config.ts` / `src/sentry.edge.config.ts` (loaded by `src/instrumentation.ts`), React render errors caught in `src/app/global-error.tsx`.
+- Needs `NEXT_PUBLIC_SENTRY_DSN` (public, safe client-side) and `SENTRY_AUTH_TOKEN` (build-time only, for source map upload — build succeeds without it, just skips upload) in the environment.
 
 ## What "high standard" means here, concretely
 
