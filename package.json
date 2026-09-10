@@ -9,7 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:migrate": "supabase db push --linked",
+    "db:seed": "supabase db query --linked --file supabase/seed.sql"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -32,6 +34,7 @@
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
+    "supabase": "^2.117.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
