@@ -41,3 +41,5 @@ Notion's organization + Pinterest's visual appeal. Minimal and calm, not overwhe
 ## One-Line Tech Summary
 
 Next.js (React/TypeScript) + Tailwind/shadcn, on Supabase (Postgres, Auth, Storage), hosted on Vercel, PWA-installable, tested with Vitest + Playwright, CI/CD via GitHub Actions. See `TECH_STACK.md` for the full reasoning.
+
+<!-- test: verifying Vercel preview deployments (KAM-8) -->
