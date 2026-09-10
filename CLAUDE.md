@@ -38,7 +38,7 @@ npm run db:seed       # seed default categories/item types
 - **Data access:** all Supabase queries go through typed helper functions in `lib/db/`, not scattered `supabase.from(...)` calls in components.
 - **Multi-tenancy is not optional.** Every table with user data has a `user_id` column and a Row Level Security policy. Never add a query that bypasses RLS without an explicit, commented reason (e.g. the public wishlist-share endpoint).
 - **Commits:** Conventional Commits style (`feat:`, `fix:`, `chore:`, `test:`) — keeps changelogs and CI readable.
-- **Linking work to Linear:** the GitHub ↔ Linear integration is installed on this repo, so branch names and commit/PR text tie work back to its ticket. For anything beyond a trivial direct-to-main change, branch using the ticket's Linear-suggested branch name (e.g. `kamigillespie/kam-5-...`). Reference the ticket ID in commit messages or PR descriptions — `Fixes KAM-5` / `Closes KAM-5` auto-marks the ticket Done on merge, `Refs KAM-5` just links it without changing status.
+- **Linking work to Linear:** the GitHub ↔ Linear integration is installed on this repo, so branch names and commit/PR text tie work back to its ticket. For anything beyond a trivial direct-to-main change, branch using just the ticket ID (e.g. `KAM-10`) — not Linear's longer suggested branch name — so branch name and ticket ID match exactly. Reference the ticket ID in commit messages or PR descriptions — `Fixes KAM-5` / `Closes KAM-5` auto-marks the ticket Done on merge, `Refs KAM-5` just links it without changing status.
 
 ## Before considering a task done
 
