@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:migrate": "supabase db push --linked",
-    "db:seed": "supabase db query --linked --file supabase/seed.sql"
+    "db:seed": "supabase db query --linked --file supabase/seed.sql",
+    "test": "vitest run"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -28,7 +29,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22.20.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
@@ -38,6 +39,7 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "supabase": "^2.117.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.0"
   }
 }
