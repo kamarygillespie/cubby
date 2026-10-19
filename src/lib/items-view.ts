@@ -126,3 +126,27 @@ export function totalWishlistValue(items: Item[]): number {
     0,
   );
 }
+
+// Whole-percent discount for display ("-30%", not the stored "-30.47%").
+// Null when not on sale or when it would round to 0%.
+export function displayDiscountPercent(
+  price: number | null,
+  salePrice: number | null,
+): number | null {
+  if (price === null || salePrice === null || price <= 0) return null;
+  if (salePrice >= price) return null;
+  const percent = Math.round(((price - salePrice) / price) * 100);
+  return percent >= 1 ? percent : null;
+}
+
+// The card's "Item type · Category · Store" line. The category is dropped
+// when it just repeats the item type ("Technology · Technology").
+export function itemMetaParts(item: Item): string[] {
+  const type = item.item_type.name;
+  const category = item.item_type.category.name;
+  return [
+    type,
+    ...(category.toLowerCase() === type.toLowerCase() ? [] : [category]),
+    ...(item.store_brand ? [item.store_brand] : []),
+  ];
+}

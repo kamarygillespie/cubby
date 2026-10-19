@@ -49,7 +49,8 @@ export async function logIn(page: Page, user: TestUser) {
   await page.getByLabel("Email").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
   await page.getByRole("button", { name: /log in/i }).click();
-  await expect(page.getByText(`Signed in as ${user.email}`)).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
 }
 
 // Catches layouts wider than the viewport (e.g. an unbreakable long email),
@@ -61,16 +62,20 @@ export async function expectNoHorizontalScroll(page: Page) {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
-// A fresh signed-in user per test, so tests never share data.
+// A fresh signed-in user per test, so tests never share data. `auto`: every
+// test using this `test` starts signed in, whether or not it reads `user`.
 export const test = base.extend<{ user: TestUser }>({
-  // Named `provide` rather than Playwright's usual `use`, which the React
-  // hooks lint rule mistakes for React's use().
-  user: async ({ page }, provide) => {
-    const user = await createUser();
-    await logIn(page, user);
-    await provide(user);
-    await admin.auth.admin.deleteUser(user.id);
-  },
+  user: [
+    // Named `provide` rather than Playwright's usual `use`, which the React
+    // hooks lint rule mistakes for React's use().
+    async ({ page }, provide) => {
+      const user = await createUser();
+      await logIn(page, user);
+      await provide(user);
+      await admin.auth.admin.deleteUser(user.id);
+    },
+    { auto: true },
+  ],
 });
 
 export { expect };

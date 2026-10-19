@@ -31,6 +31,53 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+// What to say when the current tab/filters show nothing — "No items yet"
+// is wrong when the user has items that are just filtered out or elsewhere.
+function EmptyItems({
+  hasAnyItems,
+  view,
+  filtered,
+}: {
+  hasAnyItems: boolean;
+  view: ItemView;
+  filtered: boolean;
+}) {
+  if (!hasAnyItems) {
+    return (
+      <p>
+        No items yet.{" "}
+        <Link href="/items/new" className="text-foreground underline">
+          Add your first one
+        </Link>{" "}
+        — type it in or paste a product link.
+      </p>
+    );
+  }
+  if (filtered) {
+    return (
+      <p>
+        No items match these filters.{" "}
+        <Link
+          href={view === "wishlist" ? "/" : `/?view=${view}`}
+          className="text-foreground underline"
+        >
+          Clear filters
+        </Link>
+      </p>
+    );
+  }
+  if (view === "purchased") return <p>Nothing marked purchased yet.</p>;
+  if (view === "gifted") return <p>Nothing marked gifted yet.</p>;
+  return (
+    <p>
+      Your wishlist is empty — everything&apos;s been bought or gifted.{" "}
+      <Link href="/items/new" className="text-foreground underline">
+        Add an item
+      </Link>
+    </p>
+  );
+}
+
 export default async function Home({
   searchParams,
 }: {
@@ -62,6 +109,14 @@ export default async function Home({
     listWishlists(supabase),
   ]);
 
+  const emptyState = (
+    <EmptyItems
+      hasAnyItems={items.length > 0}
+      view={view}
+      filtered={Boolean(categoryId || itemTypeId || onSaleOnly)}
+    />
+  );
+
   const listsByItem = new Map<string, { id: string; name: string }[]>();
   for (const list of wishlists) {
     for (const { item_id } of list.wishlist_items) {
@@ -86,10 +141,11 @@ export default async function Home({
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
-      <div className="flex items-center justify-between gap-2">
-        {/* min-w-0 + wrap-anywhere: a long email must wrap, not widen the
-            page into horizontal scroll on phones. */}
-        <p className="text-muted-foreground min-w-0 text-sm wrap-anywhere">
+      <div className="flex items-center justify-between gap-2 max-sm:justify-end">
+        {/* Hidden on phones, where the header is tight and Log out already
+            says you're signed in. min-w-0 + wrap-anywhere: a long email
+            must wrap, not widen the page into horizontal scroll. */}
+        <p className="text-muted-foreground min-w-0 text-sm wrap-anywhere max-sm:hidden">
           Signed in as {user.email}
         </p>
         <div className="flex items-center gap-2">
@@ -111,7 +167,12 @@ export default async function Home({
         <ViewTabs />
         <Link
           href="/wishlists"
-          className={buttonVariants({ variant: "ghost", size: "sm" })}
+          className={buttonVariants({
+            variant: "ghost",
+            size: "sm",
+            // Slightly tighter on phones so this fits beside the tabs.
+            className: "max-sm:px-2",
+          })}
         >
           <ListChecks />
           Lists
@@ -136,14 +197,20 @@ export default async function Home({
             <ItemsGroupedList
               groups={groupByCategory(visibleItems)}
               listsByItem={listsByItem}
+              emptyState={emptyState}
             />
           ) : group === "itemType" ? (
             <ItemsGroupedList
               groups={groupByItemType(visibleItems)}
               listsByItem={listsByItem}
+              emptyState={emptyState}
             />
           ) : (
-            <ItemsList items={visibleItems} listsByItem={listsByItem} />
+            <ItemsList
+              items={visibleItems}
+              listsByItem={listsByItem}
+              emptyState={emptyState}
+            />
           )}
         </ItemSelectionProvider>
       )}

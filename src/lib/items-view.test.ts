@@ -2,6 +2,8 @@ import { describe, expect, test } from "vitest";
 import type { Item } from "@/lib/db/items";
 import {
   activeWishlistItems,
+  displayDiscountPercent,
+  itemMetaParts,
   filterByView,
   filterItems,
   groupByCategory,
@@ -271,5 +273,50 @@ describe("totals", () => {
   test("both totals are zero with no matching items", () => {
     expect(totalSpent([gifted])).toBe(0);
     expect(totalWishlistValue([purchasedFullPrice, gifted])).toBe(0);
+  });
+});
+
+describe("displayDiscountPercent", () => {
+  test("rounds to a whole percent", () => {
+    expect(displayDiscountPercent(128, 89)).toBe(30); // 30.47%
+    expect(displayDiscountPercent(249, 199)).toBe(20); // 20.08%
+    expect(displayDiscountPercent(3, 2)).toBe(33);
+  });
+
+  test("is null when not on sale", () => {
+    expect(displayDiscountPercent(100, null)).toBeNull();
+    expect(displayDiscountPercent(null, 50)).toBeNull();
+    expect(displayDiscountPercent(100, 100)).toBeNull();
+    expect(displayDiscountPercent(100, 120)).toBeNull();
+    expect(displayDiscountPercent(0, 0)).toBeNull();
+  });
+
+  test("hides discounts that round to 0%", () => {
+    expect(displayDiscountPercent(1000, 999)).toBeNull();
+  });
+});
+
+describe("itemMetaParts", () => {
+  const withTaxonomy = (type: string, category: string, store: string | null) =>
+    makeItem({
+      store_brand: store,
+      item_type: {
+        id: "t",
+        name: type,
+        category: { id: "c", name: category },
+      },
+    });
+
+  test("type · category · store", () => {
+    expect(
+      itemMetaParts(withTaxonomy("Boots", "Shoes", "Dr. Martens")),
+    ).toEqual(["Boots", "Shoes", "Dr. Martens"]);
+  });
+
+  test("drops a category that repeats the type", () => {
+    expect(
+      itemMetaParts(withTaxonomy("Technology", "Technology", "Apple")),
+    ).toEqual(["Technology", "Apple"]);
+    expect(itemMetaParts(withTaxonomy("Misc", "misc", null))).toEqual(["Misc"]);
   });
 });

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   Card,
   CardContent,
@@ -8,6 +9,8 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { listItemTypes } from "@/lib/db/item-types";
 import { AddItemForm } from "./add-item-form";
+
+export const metadata: Metadata = { title: "Add item" };
 
 export default async function NewItemPage() {
   const supabase = await createClient();

@@ -1,24 +1,40 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { getWishlist } from "@/lib/db/wishlists";
 import { effectivePrice } from "@/lib/items-view";
 import { formatCurrency } from "@/lib/format";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { removeFromWishlistAction } from "../actions";
 import { RenameWishlistForm } from "./rename-wishlist-form";
 import { DeleteWishlistButton } from "./delete-wishlist-button";
 import { ShareLink } from "./share-link";
 
+// Shared between generateMetadata and the page so the query runs once.
+const loadWishlist = cache(async (id: string) => {
+  const supabase = await createClient();
+  return getWishlist(supabase, id);
+});
+
+export async function generateMetadata({
+  params,
+}: PageProps<"/wishlists/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const wishlist = await loadWishlist(id);
+  return { title: wishlist?.name ?? "Wishlist not found" };
+}
+
 export default async function WishlistPage({
   params,
 }: PageProps<"/wishlists/[id]">) {
   const { id } = await params;
-  const supabase = await createClient();
-  const wishlist = await getWishlist(supabase, id);
+  const wishlist = await loadWishlist(id);
   if (!wishlist) notFound();
 
   const items = wishlist.wishlist_items.flatMap((wi) =>
@@ -99,15 +115,14 @@ export default async function WishlistPage({
                       item.id,
                     )}
                   >
-                    <Button
-                      type="submit"
+                    <PendingSubmitButton
                       size="icon-sm"
                       variant="ghost"
                       aria-label={`Remove ${item.title} from ${wishlist.name}`}
                       title="Remove from list"
                     >
                       <X />
-                    </Button>
+                    </PendingSubmitButton>
                   </form>
                 </CardContent>
               </Card>

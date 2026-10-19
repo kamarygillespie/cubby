@@ -1,6 +1,6 @@
 import { test, expect, expectNoHorizontalScroll, seedItems } from "./fixtures";
 
-test("add an item manually", async ({ page, user }) => {
+test("add an item manually", async ({ page }) => {
   await page.getByRole("link", { name: "Add item" }).click();
   await expect(page).toHaveURL(/\/items\/new/);
 
@@ -20,8 +20,8 @@ test("add an item manually", async ({ page, user }) => {
   await expect(card).toContainText("$60.00");
   await expect(card).toContainText("$80.00");
   await expect(card).toContainText("Everlane");
-  // e2e emails are long (e2e-<uuid>@example.com) — a good overflow check.
-  await expect(page.getByText(`Signed in as ${user.email}`)).toBeVisible();
+  // e2e emails are long (e2e-<uuid>@example.com), so this also guards the
+  // header's email (shown from the sm breakpoint up) against overflow.
   await expectNoHorizontalScroll(page);
 });
 
