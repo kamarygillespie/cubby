@@ -1,6 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ExternalLink, Gift, ListChecks, ShoppingBag } from "lucide-react";
+import {
+  ExternalLink,
+  Gift,
+  ListChecks,
+  Pencil,
+  ShoppingBag,
+} from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ReactNode } from "react";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
@@ -133,7 +140,7 @@ export function ItemsList({
                   </p>
                 )}
                 <OnLists lists={listsByItem?.get(item.id) ?? []} />
-                <div className="mt-1 flex gap-2">
+                <div className="mt-1 flex flex-wrap gap-2">
                   <form
                     action={setItemFlag.bind(
                       null,
@@ -166,6 +173,14 @@ export function ItemsList({
                       {item.gifted ? "Gifted" : "Mark gifted"}
                     </PendingSubmitButton>
                   </form>
+                  <Link
+                    href={`/items/${item.id}/edit`}
+                    aria-label={`Edit ${item.title}`}
+                    className={buttonVariants({ variant: "ghost", size: "xs" })}
+                  >
+                    <Pencil />
+                    Edit
+                  </Link>
                 </div>
               </div>
             </CardContent>

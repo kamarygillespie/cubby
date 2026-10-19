@@ -101,7 +101,9 @@ describe("lib/db/items (integration)", () => {
     // DELETE on a row RLS hides isn't an error, just zero rows affected.
     await deleteItem(userB.client, item.id);
     const stillThere = await getItem(userA.client, item.id);
-    expect(stillThere.title).toBe("Protected Item");
+    expect(stillThere?.title).toBe("Protected Item");
+    // ...and the other user can't even read it.
+    expect(await getItem(userB.client, item.id)).toBeNull();
   });
 
   test("deleteItem removes the item for its owner", async () => {
@@ -113,6 +115,7 @@ describe("lib/db/items (integration)", () => {
     });
     await deleteItem(client, item.id);
 
-    await expect(getItem(client, item.id)).rejects.toThrow();
+    expect(await getItem(client, item.id)).toBeNull();
+    expect(await getItem(client, "not-a-uuid")).toBeNull();
   });
 });

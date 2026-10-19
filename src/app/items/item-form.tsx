@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { StarRatingInput } from "./star-rating-input";
 import { LinkAutofillField } from "./link-autofill-field";
-import { addItem } from "./actions";
+import type { ItemFormState } from "./item-form-state";
 
 type ItemTypeOption = {
   id: string;
@@ -32,18 +32,51 @@ type AutofillResult = {
   salePrice: number | null;
 };
 
-export function AddItemForm({
+// Starting values when editing an existing item.
+export type ItemFormInitial = {
+  title: string;
+  item_type_id: string;
+  image_url: string | null;
+  price: number | null;
+  sale_price: number | null;
+  interest_level: number | null;
+  store_brand: string | null;
+  link: string | null;
+  notes: string | null;
+};
+
+const numberField = (value: number | null | undefined) =>
+  value === null || value === undefined ? "" : String(value);
+
+// Shared by Add item and Edit item. Paste-a-link autofill is offered when
+// adding; editing starts from the saved values (re-checking a link's price
+// is a separate action, KAM-36).
+export function ItemForm({
   itemTypesByCategory,
+  action,
+  initial,
+  submitLabel,
+  pendingLabel,
+  withAutofill = false,
 }: {
   itemTypesByCategory: { category: string; itemTypes: ItemTypeOption[] }[];
+  action: (state: ItemFormState, formData: FormData) => Promise<ItemFormState>;
+  initial?: ItemFormInitial;
+  submitLabel: string;
+  pendingLabel: string;
+  withAutofill?: boolean;
 }) {
-  const [state, formAction, pending] = useActionState(addItem, null);
+  const [state, formAction, pending] = useActionState(action, null);
 
-  const [title, setTitle] = useState("");
-  const [price, setPrice] = useState("");
-  const [salePrice, setSalePrice] = useState("");
-  const [link, setLink] = useState("");
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [price, setPrice] = useState(numberField(initial?.price));
+  const [salePrice, setSalePrice] = useState(numberField(initial?.sale_price));
+  const [link, setLink] = useState(initial?.link ?? "");
   const [autofillImageUrl, setAutofillImageUrl] = useState<string | null>(null);
+  // Editing: the saved image, unless the user chose to remove it.
+  const [removeImage, setRemoveImage] = useState(false);
+  const savedImageUrl = removeImage ? null : (initial?.image_url ?? null);
+  const previewUrl = autofillImageUrl ?? savedImageUrl;
 
   const itemTypeLabels = useMemo(() => {
     const labels = new Map<string, string>();
@@ -65,7 +98,8 @@ export function AddItemForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <LinkAutofillField onAutofill={handleAutofill} />
+      {withAutofill && <LinkAutofillField onAutofill={handleAutofill} />}
+      <input type="hidden" name="remove_image" value={removeImage ? "1" : ""} />
 
       <input
         type="hidden"
@@ -86,10 +120,10 @@ export function AddItemForm({
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="image">Image</Label>
-        {autofillImageUrl && (
+        {previewUrl && (
           <Image
-            src={autofillImageUrl}
-            alt="Fetched preview"
+            src={previewUrl}
+            alt={autofillImageUrl ? "Fetched preview" : "Current image"}
             width={80}
             height={80}
             className="size-20 rounded-md object-cover"
@@ -107,11 +141,31 @@ export function AddItemForm({
             Fetched from the link. Choose a file above to replace it.
           </p>
         )}
+        {initial?.image_url && !autofillImageUrl && (
+          <p className="text-muted-foreground flex items-center gap-2 text-xs">
+            {removeImage
+              ? "The image will be removed when you save."
+              : "Choose a file above to replace the current image."}
+            <Button
+              type="button"
+              variant="link"
+              size="xs"
+              className="h-auto p-0"
+              onClick={() => setRemoveImage((r) => !r)}
+            >
+              {removeImage ? "Undo" : "Remove image"}
+            </Button>
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="item_type_id">Item type</Label>
-        <Select name="item_type_id" required>
+        <Select
+          name="item_type_id"
+          required
+          defaultValue={initial?.item_type_id}
+        >
           <SelectTrigger id="item_type_id" className="w-full">
             <SelectValue placeholder="Choose an item type">
               {(value: string | null) =>
@@ -165,12 +219,19 @@ export function AddItemForm({
 
       <div className="flex flex-col gap-2">
         <Label>Interest level</Label>
-        <StarRatingInput name="interest_level" />
+        <StarRatingInput
+          name="interest_level"
+          defaultValue={initial?.interest_level ?? null}
+        />
       </div>
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="store_brand">Store / brand</Label>
-        <Input id="store_brand" name="store_brand" />
+        <Input
+          id="store_brand"
+          name="store_brand"
+          defaultValue={initial?.store_brand ?? ""}
+        />
       </div>
 
       <div className="flex flex-col gap-2">
@@ -187,15 +248,22 @@ export function AddItemForm({
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" rows={3} />
+        <Textarea
+          id="notes"
+          name="notes"
+          rows={3}
+          defaultValue={initial?.notes ?? ""}
+        />
       </div>
 
       {state?.error && (
-        <p className="text-destructive text-sm">{state.error}</p>
+        <p role="alert" className="text-destructive text-sm">
+          {state.error}
+        </p>
       )}
 
       <Button type="submit" disabled={pending}>
-        {pending ? "Adding..." : "Add item"}
+        {pending ? pendingLabel : submitLabel}
       </Button>
     </form>
   );

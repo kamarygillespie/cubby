@@ -32,16 +32,38 @@ export async function seedItems(
 
   // Same keys on every row: PostgREST sends an explicit NULL (not the column
   // default) for a key that's missing from some rows of a batch insert.
-  const { error } = await admin.from("items").insert(
-    items.map((item) => ({
-      user_id: userId,
-      item_type_id: itemType.id,
-      title: item.title,
-      price: item.price ?? null,
-      sale_price: item.sale_price ?? null,
-    })),
-  );
+  const { data, error } = await admin
+    .from("items")
+    .insert(
+      items.map((item) => ({
+        user_id: userId,
+        item_type_id: itemType.id,
+        title: item.title,
+        price: item.price ?? null,
+        sale_price: item.sale_price ?? null,
+      })),
+    )
+    .select("id, title");
   if (error) throw error;
+  return data;
+}
+
+export async function seedWishlist(
+  userId: string,
+  name: string,
+  itemIds: string[],
+) {
+  const { data: list, error } = await admin
+    .from("wishlists")
+    .insert({ user_id: userId, name })
+    .select("id")
+    .single();
+  if (error) throw error;
+  const { error: itemsError } = await admin
+    .from("wishlist_items")
+    .insert(itemIds.map((item_id) => ({ wishlist_id: list.id, item_id })));
+  if (itemsError) throw itemsError;
+  return list.id;
 }
 
 export async function logIn(page: Page, user: TestUser) {

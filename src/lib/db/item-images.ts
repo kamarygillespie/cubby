@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
+import { itemImagePathFromUrl } from "@/lib/item-form";
 
 type DbClient = SupabaseClient<Database>;
 
@@ -28,4 +29,18 @@ export async function uploadItemImage(
     data: { publicUrl },
   } = supabase.storage.from(BUCKET).getPublicUrl(path);
   return publicUrl;
+}
+
+// Removes a replaced/removed image from the bucket. Only touches files we
+// host (external URLs are ignored), and storage RLS limits it to the
+// caller's own folder. Best-effort: an orphaned file is harmless, so a
+// failure here must not undo the item change that triggered it.
+export async function deleteItemImage(
+  supabase: DbClient,
+  imageUrl: string | null,
+) {
+  const path = itemImagePathFromUrl(imageUrl);
+  if (!path) return;
+  const { error } = await supabase.storage.from(BUCKET).remove([path]);
+  if (error) console.error("Failed to delete item image", path, error);
 }
