@@ -35,6 +35,8 @@ export async function listItems(supabase: DbClient) {
   return data;
 }
 
+export type Item = Awaited<ReturnType<typeof listItems>>[number];
+
 export async function getItem(supabase: DbClient, id: string) {
   const { data, error } = await supabase
     .from("items")
