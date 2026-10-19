@@ -1,12 +1,15 @@
 import { describe, expect, test } from "vitest";
 import type { Item } from "@/lib/db/items";
 import {
+  activeWishlistItems,
   filterByView,
   filterItems,
   groupByCategory,
   groupByItemType,
   isOnSale,
   sortItems,
+  totalSpent,
+  totalWishlistValue,
 } from "./items-view";
 
 function makeItem(overrides: Partial<Item> = {}): Item {
@@ -234,5 +237,39 @@ describe("filterByView", () => {
     expect(filterByView(items, "purchased")).toEqual([both]);
     expect(filterByView(items, "gifted")).toEqual([both]);
     expect(filterByView(items, "wishlist")).toEqual([active]);
+  });
+});
+
+describe("totals", () => {
+  const active = makeItem({ price: 50, purchased: false, gifted: false });
+  const purchasedFullPrice = makeItem({
+    price: 100,
+    purchased: true,
+    gifted: false,
+  });
+  const purchasedOnSale = makeItem({
+    price: 80,
+    sale_price: 60,
+    purchased: true,
+    gifted: false,
+  });
+  const gifted = makeItem({ price: 200, purchased: false, gifted: true });
+  const all = [active, purchasedFullPrice, purchasedOnSale, gifted];
+
+  test("activeWishlistItems excludes purchased and gifted", () => {
+    expect(activeWishlistItems(all)).toEqual([active]);
+  });
+
+  test("totalSpent sums purchased items at effective (sale) price", () => {
+    expect(totalSpent(all)).toBe(100 + 60);
+  });
+
+  test("totalWishlistValue sums only active items", () => {
+    expect(totalWishlistValue(all)).toBe(50);
+  });
+
+  test("both totals are zero with no matching items", () => {
+    expect(totalSpent([gifted])).toBe(0);
+    expect(totalWishlistValue([purchasedFullPrice, gifted])).toBe(0);
   });
 });

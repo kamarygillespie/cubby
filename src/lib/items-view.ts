@@ -109,3 +109,20 @@ export function groupByCategory(items: Item[]): ItemGroup[] {
 export function groupByItemType(items: Item[]): ItemGroup[] {
   return groupBy(items, (item) => item.item_type);
 }
+
+export function activeWishlistItems(items: Item[]): Item[] {
+  return items.filter((item) => !item.purchased && !item.gifted);
+}
+
+export function totalSpent(items: Item[]): number {
+  return items
+    .filter((item) => item.purchased)
+    .reduce((sum, item) => sum + effectivePrice(item), 0);
+}
+
+export function totalWishlistValue(items: Item[]): number {
+  return activeWishlistItems(items).reduce(
+    (sum, item) => sum + effectivePrice(item),
+    0,
+  );
+}
