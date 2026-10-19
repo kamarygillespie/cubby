@@ -39,10 +39,14 @@ export async function addItem(
     }
 
     const imageFile = formData.get("image");
+    const autofillImageUrl =
+      String(formData.get("autofill_image_url") ?? "").trim() || null;
+    // A manually chosen file always wins over whatever the link autofill
+    // fetched, matching "full manual edit + image replacement" in FEATURES.md.
     const imageUrl =
       imageFile instanceof File && imageFile.size > 0
         ? await uploadItemImage(supabase, user.id, imageFile)
-        : null;
+        : autofillImageUrl;
 
     await createItem(supabase, {
       title,
