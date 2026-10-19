@@ -37,6 +37,7 @@ export function ViewTabs() {
           type="button"
           size="sm"
           variant={currentView === tab.value ? "default" : "ghost"}
+          className="max-sm:px-2"
           onClick={() => setView(tab.value)}
         >
           {tab.label}

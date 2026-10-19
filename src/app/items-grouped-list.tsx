@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ItemGroup } from "@/lib/items-view";
 import { ItemsList, type ListsByItem } from "./items-list";
 import { formatCurrency } from "@/lib/format";
@@ -5,15 +6,17 @@ import { formatCurrency } from "@/lib/format";
 export function ItemsGroupedList({
   groups,
   listsByItem,
+  emptyState,
 }: {
   groups: ItemGroup[];
   listsByItem?: ListsByItem;
+  emptyState?: ReactNode;
 }) {
   if (groups.length === 0) {
     return (
-      <p className="text-muted-foreground text-sm">
-        No items match these filters.
-      </p>
+      <div className="text-muted-foreground text-sm">
+        {emptyState ?? "No items match these filters."}
+      </div>
     );
   }
 

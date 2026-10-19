@@ -2,12 +2,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { ExternalLink, Gift, ListChecks, ShoppingBag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import type { ReactNode } from "react";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { StarRating } from "@/components/star-rating";
 import type { listItems } from "@/lib/db/items";
 import { setItemFlag } from "./items/status-actions";
 import { ItemSelectCheckbox } from "./item-selection";
 import { formatCurrency } from "@/lib/format";
+import { displayDiscountPercent, itemMetaParts } from "@/lib/items-view";
 
 type Items = Awaited<ReturnType<typeof listItems>>;
 
@@ -18,11 +20,9 @@ export type ListsByItem = ReadonlyMap<string, { id: string; name: string }[]>;
 export function PriceDisplay({
   price,
   salePrice,
-  discountPercent,
 }: {
   price: number | null;
   salePrice: number | null;
-  discountPercent: number | null;
 }) {
   if (price === null) return null;
 
@@ -32,8 +32,10 @@ export function PriceDisplay({
     return <span className="font-medium">{formatCurrency(price)}</span>;
   }
 
+  const discountPercent = displayDiscountPercent(price, salePrice);
+
   return (
-    <span className="flex items-center gap-2">
+    <span className="flex shrink-0 items-center gap-2">
       <span className="font-medium">{formatCurrency(salePrice)}</span>
       <span className="text-muted-foreground text-sm line-through">
         {formatCurrency(price)}
@@ -69,19 +71,17 @@ function OnLists({ lists }: { lists: { id: string; name: string }[] }) {
 export function ItemsList({
   items,
   listsByItem,
+  emptyState,
 }: {
   items: Items;
   listsByItem?: ListsByItem;
+  emptyState?: ReactNode;
 }) {
   if (items.length === 0) {
     return (
-      <p className="text-muted-foreground text-sm">
-        No items yet.{" "}
-        <Link href="/items/new" className="underline">
-          Add your first one
-        </Link>
-        .
-      </p>
+      <div className="text-muted-foreground text-sm">
+        {emptyState ?? "No items here."}
+      </div>
     );
   }
 
@@ -102,8 +102,10 @@ export function ItemsList({
                 />
               )}
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
+                {/* Wraps the price under the title when both don't fit,
+                    instead of squeezing the title into a narrow column. */}
+                <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                  <div className="flex min-w-0 items-center gap-1.5">
                     <span className="font-medium">{item.title}</span>
                     {item.link && (
                       <a
@@ -119,14 +121,10 @@ export function ItemsList({
                   <PriceDisplay
                     price={item.price}
                     salePrice={item.sale_price}
-                    discountPercent={item.discount_percent}
                   />
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  {item.item_type.name}
-                  {" · "}
-                  {item.item_type.category.name}
-                  {item.store_brand && ` · ${item.store_brand}`}
+                  {itemMetaParts(item).join(" · ")}
                 </p>
                 <StarRating level={item.interest_level} />
                 {item.notes && (
@@ -144,14 +142,13 @@ export function ItemsList({
                       !item.purchased,
                     )}
                   >
-                    <Button
-                      type="submit"
+                    <PendingSubmitButton
                       size="xs"
                       variant={item.purchased ? "default" : "outline"}
                     >
                       <ShoppingBag />
                       {item.purchased ? "Purchased" : "Mark purchased"}
-                    </Button>
+                    </PendingSubmitButton>
                   </form>
                   <form
                     action={setItemFlag.bind(
@@ -161,14 +158,13 @@ export function ItemsList({
                       !item.gifted,
                     )}
                   >
-                    <Button
-                      type="submit"
+                    <PendingSubmitButton
                       size="xs"
                       variant={item.gifted ? "default" : "outline"}
                     >
                       <Gift />
                       {item.gifted ? "Gifted" : "Mark gifted"}
-                    </Button>
+                    </PendingSubmitButton>
                   </form>
                 </div>
               </div>

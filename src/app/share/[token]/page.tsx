@@ -21,7 +21,7 @@ export async function generateMetadata({
   const { token } = await params;
   const wishlist = await loadSharedWishlist(token);
   return {
-    title: wishlist ? `${wishlist.name} · Cubby` : "Wishlist not found · Cubby",
+    title: wishlist ? wishlist.name : "Wishlist not found",
     // Share links are private-by-obscurity; keep them out of search results.
     robots: { index: false, follow: false },
   };
@@ -73,7 +73,6 @@ export default async function SharedWishlistPage({
                       <PriceDisplay
                         price={item.price}
                         salePrice={item.sale_price}
-                        discountPercent={null}
                       />
                     </div>
                     {item.store_brand && (

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +9,8 @@ import { listWishlists } from "@/lib/db/wishlists";
 import { effectivePrice } from "@/lib/items-view";
 import { formatCurrency } from "@/lib/format";
 import { CreateWishlistForm } from "./create-wishlist-form";
+
+export const metadata: Metadata = { title: "Wishlists" };
 
 export default async function WishlistsPage() {
   const supabase = await createClient();

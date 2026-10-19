@@ -73,6 +73,8 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
 
 - Server Components for data-heavy views (category/item-type group views, totals) — fetch and aggregate close to the database.
 - Client Components only where interactivity demands it (filters, multi-select, star ratings, drag-to-wishlist).
+- **Loading/error/not-found states:** `app/loading.tsx` (skeleton shown instantly on navigation), `app/error.tsx` (friendly retry screen, reports to Sentry; `global-error.tsx` only covers the root layout), `app/not-found.tsx`, plus a share-specific `share/[token]/not-found.tsx` worded for signed-out visitors. Server-action buttons use `PendingSubmitButton` (disabled while submitting) so slow actions can't be double-fired.
+- **Display rules:** discounts show as whole percents (`displayDiscountPercent`, the stored `discount_percent` keeps 2 decimals); the card's meta line drops a category that just repeats the item type (`itemMetaParts`). Page titles use the root `"%s · Cubby"` template.
 
 ## Theming
 

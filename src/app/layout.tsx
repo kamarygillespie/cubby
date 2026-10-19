@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cubby",
+  // Pages set just their own name ("Wishlists"); the template adds the app.
+  title: { default: "Cubby", template: "%s · Cubby" },
   description:
     "A wishlist and spending tracker for fashion, beauty, and lifestyle items.",
   appleWebApp: {
