@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeSync } from "@/components/theme-sync";
+import { THEME_COLORS, themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,10 +24,13 @@ export const metadata: Metadata = {
   },
 };
 
-// Static for now — the light/dark toggle (see FEATURES.md) will make this
-// dynamic once it exists; the app is always light-themed until then.
+// Matches the OS setting by default; ThemeSync overwrites these with the
+// user's chosen theme (light/dim/dark) once the page hydrates.
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: THEME_COLORS.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLORS.dark },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -33,8 +38,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // The inline theme script adds classes/color-scheme to <html> before
+      // React hydrates; let the DOM win.
+      suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="flex min-h-full flex-col">
+        <ThemeSync />
+        {children}
+      </body>
     </html>
   );
 }

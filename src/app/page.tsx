@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { listItems } from "@/lib/db/items";
 import { listItemTypes } from "@/lib/db/item-types";
 import {
@@ -76,6 +77,7 @@ export default async function Home({
           Signed in as {user.email}
         </p>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Link
             href="/items/new"
             className={buttonVariants({ variant: "default" })}

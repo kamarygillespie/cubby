@@ -117,6 +117,36 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* "Dim" — the in-between theme: a soft slate palette with lower contrast
+   than dark. Applied alongside .dark (so dark: variants still match) and
+   overrides its tokens; must stay after the .dark block. Keep --background
+   in sync with THEME_COLORS.dim in src/lib/theme.ts. */
+.dim {
+  --background: oklch(0.27 0.018 255);
+  --foreground: oklch(0.94 0.008 255);
+  --card: oklch(0.31 0.02 255);
+  --card-foreground: oklch(0.94 0.008 255);
+  --popover: oklch(0.31 0.02 255);
+  --popover-foreground: oklch(0.94 0.008 255);
+  --primary: oklch(0.9 0.012 255);
+  --primary-foreground: oklch(0.27 0.018 255);
+  --secondary: oklch(0.36 0.02 255);
+  --secondary-foreground: oklch(0.94 0.008 255);
+  --muted: oklch(0.36 0.02 255);
+  --muted-foreground: oklch(0.76 0.015 255);
+  --accent: oklch(0.36 0.02 255);
+  --accent-foreground: oklch(0.94 0.008 255);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.6 0.02 255);
+  --sidebar: oklch(0.31 0.02 255);
+  --sidebar-foreground: oklch(0.94 0.008 255);
+  --sidebar-accent: oklch(0.36 0.02 255);
+  --sidebar-accent-foreground: oklch(0.94 0.008 255);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.6 0.02 255);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
