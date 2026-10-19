@@ -3,8 +3,16 @@ import type { Database } from "@/lib/supabase/database.types";
 
 type DbClient = SupabaseClient<Database>;
 
-export type NewItem = Database["public"]["Tables"]["items"]["Insert"];
-export type ItemUpdate = Database["public"]["Tables"]["items"]["Update"];
+// `discount_percent` is a generated column (Postgres rejects writes to it
+// outright) and `purchased_date` is trigger-managed — synced from the
+// `purchased` flag, see DATABASE.md — so the app must never set it directly
+// or it can drift out of sync with `purchased` on an unrelated update.
+type RawNewItem = Database["public"]["Tables"]["items"]["Insert"];
+type RawItemUpdate = Database["public"]["Tables"]["items"]["Update"];
+type AppReadonlyField = "discount_percent" | "purchased_date";
+
+export type NewItem = Omit<RawNewItem, AppReadonlyField>;
+export type ItemUpdate = Omit<RawItemUpdate, AppReadonlyField>;
 
 const ITEM_SELECT =
   "*, item_type:item_types(id, name, category:categories(id, name))";

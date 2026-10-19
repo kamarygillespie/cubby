@@ -48,6 +48,11 @@ export function AddItemForm({
       </div>
 
       <div className="flex flex-col gap-2">
+        <Label htmlFor="image">Image</Label>
+        <Input id="image" name="image" type="file" accept="image/*" />
+      </div>
+
+      <div className="flex flex-col gap-2">
         <Label htmlFor="item_type_id">Item type</Label>
         <Select name="item_type_id" required>
           <SelectTrigger id="item_type_id" className="w-full">
