@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import type { listItems } from "@/lib/db/items";
 import { setItemFlag } from "./items/status-actions";
+import { ItemSelectCheckbox } from "./item-selection";
 
 type Items = Awaited<ReturnType<typeof listItems>>;
 
@@ -63,8 +64,9 @@ export function ItemsList({ items }: { items: Items }) {
     <ul className="flex w-full flex-col gap-3">
       {items.map((item) => (
         <li key={item.id}>
-          <Card>
+          <Card className="has-data-checked:ring-primary has-data-checked:ring-2">
             <CardContent className="flex gap-3">
+              <ItemSelectCheckbox itemId={item.id} title={item.title} />
               {item.image_url && (
                 <Image
                   src={item.image_url}

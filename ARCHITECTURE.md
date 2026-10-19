@@ -39,6 +39,7 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
 
 - Each `wishlists` row has a unique, unguessable `share_token`.
 - A narrow, explicit RLS policy allows anonymous (`anon` role) `SELECT` on a wishlist and its items **only when the request includes a valid share token**, via a Postgres function (`get_shared_wishlist(token)`) rather than open table access.
+- Because that function bypasses RLS, what it returns is only as safe as what can get into `wishlist_items`: the insert policy requires the caller to own **both** the wishlist and the item, so no one can publish another user's item through their own share link.
 - This keeps the "no login to view" requirement without opening the tables themselves to anonymous reads.
 - The schema leaves room for an optional, lightweight anonymous identifier (name + a browser cookie) to be added later for reservation-style features, without changing the sharing model itself.
 

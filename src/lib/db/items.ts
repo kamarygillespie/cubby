@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
+import { requireUserId } from "./auth";
 
 type DbClient = SupabaseClient<Database>;
 
@@ -16,14 +17,6 @@ export type ItemUpdate = Omit<RawItemUpdate, AppReadonlyField>;
 
 const ITEM_SELECT =
   "*, item_type:item_types(id, name, category:categories(id, name))";
-
-async function requireUserId(supabase: DbClient): Promise<string> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-  return user.id;
-}
 
 export async function listItems(supabase: DbClient) {
   const { data, error } = await supabase

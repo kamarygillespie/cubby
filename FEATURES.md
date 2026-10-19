@@ -36,7 +36,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 ### Wishlist sharing
 
-- Multi-select items → add to one or more named wishlists
+- Multi-select items → add to one or more named wishlists (Wishlist tab only — purchased/gifted items aren't offered; a new list can be created inline from the picker, and re-adding an item already on a list is a silent no-op)
 - Public, no-login share link per wishlist
 - Clean, shareable export view (readable on any device, no account needed to view)
 - UI surfaces which wishlist(s) an item is already on, to avoid accidentally duplicating an item across two people's lists

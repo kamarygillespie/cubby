@@ -204,13 +204,18 @@ create table public.wishlist_items (
 
 alter table public.wishlist_items enable row level security;
 
-create policy "Users manage wishlist_items for their own wishlists"
+-- Both sides of the join must belong to the caller. Checking only the
+-- wishlist would let a user attach someone else's item (by UUID) to their own
+-- list, which get_shared_wishlist() (SECURITY DEFINER) would then expose
+-- publicly. Fixed in migration 20261019200000_wishlist_items_item_ownership.
+create policy "Users manage wishlist_items for their own wishlists and items"
   on public.wishlist_items for all
   using (
     exists (select 1 from public.wishlists w where w.id = wishlist_id and w.user_id = auth.uid())
   )
   with check (
     exists (select 1 from public.wishlists w where w.id = wishlist_id and w.user_id = auth.uid())
+    and exists (select 1 from public.items i where i.id = item_id and i.user_id = auth.uid())
   );
 
 
