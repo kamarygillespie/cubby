@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useMemo } from "react";
+import { useActionState, useMemo, useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StarRatingInput } from "./star-rating-input";
+import { LinkAutofillField } from "./link-autofill-field";
 import { addItem } from "./actions";
 
 type ItemTypeOption = {
@@ -23,12 +25,25 @@ type ItemTypeOption = {
   category: { id: string; name: string } | null;
 };
 
+type AutofillResult = {
+  title: string | null;
+  image: string | null;
+  price: number | null;
+  salePrice: number | null;
+};
+
 export function AddItemForm({
   itemTypesByCategory,
 }: {
   itemTypesByCategory: { category: string; itemTypes: ItemTypeOption[] }[];
 }) {
   const [state, formAction, pending] = useActionState(addItem, null);
+
+  const [title, setTitle] = useState("");
+  const [price, setPrice] = useState("");
+  const [salePrice, setSalePrice] = useState("");
+  const [link, setLink] = useState("");
+  const [autofillImageUrl, setAutofillImageUrl] = useState<string | null>(null);
 
   const itemTypeLabels = useMemo(() => {
     const labels = new Map<string, string>();
@@ -40,16 +55,58 @@ export function AddItemForm({
     return labels;
   }, [itemTypesByCategory]);
 
+  function handleAutofill(result: AutofillResult, autofilledLink: string) {
+    if (result.title) setTitle(result.title);
+    if (result.price !== null) setPrice(String(result.price));
+    if (result.salePrice !== null) setSalePrice(String(result.salePrice));
+    if (result.image) setAutofillImageUrl(result.image);
+    setLink(autofilledLink);
+  }
+
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      <LinkAutofillField onAutofill={handleAutofill} />
+
+      <input
+        type="hidden"
+        name="autofill_image_url"
+        value={autofillImageUrl ?? ""}
+      />
+
       <div className="flex flex-col gap-2">
         <Label htmlFor="title">Title</Label>
-        <Input id="title" name="title" required />
+        <Input
+          id="title"
+          name="title"
+          required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
       </div>
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="image">Image</Label>
-        <Input id="image" name="image" type="file" accept="image/*" />
+        {autofillImageUrl && (
+          <Image
+            src={autofillImageUrl}
+            alt="Fetched preview"
+            width={80}
+            height={80}
+            className="size-20 rounded-md object-cover"
+          />
+        )}
+        <Input
+          id="image"
+          name="image"
+          type="file"
+          accept="image/*"
+          onChange={() => setAutofillImageUrl(null)}
+        />
+        {autofillImageUrl && (
+          <p className="text-muted-foreground text-xs">
+            Fetched from the link. Choose a file above to replace it.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -87,6 +144,8 @@ export function AddItemForm({
             step="0.01"
             min="0"
             inputMode="decimal"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -98,6 +157,8 @@ export function AddItemForm({
             step="0.01"
             min="0"
             inputMode="decimal"
+            value={salePrice}
+            onChange={(e) => setSalePrice(e.target.value)}
           />
         </div>
       </div>
@@ -114,7 +175,14 @@ export function AddItemForm({
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="link">Link</Label>
-        <Input id="link" name="link" type="url" placeholder="https://" />
+        <Input
+          id="link"
+          name="link"
+          type="url"
+          placeholder="https://"
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+        />
       </div>
 
       <div className="flex flex-col gap-2">
