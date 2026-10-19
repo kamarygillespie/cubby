@@ -8,11 +8,7 @@ import {
   totalWishlistValue,
   type ItemGroup,
 } from "@/lib/items-view";
-
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
+import { formatCurrency } from "@/lib/format";
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -48,7 +44,7 @@ function BreakdownList({
             <span>
               {group.name} ({group.count})
             </span>
-            <span>{currency.format(group.totalPrice)}</span>
+            <span>{formatCurrency(group.totalPrice)}</span>
           </li>
         ))}
       </ul>
@@ -64,11 +60,11 @@ export function TotalsDashboard({ items }: { items: Item[] }) {
       <div className="grid grid-cols-2 gap-4">
         <StatCard
           label="Total spent"
-          value={currency.format(totalSpent(items))}
+          value={formatCurrency(totalSpent(items))}
         />
         <StatCard
           label="Wishlist value"
-          value={currency.format(totalWishlistValue(items))}
+          value={formatCurrency(totalWishlistValue(items))}
         />
       </div>
       <BreakdownList title="By category" groups={groupByCategory(active)} />

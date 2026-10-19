@@ -15,7 +15,7 @@ type AppReadonlyField = "discount_percent" | "purchased_date";
 export type NewItem = Omit<RawNewItem, AppReadonlyField>;
 export type ItemUpdate = Omit<RawItemUpdate, AppReadonlyField>;
 
-const ITEM_SELECT =
+export const ITEM_SELECT =
   "*, item_type:item_types(id, name, category:categories(id, name))";
 
 export async function listItems(supabase: DbClient) {

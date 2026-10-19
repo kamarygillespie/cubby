@@ -1,11 +1,15 @@
 import { beforeAll, describe, expect, test } from "vitest";
-import { createItem } from "./items";
 import { listItemTypes } from "./item-types";
 import {
   addItemsToWishlists,
   createWishlist,
+  deleteWishlist,
+  getWishlist,
   listWishlists,
+  removeItemFromWishlist,
+  renameWishlist,
 } from "./wishlists";
+import { createItem, getItem } from "./items";
 import { admin, createTestUser } from "./integration-test-utils";
 
 // Runs against a real local Supabase instance (`supabase start`) — see
@@ -92,5 +96,71 @@ describe("lib/db/wishlists (integration)", () => {
       token: shareToken!.share_token,
     });
     expect(shared).toEqual([]);
+  });
+
+  test("getWishlist returns the list with full item rows, newest first", async () => {
+    const { client } = await createTestUser();
+    const first = await createItem(client, {
+      title: "First",
+      item_type_id: itemTypeId,
+      price: 10,
+    });
+    const second = await createItem(client, {
+      title: "Second",
+      item_type_id: itemTypeId,
+    });
+    const list = await createWishlist(client, "Gifts");
+    await addItemsToWishlists(client, [first.id], [list.id]);
+    await addItemsToWishlists(client, [second.id], [list.id]);
+
+    const fetched = await getWishlist(client, list.id);
+    expect(fetched?.name).toBe("Gifts");
+    expect(fetched?.wishlist_items.map((wi) => wi.item?.title)).toEqual([
+      "Second",
+      "First",
+    ]);
+    expect(fetched?.wishlist_items[1].item?.item_type.category.id).toBeTruthy();
+  });
+
+  test("getWishlist returns null for another user's list or a malformed id", async () => {
+    const owner = await createTestUser();
+    const other = await createTestUser();
+    const list = await createWishlist(owner.client, "Private");
+
+    expect(await getWishlist(other.client, list.id)).toBeNull();
+    expect(await getWishlist(owner.client, "not-a-uuid")).toBeNull();
+  });
+
+  test("rename, remove item, and delete list (items survive)", async () => {
+    const { client } = await createTestUser();
+    const item = await createItem(client, {
+      title: "Keep me",
+      item_type_id: itemTypeId,
+    });
+    const list = await createWishlist(client, "Old name");
+    await addItemsToWishlists(client, [item.id], [list.id]);
+
+    await renameWishlist(client, list.id, "New name");
+    expect((await getWishlist(client, list.id))?.name).toBe("New name");
+
+    await removeItemFromWishlist(client, list.id, item.id);
+    expect((await getWishlist(client, list.id))?.wishlist_items).toEqual([]);
+
+    await addItemsToWishlists(client, [item.id], [list.id]);
+    await deleteWishlist(client, list.id);
+    expect(await getWishlist(client, list.id)).toBeNull();
+    expect((await getItem(client, item.id)).title).toBe("Keep me");
+  });
+
+  test("cannot rename or delete another user's list (RLS)", async () => {
+    const owner = await createTestUser();
+    const other = await createTestUser();
+    const list = await createWishlist(owner.client, "Mine");
+
+    // RLS filters the rows out, so these are silent no-ops, not errors.
+    await renameWishlist(other.client, list.id, "Hijacked");
+    await deleteWishlist(other.client, list.id);
+
+    expect((await getWishlist(owner.client, list.id))?.name).toBe("Mine");
   });
 });
