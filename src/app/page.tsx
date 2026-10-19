@@ -6,6 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { listItems } from "@/lib/db/items";
 import { listItemTypes } from "@/lib/db/item-types";
+import { listWishlists } from "@/lib/db/wishlists";
 import {
   filterByView,
   filterItems,
@@ -20,6 +21,8 @@ import { ItemsGroupedList } from "./items-grouped-list";
 import { FilterBar } from "./filter-bar";
 import { ViewTabs } from "./view-tabs";
 import { TotalsDashboard } from "./totals-dashboard";
+import { ItemSelectionProvider } from "./item-selection";
+import { AddToWishlistBar } from "./add-to-wishlist-bar";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -52,9 +55,10 @@ export default async function Home({
   const view =
     (showTotals ? undefined : (rawView as ItemView | undefined)) ?? "wishlist";
 
-  const [items, itemTypes] = await Promise.all([
+  const [items, itemTypes, wishlists] = await Promise.all([
     listItems(supabase),
     listItemTypes(supabase),
+    listWishlists(supabase),
   ]);
 
   const categories = [
@@ -71,7 +75,7 @@ export default async function Home({
   );
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 p-4">
+    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-muted-foreground text-sm">
           Signed in as {user.email}
@@ -95,8 +99,18 @@ export default async function Home({
       {showTotals ? (
         <TotalsDashboard items={items} />
       ) : (
-        <>
+        <ItemSelectionProvider key={view}>
           <FilterBar categories={categories} itemTypes={itemTypes} />
+          {view === "wishlist" && (
+            <AddToWishlistBar
+              itemIds={visibleItems.map((i) => i.id)}
+              wishlists={wishlists.map((w) => ({
+                id: w.id,
+                name: w.name,
+                itemIds: w.wishlist_items.map((wi) => wi.item_id),
+              }))}
+            />
+          )}
           {group === "category" ? (
             <ItemsGroupedList groups={groupByCategory(visibleItems)} />
           ) : group === "itemType" ? (
@@ -104,7 +118,7 @@ export default async function Home({
           ) : (
             <ItemsList items={visibleItems} />
           )}
-        </>
+        </ItemSelectionProvider>
       )}
     </div>
   );
