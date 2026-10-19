@@ -47,7 +47,7 @@ export async function seedItems(
 export async function logIn(page: Page, user: TestUser) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(user.email);
-  await page.getByLabel("Password").fill(user.password);
+  await page.getByLabel("Password", { exact: true }).fill(user.password);
   await page.getByRole("button", { name: /log in/i }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();

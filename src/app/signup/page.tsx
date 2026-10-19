@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/password-input";
+import { PASSWORD_MIN_LENGTH } from "@/lib/auth";
 import {
   Card,
   CardContent,
@@ -16,6 +18,10 @@ import { signUp } from "./actions";
 
 export default function SignUpPage() {
   const [state, formAction, pending] = useActionState(signUp, null);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  // Only flag a mismatch once they've started typing the confirmation.
+  const mismatch = confirmPassword !== "" && confirmPassword !== password;
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -26,7 +32,7 @@ export default function SignUpPage() {
         </CardHeader>
         <CardContent>
           {state && "success" in state ? (
-            <p className="text-sm">
+            <p role="status" className="text-sm">
               Check your email for a confirmation link to finish signing up.
             </p>
           ) : (
@@ -44,19 +50,47 @@ export default function SignUpPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input
+                  <PasswordInput
                     id="password"
                     name="password"
-                    type="password"
                     autoComplete="new-password"
-                    minLength={6}
+                    minLength={PASSWORD_MIN_LENGTH}
                     required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    aria-describedby="password-hint"
                   />
+                  <p
+                    id="password-hint"
+                    className="text-muted-foreground text-xs"
+                  >
+                    At least {PASSWORD_MIN_LENGTH} characters.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="confirmPassword">Confirm password</Label>
+                  <PasswordInput
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    aria-invalid={mismatch || undefined}
+                    aria-describedby={mismatch ? "confirm-error" : undefined}
+                  />
+                  {mismatch && (
+                    <p id="confirm-error" className="text-destructive text-xs">
+                      Passwords don&apos;t match.
+                    </p>
+                  )}
                 </div>
                 {state?.error && (
-                  <p className="text-destructive text-sm">{state.error}</p>
+                  <p role="alert" className="text-destructive text-sm">
+                    {state.error}
+                  </p>
                 )}
-                <Button type="submit" disabled={pending}>
+                <Button type="submit" disabled={pending || mismatch}>
                   {pending ? "Signing up..." : "Sign up"}
                 </Button>
               </form>
