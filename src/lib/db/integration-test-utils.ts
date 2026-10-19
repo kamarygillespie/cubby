@@ -36,3 +36,8 @@ export async function createTestUser() {
 
   return { userId: data.user.id, client };
 }
+
+// A signed-out visitor, for exercising the public share path.
+export function createAnonClient() {
+  return createClient<Database>(LOCAL_URL, LOCAL_ANON_KEY);
+}

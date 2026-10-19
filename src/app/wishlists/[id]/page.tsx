@@ -11,6 +11,7 @@ import { formatCurrency } from "@/lib/format";
 import { removeFromWishlistAction } from "../actions";
 import { RenameWishlistForm } from "./rename-wishlist-form";
 import { DeleteWishlistButton } from "./delete-wishlist-button";
+import { ShareLink } from "./share-link";
 
 export default async function WishlistPage({
   params,
@@ -44,6 +45,7 @@ export default async function WishlistPage({
         {items.length} item{items.length === 1 ? "" : "s"} ·{" "}
         {formatCurrency(total)}
       </p>
+      <ShareLink shareToken={wishlist.share_token} />
 
       {items.length === 0 ? (
         <p className="text-muted-foreground text-sm">
