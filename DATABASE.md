@@ -222,6 +222,10 @@ create policy "Users manage wishlist_items for their own wishlists and items"
 -- ============================================================
 -- PUBLIC SHARING (no-login read access via token)
 -- ============================================================
+-- LEFT JOIN so an empty (or all-purchased) list still returns one row with
+-- null item columns — distinguishable from an invalid token. Purchased/gifted
+-- items are hidden: the page is for gift-givers. search_path pinned per
+-- Supabase's SECURITY DEFINER guidance. (Migration 20261019210000.)
 create function public.get_shared_wishlist(token uuid)
 returns table (
   wishlist_name text,
@@ -245,10 +249,14 @@ returns table (
     i.notes,
     i.store_brand
   from public.wishlists w
-  join public.wishlist_items wi on wi.wishlist_id = w.id
-  join public.items i on i.id = wi.item_id
-  where w.share_token = token;
-$$ language sql security definer stable;
+  left join (
+    public.wishlist_items wi
+    join public.items i
+      on i.id = wi.item_id and not i.purchased and not i.gifted
+  ) on wi.wishlist_id = w.id
+  where w.share_token = token
+  order by wi.added_at desc nulls last;
+$$ language sql security definer stable set search_path = '';
 
 -- Exposed deliberately via a SECURITY DEFINER function rather than opening
 -- table-level anon SELECT policies — keeps the "no login to view" feature

@@ -2,7 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import { requireUserId } from "./auth";
 import { ITEM_SELECT } from "./items";
-import { wishlistItemPairs } from "@/lib/wishlists";
+import {
+  toSharedWishlist,
+  type SharedWishlistRow,
+  wishlistItemPairs,
+} from "@/lib/wishlists";
 
 type DbClient = SupabaseClient<Database>;
 
@@ -20,6 +24,19 @@ export type Wishlist = Awaited<ReturnType<typeof listWishlists>>[number];
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Public, no-login read. Deliberately goes through the SECURITY DEFINER
+// get_shared_wishlist() rather than table access — the one sanctioned RLS
+// bypass in the app (see ARCHITECTURE.md "Public Wishlist Sharing"). Works
+// with an anonymous or signed-in client. Null for unknown/malformed tokens.
+export async function getSharedWishlist(supabase: DbClient, token: string) {
+  if (!UUID_RE.test(token)) return null;
+
+  const { data, error } = await supabase.rpc("get_shared_wishlist", { token });
+  if (error) throw error;
+  // Generated types mark every column non-null; see SharedWishlistRow.
+  return toSharedWishlist(data as SharedWishlistRow[]);
+}
 
 // Returns null (not an error) for a malformed id, a missing list, or someone
 // else's list — RLS makes the last two indistinguishable, and all should 404.

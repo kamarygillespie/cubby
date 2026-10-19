@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/auth"];
+// /share/<token> is the no-login public wishlist page (ARCHITECTURE.md).
+const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/share"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(

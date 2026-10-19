@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   WISHLIST_NAME_MAX_LENGTH,
   parseWishlistName,
+  toSharedWishlist,
   wishlistItemPairs,
+  type SharedWishlistRow,
 } from "./wishlists";
 
 describe("parseWishlistName", () => {
@@ -46,5 +48,39 @@ describe("wishlistItemPairs", () => {
   it("returns nothing when either side is empty", () => {
     expect(wishlistItemPairs([], ["w1"])).toEqual([]);
     expect(wishlistItemPairs(["i1"], [])).toEqual([]);
+  });
+});
+
+describe("toSharedWishlist", () => {
+  const row = (over: Partial<SharedWishlistRow>): SharedWishlistRow => ({
+    wishlist_name: "Birthday",
+    item_id: "i1",
+    title: "Sweater",
+    image_url: null,
+    link: null,
+    price: 100,
+    sale_price: null,
+    notes: null,
+    store_brand: null,
+    ...over,
+  });
+
+  it("returns null when the token matched nothing", () => {
+    expect(toSharedWishlist([])).toBeNull();
+  });
+
+  it("maps item rows", () => {
+    const shared = toSharedWishlist([
+      row({ item_id: "i1", title: "Sweater" }),
+      row({ item_id: "i2", title: "Boots" }),
+    ]);
+    expect(shared?.name).toBe("Birthday");
+    expect(shared?.items.map((i) => i.title)).toEqual(["Sweater", "Boots"]);
+  });
+
+  it("treats the LEFT JOIN placeholder row as an empty list", () => {
+    expect(
+      toSharedWishlist([row({ item_id: null, title: null, price: null })]),
+    ).toEqual({ name: "Birthday", items: [] });
   });
 });

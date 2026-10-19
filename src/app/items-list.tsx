@@ -15,7 +15,7 @@ type Items = Awaited<ReturnType<typeof listItems>>;
 // accidentally put on two people's lists (FEATURES.md, wishlist sharing).
 export type ListsByItem = ReadonlyMap<string, { id: string; name: string }[]>;
 
-function PriceDisplay({
+export function PriceDisplay({
   price,
   salePrice,
   discountPercent,

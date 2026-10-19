@@ -4,13 +4,18 @@ import {
   addItemsToWishlists,
   createWishlist,
   deleteWishlist,
+  getSharedWishlist,
   getWishlist,
   listWishlists,
   removeItemFromWishlist,
   renameWishlist,
 } from "./wishlists";
-import { createItem, getItem } from "./items";
-import { admin, createTestUser } from "./integration-test-utils";
+import { createItem, getItem, updateItem } from "./items";
+import {
+  admin,
+  createAnonClient,
+  createTestUser,
+} from "./integration-test-utils";
 
 // Runs against a real local Supabase instance (`supabase start`) — see
 // integration-test-utils.ts.
@@ -87,15 +92,12 @@ describe("lib/db/wishlists (integration)", () => {
       addItemsToWishlists(attacker.client, [victimItem.id], [attackerList.id]),
     ).rejects.toThrow();
 
-    const { data: shareToken } = await admin
-      .from("wishlists")
-      .select("share_token")
-      .eq("id", attackerList.id)
-      .single();
-    const { data: shared } = await admin.rpc("get_shared_wishlist", {
-      token: shareToken!.share_token,
-    });
-    expect(shared).toEqual([]);
+    const { share_token } = (await getWishlist(
+      attacker.client,
+      attackerList.id,
+    ))!;
+    const shared = await getSharedWishlist(createAnonClient(), share_token);
+    expect(shared).toEqual({ name: "Leak", items: [] });
   });
 
   test("getWishlist returns the list with full item rows, newest first", async () => {
@@ -162,5 +164,65 @@ describe("lib/db/wishlists (integration)", () => {
     await deleteWishlist(other.client, list.id);
 
     expect((await getWishlist(owner.client, list.id))?.name).toBe("Mine");
+  });
+
+  test("share link: a signed-out visitor sees the list, minus purchased/gifted items", async () => {
+    const { client } = await createTestUser();
+    const want = await createItem(client, {
+      title: "Still wanted",
+      item_type_id: itemTypeId,
+      price: 50,
+    });
+    const bought = await createItem(client, {
+      title: "Already bought",
+      item_type_id: itemTypeId,
+    });
+    const given = await createItem(client, {
+      title: "Already gifted",
+      item_type_id: itemTypeId,
+    });
+    const list = await createWishlist(client, "Birthday");
+    await addItemsToWishlists(
+      client,
+      [want.id, bought.id, given.id],
+      [list.id],
+    );
+    await updateItem(client, bought.id, { purchased: true });
+    await updateItem(client, given.id, { gifted: true });
+
+    const { share_token } = (await getWishlist(client, list.id))!;
+    const shared = await getSharedWishlist(createAnonClient(), share_token);
+
+    expect(shared?.name).toBe("Birthday");
+    expect(shared?.items.map((i) => i.title)).toEqual(["Still wanted"]);
+    expect(shared?.items[0].price).toBe(50);
+  });
+
+  test("share link: an empty list still resolves (not a 404)", async () => {
+    const { client } = await createTestUser();
+    const list = await createWishlist(client, "Empty");
+    const { share_token } = (await getWishlist(client, list.id))!;
+
+    expect(await getSharedWishlist(createAnonClient(), share_token)).toEqual({
+      name: "Empty",
+      items: [],
+    });
+  });
+
+  test("share link: unknown or malformed tokens return null", async () => {
+    const anon = createAnonClient();
+    expect(await getSharedWishlist(anon, crypto.randomUUID())).toBeNull();
+    expect(await getSharedWishlist(anon, "not-a-token")).toBeNull();
+  });
+
+  test("a signed-out visitor cannot read wishlist tables directly (RLS)", async () => {
+    const { client } = await createTestUser();
+    await createWishlist(client, "Secret");
+    const anon = createAnonClient();
+
+    const { data: lists } = await anon.from("wishlists").select("*");
+    const { data: items } = await anon.from("items").select("*");
+    expect(lists).toEqual([]);
+    expect(items).toEqual([]);
   });
 });
