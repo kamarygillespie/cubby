@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createItem } from "@/lib/db/items";
+import { uploadItemImage } from "@/lib/db/item-images";
 
 export type AddItemActionState = { error: string } | null;
 
@@ -30,9 +31,23 @@ export async function addItem(
   const supabase = await createClient();
 
   try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { error: "Not authenticated" };
+    }
+
+    const imageFile = formData.get("image");
+    const imageUrl =
+      imageFile instanceof File && imageFile.size > 0
+        ? await uploadItemImage(supabase, user.id, imageFile)
+        : null;
+
     await createItem(supabase, {
       title,
       item_type_id: itemTypeId,
+      image_url: imageUrl,
       price: parseOptionalNumber(formData.get("price")),
       sale_price: parseOptionalNumber(formData.get("sale_price")),
       interest_level: parseOptionalNumber(formData.get("interest_level")),

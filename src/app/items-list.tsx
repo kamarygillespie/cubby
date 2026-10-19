@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { StarRating } from "@/components/star-rating";
@@ -61,39 +62,50 @@ export function ItemsList({ items }: { items: Items }) {
       {items.map((item) => (
         <li key={item.id}>
           <Card>
-            <CardContent className="flex flex-col gap-1">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-medium">{item.title}</span>
-                  {item.link && (
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Open ${item.title} link`}
-                    >
-                      <ExternalLink className="text-muted-foreground size-3.5" />
-                    </a>
-                  )}
-                </div>
-                <PriceDisplay
-                  price={item.price}
-                  salePrice={item.sale_price}
-                  discountPercent={item.discount_percent}
+            <CardContent className="flex gap-3">
+              {item.image_url && (
+                <Image
+                  src={item.image_url}
+                  alt={item.title}
+                  width={64}
+                  height={64}
+                  className="size-16 shrink-0 rounded-md object-cover"
                 />
-              </div>
-              <p className="text-muted-foreground text-sm">
-                {item.item_type.name}
-                {" · "}
-                {item.item_type.category.name}
-                {item.store_brand && ` · ${item.store_brand}`}
-              </p>
-              <StarRating level={item.interest_level} />
-              {item.notes && (
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {item.notes}
-                </p>
               )}
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium">{item.title}</span>
+                    {item.link && (
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open ${item.title} link`}
+                      >
+                        <ExternalLink className="text-muted-foreground size-3.5" />
+                      </a>
+                    )}
+                  </div>
+                  <PriceDisplay
+                    price={item.price}
+                    salePrice={item.sale_price}
+                    discountPercent={item.discount_percent}
+                  />
+                </div>
+                <p className="text-muted-foreground text-sm">
+                  {item.item_type.name}
+                  {" · "}
+                  {item.item_type.category.name}
+                  {item.store_brand && ` · ${item.store_brand}`}
+                </p>
+                <StarRating level={item.interest_level} />
+                {item.notes && (
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {item.notes}
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </li>
