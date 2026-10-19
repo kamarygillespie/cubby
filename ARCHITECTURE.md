@@ -71,6 +71,14 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
 - Server Components for data-heavy views (category/item-type group views, totals) — fetch and aggregate close to the database.
 - Client Components only where interactivity demands it (filters, multi-select, star ratings, drag-to-wishlist).
 
+## Theming
+
+- Four preferences: `light`, `dim`, `dark`, `system` (default). Logic lives in `src/lib/theme.ts`; palettes are CSS variables in `globals.css`.
+- **Dim is a dark-family theme**: `<html>` gets both `.dark` and `.dim`, so Tailwind `dark:` variants still apply and `.dim` only swaps the color tokens. Components should use theme tokens (`bg-background`, `text-muted-foreground`, …), never raw palette colors, so all three palettes stay correct automatically.
+- **Stored per device in `localStorage`** (`cubby-theme`), not in the database — no schema/RLS cost, works on logged-out pages (login/signup, public share page). Syncing across devices would mean a `theme` column on a profile table; deferred until there's a reason.
+- **No flash**: an inline script in the root layout's `<head>` applies the theme before first paint (per Next's "preventing flash before hydration" guide), so the root layout stays static rather than reading a cookie. `ThemeSync` (client) keeps it correct afterward — OS changes while on System, changes in other tabs, and React's dev-mode remount.
+- PWA/browser chrome color: `viewport.themeColor` defaults to light/dark by OS media query; `ThemeSync` overwrites it with the chosen palette's color (`THEME_COLORS`) after hydration.
+
 ## Future Extension Points (kept in mind now, not built yet)
 
 - **Closet view (V2):** `items` already has an image; a `closets` table can reference existing items plus new standalone closet photos without restructuring `items`.

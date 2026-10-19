@@ -45,7 +45,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 - Responsive web app
 - Installable PWA (mobile + desktop)
-- Light/dark/"in-between" theme (see Open Questions)
+- Theme picker: Light / Dim / Dark / System. "Dim" is the in-between option — a soft slate palette with lower contrast than dark; System (the default) follows the OS setting. Saved per device, not per account (see `ARCHITECTURE.md` → Theming)
 
 ## V1.5 — Post-Launch Hardening (no fixed date)
 
@@ -80,5 +80,4 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 ## Open Questions to Revisit
 
 - Final app name/branding (see `README.md`)
-- Exact "in-between" theme treatment beyond light/dark
 - Whether V3 recommendations need any external data source or stay purely first-party
