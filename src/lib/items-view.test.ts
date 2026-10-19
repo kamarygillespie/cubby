@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import type { Item } from "@/lib/db/items";
 import {
+  filterByView,
   filterItems,
   groupByCategory,
   groupByItemType,
@@ -206,5 +207,32 @@ describe("groupByItemType", () => {
     expect(groups).toEqual([
       { id: "t1", name: "Sweaters", items: [a, b], count: 2, totalPrice: 200 },
     ]);
+  });
+});
+
+describe("filterByView", () => {
+  const active = makeItem({ purchased: false, gifted: false });
+  const purchased = makeItem({ purchased: true, gifted: false });
+  const gifted = makeItem({ purchased: false, gifted: true });
+  const all = [active, purchased, gifted];
+
+  test("wishlist view excludes purchased and gifted items", () => {
+    expect(filterByView(all, "wishlist")).toEqual([active]);
+  });
+
+  test("purchased view includes only purchased items", () => {
+    expect(filterByView(all, "purchased")).toEqual([purchased]);
+  });
+
+  test("gifted view includes only gifted items", () => {
+    expect(filterByView(all, "gifted")).toEqual([gifted]);
+  });
+
+  test("an item that is both purchased and gifted appears in both views", () => {
+    const both = makeItem({ purchased: true, gifted: true });
+    const items = [active, both];
+    expect(filterByView(items, "purchased")).toEqual([both]);
+    expect(filterByView(items, "gifted")).toEqual([both]);
+    expect(filterByView(items, "wishlist")).toEqual([active]);
   });
 });

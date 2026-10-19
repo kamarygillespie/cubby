@@ -6,15 +6,18 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { listItems } from "@/lib/db/items";
 import { listItemTypes } from "@/lib/db/item-types";
 import {
+  filterByView,
   filterItems,
   groupByCategory,
   groupByItemType,
   sortItems,
+  type ItemView,
   type SortOption,
 } from "@/lib/items-view";
 import { ItemsList } from "./items-list";
 import { ItemsGroupedList } from "./items-grouped-list";
 import { FilterBar } from "./filter-bar";
+import { ViewTabs } from "./view-tabs";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -42,6 +45,7 @@ export default async function Home({
   const onSaleOnly = firstParam(params.onSale) === "1";
   const sort = (firstParam(params.sort) as SortOption | undefined) ?? null;
   const group = firstParam(params.group);
+  const view = (firstParam(params.view) as ItemView | undefined) ?? "wishlist";
 
   const [items, itemTypes] = await Promise.all([
     listItems(supabase),
@@ -53,7 +57,11 @@ export default async function Home({
   ].sort((a, b) => a.name.localeCompare(b.name));
 
   const visibleItems = sortItems(
-    filterItems(items, { categoryId, itemTypeId, onSaleOnly }),
+    filterItems(filterByView(items, view), {
+      categoryId,
+      itemTypeId,
+      onSaleOnly,
+    }),
     sort,
   );
 
@@ -77,6 +85,7 @@ export default async function Home({
           </form>
         </div>
       </div>
+      <ViewTabs />
       <FilterBar categories={categories} itemTypes={itemTypes} />
       {group === "category" ? (
         <ItemsGroupedList groups={groupByCategory(visibleItems)} />

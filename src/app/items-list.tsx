@@ -1,9 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Gift, ShoppingBag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import type { listItems } from "@/lib/db/items";
+import { setItemFlag } from "./items/status-actions";
 
 type Items = Awaited<ReturnType<typeof listItems>>;
 
@@ -105,6 +107,42 @@ export function ItemsList({ items }: { items: Items }) {
                     {item.notes}
                   </p>
                 )}
+                <div className="mt-1 flex gap-2">
+                  <form
+                    action={setItemFlag.bind(
+                      null,
+                      item.id,
+                      "purchased",
+                      !item.purchased,
+                    )}
+                  >
+                    <Button
+                      type="submit"
+                      size="xs"
+                      variant={item.purchased ? "default" : "outline"}
+                    >
+                      <ShoppingBag />
+                      {item.purchased ? "Purchased" : "Mark purchased"}
+                    </Button>
+                  </form>
+                  <form
+                    action={setItemFlag.bind(
+                      null,
+                      item.id,
+                      "gifted",
+                      !item.gifted,
+                    )}
+                  >
+                    <Button
+                      type="submit"
+                      size="xs"
+                      variant={item.gifted ? "default" : "outline"}
+                    >
+                      <Gift />
+                      {item.gifted ? "Gifted" : "Mark gifted"}
+                    </Button>
+                  </form>
+                </div>
               </div>
             </CardContent>
           </Card>

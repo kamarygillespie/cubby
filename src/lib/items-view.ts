@@ -16,8 +16,22 @@ export function isOnSale(item: Item): boolean {
   );
 }
 
-function effectivePrice(item: Item): number {
+export function effectivePrice(item: Item): number {
   return (isOnSale(item) ? item.sale_price : item.price) ?? 0;
+}
+
+export type ItemView = "wishlist" | "purchased" | "gifted";
+
+export function filterByView(items: Item[], view: ItemView): Item[] {
+  switch (view) {
+    case "purchased":
+      return items.filter((item) => item.purchased);
+    case "gifted":
+      return items.filter((item) => item.gifted);
+    case "wishlist":
+    default:
+      return items.filter((item) => !item.purchased && !item.gifted);
+  }
 }
 
 export function filterItems(items: Item[], filters: ItemFilters): Item[] {
