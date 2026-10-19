@@ -16,11 +16,24 @@ jobs:
           node-version: 22
           cache: npm
 
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - run: npm ci
 
       - run: npm run lint
 
       - run: npm run typecheck
+
+      # Edge Functions run on Deno, not Node — checked and tested separately.
+      # Must run from inside the function's own directory so Deno resolves
+      # its deno.json import map; from the repo root it can't find it.
+      - name: Check and test link-autofill Edge Function
+        working-directory: supabase/functions/link-autofill
+        run: |
+          deno check index.ts
+          deno test --allow-net --allow-read
 
       # lib/db/ integration tests run against a real local Supabase stack
       # (RLS + triggers exercised for real), not mocks — see TESTING.md.
