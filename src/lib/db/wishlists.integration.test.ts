@@ -151,7 +151,7 @@ describe("lib/db/wishlists (integration)", () => {
     await addItemsToWishlists(client, [item.id], [list.id]);
     await deleteWishlist(client, list.id);
     expect(await getWishlist(client, list.id)).toBeNull();
-    expect((await getItem(client, item.id)).title).toBe("Keep me");
+    expect((await getItem(client, item.id))?.title).toBe("Keep me");
   });
 
   test("cannot rename or delete another user's list (RLS)", async () => {

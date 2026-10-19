@@ -10,7 +10,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 - Full item schema: title, image, link, price, interest level (1–5 stars), purchased (+ auto purchased date), gifted, notes, store/brand, item type, category (auto-derived from item type)
 - Add item via pasted link → server-side autofill (title/image/price) with full manual edit + image replacement
-- Add/edit item manually (no link required)
+- Add/edit item manually (no link required). Edit at `/items/<id>/edit` (Edit on each card): all fields, plus replace or remove the image (the old file is deleted from storage). Delete lives on the edit page behind a confirmation that names any wishlists the item will drop off
 - Default system taxonomy for Category and Item Type, seeded on signup
 - Users can add their own custom Item Types (auto-mapped to a Category) and, if needed, custom Categories
 

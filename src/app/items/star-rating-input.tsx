@@ -6,8 +6,14 @@ import { cn } from "@/lib/utils";
 
 const LEVELS = [1, 2, 3, 4, 5] as const;
 
-export function StarRatingInput({ name }: { name: string }) {
-  const [value, setValue] = useState<number | null>(null);
+export function StarRatingInput({
+  name,
+  defaultValue = null,
+}: {
+  name: string;
+  defaultValue?: number | null;
+}) {
+  const [value, setValue] = useState<number | null>(defaultValue);
   const [hovered, setHovered] = useState<number | null>(null);
   const displayed = hovered ?? value ?? 0;
 

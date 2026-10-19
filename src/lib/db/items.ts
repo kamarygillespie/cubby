@@ -30,12 +30,19 @@ export async function listItems(supabase: DbClient) {
 
 export type Item = Awaited<ReturnType<typeof listItems>>[number];
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Null (not an error) for a malformed id, a missing item, or someone else's
+// item — RLS makes the last two indistinguishable, and all should 404.
 export async function getItem(supabase: DbClient, id: string) {
+  if (!UUID_RE.test(id)) return null;
+
   const { data, error } = await supabase
     .from("items")
     .select(ITEM_SELECT)
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
