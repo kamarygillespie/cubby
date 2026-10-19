@@ -87,7 +87,9 @@ export default async function Home({
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-muted-foreground text-sm">
+        {/* min-w-0 + wrap-anywhere: a long email must wrap, not widen the
+            page into horizontal scroll on phones. */}
+        <p className="text-muted-foreground min-w-0 text-sm wrap-anywhere">
           Signed in as {user.email}
         </p>
         <div className="flex items-center gap-2">

@@ -14,25 +14,33 @@ Goal: real confidence when shipping changes, without building test infrastructur
 | ----------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | Unit        | Vitest                               | Pure functions: price/discount math, taxonomy mapping, filtering/sorting logic, wishlist distribution algorithm  |
 | Integration | Vitest + Supabase local/test project | DB helper functions in `lib/db/` — RLS behaves as expected, triggers fire correctly (e.g. `purchased_date` sync) |
-| End-to-end  | Playwright                           | Critical user flows listed above, run against a preview deployment                                               |
+| End-to-end  | Playwright                           | Critical user flows listed above, run against a production build + local Supabase on every PR                    |
 
 ## CI Pipeline (GitHub Actions)
 
-**On every pull request:**
+**On every pull request (and on push to `main`):**
 
 1. Install dependencies (cached)
 2. `npm run lint`
 3. `npm run typecheck`
-4. `npm run test` (unit + integration)
-5. `npm run build`
-6. Vercel automatically creates a preview deployment for the PR
+4. Edge Function check + `deno test`
+5. `npx supabase start` (local stack: real Postgres, RLS, triggers, auth)
+6. `npm run test` (unit + integration)
+7. `npm run build`
+8. `npm run test:e2e` (Playwright against that build and the local stack); on failure the report + traces are uploaded as an artifact
+9. Vercel automatically creates a preview deployment for the PR
 
-**On merge to `main`:**
+**On merge to `main`:** Vercel promotes to production; Sentry release tagged with the commit SHA, so errors map back to the exact deploy that caused them.
 
-1. All of the above
-2. `npm run test:e2e` against the fresh preview/production deployment
-3. Vercel promotes to production if everything passes
-4. Sentry release created and tagged with the commit SHA, so errors map back to the exact deploy that caused them
+### Why e2e runs against local Supabase, not a deployment
+
+The original plan ran e2e against the preview/production deployment after merge. Changed (KAM-31): those deployments talk to the real Supabase project, and the tests sign up users and write data — that would pollute production. Running against a production build wired to `supabase start` exercises the same code and real RLS/auth, runs _before_ merge (a true gate), and needs no secrets. A read-only smoke check against the live deployment can be added later if it proves useful.
+
+### Running e2e locally
+
+- `npx supabase start`, then `npm run test:e2e`. Playwright builds the app and serves it on port 3100 with the local Supabase URL/key hard-wired in `playwright.config.ts` — it never touches `.env.local`'s hosted project, and it won't reuse an existing server.
+- Specs live in `e2e/`; `e2e/fixtures.ts` seeds data via the local service-role client and gives each test a fresh signed-in user (deleted afterwards). Every spec runs at desktop and phone sizes.
+- Covered: sign up / log in / log out, the login redirect, add an item, mark purchased → gifted (+ totals), multi-select → new wishlist → public share link as a signed-out visitor (purchased items drop off). Link autofill isn't e2e-tested: it fetches external URLs, and the Edge Function's SSRF guard (correctly) blocks local fixture servers. Its parsing is covered by the Deno tests.
 
 ## Pre-Commit (Husky + lint-staged)
 

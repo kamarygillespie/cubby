@@ -12,6 +12,7 @@ export default defineConfig({
     passWithNoTests: true,
     // Edge Functions run on Deno, not Node — tested separately via
     // `deno test`, not Vitest.
-    exclude: [...defaultExclude, "supabase/functions/**"],
+    // Playwright e2e specs run via `npm run test:e2e`, not Vitest.
+    exclude: [...defaultExclude, "supabase/functions/**", "e2e/**"],
   },
 });

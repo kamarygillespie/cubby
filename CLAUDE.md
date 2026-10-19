@@ -25,7 +25,7 @@ npm run build         # production build
 npm run lint          # eslint
 npm run typecheck     # tsc --noEmit
 npm run test          # vitest unit/integration tests
-npm run test:e2e      # playwright e2e (requires local Supabase or test env)
+npm run test:e2e      # playwright e2e (needs `npx supabase start`; never touches the hosted project)
 npm run db:migrate    # apply Supabase migrations locally
 npm run db:seed       # seed default categories/item types
 ```
