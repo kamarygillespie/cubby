@@ -18,6 +18,7 @@ import { ItemsList } from "./items-list";
 import { ItemsGroupedList } from "./items-grouped-list";
 import { FilterBar } from "./filter-bar";
 import { ViewTabs } from "./view-tabs";
+import { TotalsDashboard } from "./totals-dashboard";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -45,7 +46,10 @@ export default async function Home({
   const onSaleOnly = firstParam(params.onSale) === "1";
   const sort = (firstParam(params.sort) as SortOption | undefined) ?? null;
   const group = firstParam(params.group);
-  const view = (firstParam(params.view) as ItemView | undefined) ?? "wishlist";
+  const rawView = firstParam(params.view);
+  const showTotals = rawView === "totals";
+  const view =
+    (showTotals ? undefined : (rawView as ItemView | undefined)) ?? "wishlist";
 
   const [items, itemTypes] = await Promise.all([
     listItems(supabase),
@@ -86,13 +90,19 @@ export default async function Home({
         </div>
       </div>
       <ViewTabs />
-      <FilterBar categories={categories} itemTypes={itemTypes} />
-      {group === "category" ? (
-        <ItemsGroupedList groups={groupByCategory(visibleItems)} />
-      ) : group === "itemType" ? (
-        <ItemsGroupedList groups={groupByItemType(visibleItems)} />
+      {showTotals ? (
+        <TotalsDashboard items={items} />
       ) : (
-        <ItemsList items={visibleItems} />
+        <>
+          <FilterBar categories={categories} itemTypes={itemTypes} />
+          {group === "category" ? (
+            <ItemsGroupedList groups={groupByCategory(visibleItems)} />
+          ) : group === "itemType" ? (
+            <ItemsGroupedList groups={groupByItemType(visibleItems)} />
+          ) : (
+            <ItemsList items={visibleItems} />
+          )}
+        </>
       )}
     </div>
   );

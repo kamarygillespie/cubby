@@ -4,20 +4,22 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import type { ItemView } from "@/lib/items-view";
 
-const TABS: { value: ItemView; label: string }[] = [
+type Tab = ItemView | "totals";
+
+const TABS: { value: Tab; label: string }[] = [
   { value: "wishlist", label: "Wishlist" },
   { value: "purchased", label: "Purchased" },
   { value: "gifted", label: "Gifted" },
+  { value: "totals", label: "Totals" },
 ];
 
 export function ViewTabs() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentView =
-    (searchParams.get("view") as ItemView | null) ?? "wishlist";
+  const currentView = (searchParams.get("view") as Tab | null) ?? "wishlist";
 
-  function setView(view: ItemView) {
+  function setView(view: Tab) {
     const params = new URLSearchParams(searchParams.toString());
     if (view === "wishlist") {
       params.delete("view");
