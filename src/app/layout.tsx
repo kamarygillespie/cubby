@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { InlineScript } from "@/components/inline-script";
 import { ThemeSync } from "@/components/theme-sync";
 import { THEME_COLORS, themeInitScript } from "@/lib/theme";
 import "./globals.css";
@@ -43,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <InlineScript html={themeInitScript} />
       </head>
       <body className="flex min-h-full flex-col">
         <ThemeSync />

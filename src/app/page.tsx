@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ListChecks } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -61,6 +62,15 @@ export default async function Home({
     listWishlists(supabase),
   ]);
 
+  const listsByItem = new Map<string, { id: string; name: string }[]>();
+  for (const list of wishlists) {
+    for (const { item_id } of list.wishlist_items) {
+      const lists = listsByItem.get(item_id) ?? [];
+      lists.push({ id: list.id, name: list.name });
+      listsByItem.set(item_id, lists);
+    }
+  }
+
   const categories = [
     ...new Map(itemTypes.map((t) => [t.category.id, t.category])).values(),
   ].sort((a, b) => a.name.localeCompare(b.name));
@@ -95,7 +105,16 @@ export default async function Home({
           </form>
         </div>
       </div>
-      <ViewTabs />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <ViewTabs />
+        <Link
+          href="/wishlists"
+          className={buttonVariants({ variant: "ghost", size: "sm" })}
+        >
+          <ListChecks />
+          Lists
+        </Link>
+      </div>
       {showTotals ? (
         <TotalsDashboard items={items} />
       ) : (
@@ -112,11 +131,17 @@ export default async function Home({
             />
           )}
           {group === "category" ? (
-            <ItemsGroupedList groups={groupByCategory(visibleItems)} />
+            <ItemsGroupedList
+              groups={groupByCategory(visibleItems)}
+              listsByItem={listsByItem}
+            />
           ) : group === "itemType" ? (
-            <ItemsGroupedList groups={groupByItemType(visibleItems)} />
+            <ItemsGroupedList
+              groups={groupByItemType(visibleItems)}
+              listsByItem={listsByItem}
+            />
           ) : (
-            <ItemsList items={visibleItems} />
+            <ItemsList items={visibleItems} listsByItem={listsByItem} />
           )}
         </ItemSelectionProvider>
       )}

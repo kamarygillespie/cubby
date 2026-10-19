@@ -1,12 +1,14 @@
 import type { ItemGroup } from "@/lib/items-view";
-import { ItemsList } from "./items-list";
+import { ItemsList, type ListsByItem } from "./items-list";
+import { formatCurrency } from "@/lib/format";
 
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
-export function ItemsGroupedList({ groups }: { groups: ItemGroup[] }) {
+export function ItemsGroupedList({
+  groups,
+  listsByItem,
+}: {
+  groups: ItemGroup[];
+  listsByItem?: ListsByItem;
+}) {
   if (groups.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
@@ -23,10 +25,10 @@ export function ItemsGroupedList({ groups }: { groups: ItemGroup[] }) {
             <h2 className="font-medium">{group.name}</h2>
             <p className="text-muted-foreground text-sm">
               {group.count} item{group.count === 1 ? "" : "s"} ·{" "}
-              {currency.format(group.totalPrice)}
+              {formatCurrency(group.totalPrice)}
             </p>
           </div>
-          <ItemsList items={group.items} />
+          <ItemsList items={group.items} listsByItem={listsByItem} />
         </section>
       ))}
     </div>

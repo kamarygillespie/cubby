@@ -1,19 +1,19 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ExternalLink, Gift, ShoppingBag } from "lucide-react";
+import { ExternalLink, Gift, ListChecks, ShoppingBag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
 import type { listItems } from "@/lib/db/items";
 import { setItemFlag } from "./items/status-actions";
 import { ItemSelectCheckbox } from "./item-selection";
+import { formatCurrency } from "@/lib/format";
 
 type Items = Awaited<ReturnType<typeof listItems>>;
 
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
+// itemId → the wishlists it's on. Shown on each card so the same item isn't
+// accidentally put on two people's lists (FEATURES.md, wishlist sharing).
+export type ListsByItem = ReadonlyMap<string, { id: string; name: string }[]>;
 
 function PriceDisplay({
   price,
@@ -29,14 +29,14 @@ function PriceDisplay({
   const onSale = salePrice !== null && salePrice < price;
 
   if (!onSale) {
-    return <span className="font-medium">{currency.format(price)}</span>;
+    return <span className="font-medium">{formatCurrency(price)}</span>;
   }
 
   return (
     <span className="flex items-center gap-2">
-      <span className="font-medium">{currency.format(salePrice)}</span>
+      <span className="font-medium">{formatCurrency(salePrice)}</span>
       <span className="text-muted-foreground text-sm line-through">
-        {currency.format(price)}
+        {formatCurrency(price)}
       </span>
       {discountPercent !== null && (
         <span className="bg-accent text-accent-foreground rounded px-1.5 py-0.5 text-xs font-medium">
@@ -47,7 +47,32 @@ function PriceDisplay({
   );
 }
 
-export function ItemsList({ items }: { items: Items }) {
+function OnLists({ lists }: { lists: { id: string; name: string }[] }) {
+  if (lists.length === 0) return null;
+  return (
+    <p className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-xs">
+      <ListChecks className="size-3.5" aria-hidden />
+      <span>On</span>
+      {lists.map((list) => (
+        <Link
+          key={list.id}
+          href={`/wishlists/${list.id}`}
+          className="bg-accent text-accent-foreground hover:bg-accent/70 rounded px-1.5 py-0.5"
+        >
+          {list.name}
+        </Link>
+      ))}
+    </p>
+  );
+}
+
+export function ItemsList({
+  items,
+  listsByItem,
+}: {
+  items: Items;
+  listsByItem?: ListsByItem;
+}) {
   if (items.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
@@ -109,6 +134,7 @@ export function ItemsList({ items }: { items: Items }) {
                     {item.notes}
                   </p>
                 )}
+                <OnLists lists={listsByItem?.get(item.id) ?? []} />
                 <div className="mt-1 flex gap-2">
                   <form
                     action={setItemFlag.bind(
