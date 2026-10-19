@@ -38,7 +38,7 @@ function PriceDisplay({
         {currency.format(price)}
       </span>
       {discountPercent !== null && (
-        <span className="text-primary text-xs font-medium">
+        <span className="bg-accent text-accent-foreground rounded px-1.5 py-0.5 text-xs font-medium">
           -{discountPercent}%
         </span>
       )}
