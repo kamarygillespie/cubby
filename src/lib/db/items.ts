@@ -84,3 +84,21 @@ export async function deleteItem(supabase: DbClient, id: string) {
   const { error } = await supabase.from("items").delete().eq("id", id);
   if (error) throw error;
 }
+
+// Records a price check (manual or scheduled) through the database's single
+// write path, record_price_check(): logs history, stamps price_checked_at,
+// and only changes prices when a price was actually read. See the migration
+// 20261109000000_price_checks.
+export async function recordPriceCheck(
+  supabase: DbClient,
+  itemId: string,
+  fetched: { price: number | null; salePrice: number | null },
+) {
+  const { error } = await supabase.rpc("record_price_check", {
+    p_item_id: itemId,
+    // Generated types mark args non-null; SQL accepts null (unreadable page).
+    p_price: fetched.price as number,
+    p_sale_price: fetched.salePrice as number,
+  });
+  if (error) throw error;
+}

@@ -298,6 +298,35 @@ create trigger item_types_reject_duplicate_name
 
 See the migration file for full bodies.
 
+## SQL — Price Checks (migration `20261109000000`, KAM-43)
+
+```sql
+alter table public.items add column price_checked_at timestamptz;
+
+-- One row per price check (manual "Check price" or the hourly job). status
+-- 'unreadable' rows have null prices. Base for V4 price-drop alerts.
+create table public.item_price_checks (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references public.items(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  checked_at timestamptz not null default now(),
+  status text not null check (status in ('ok', 'unreadable')),
+  price numeric(10,2),
+  sale_price numeric(10,2)
+);
+-- RLS: select own rows; insert only for your own items (via the function).
+
+-- The single write path for any price check (SECURITY INVOKER): logs history,
+-- stamps price_checked_at, updates price/sale_price only if a price was read
+-- (never wipes a known price); a sale price that isn't lower ends the sale.
+create function public.record_price_check(p_item_id uuid, p_price numeric, p_sale_price numeric) ...
+
+-- Hourly pg_cron job → pg_net POST to the daily-price-check Edge Function,
+-- reading the URL and shared secret from Vault ('project_url',
+-- 'price_check_cron_secret'). A no-op until those Vault secrets exist.
+select cron.schedule('daily-price-checks', '23 * * * *', $$ ... $$);
+```
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

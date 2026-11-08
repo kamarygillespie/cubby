@@ -58,7 +58,10 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
 ## Sale Detection
 
 - **V1:** price and sale price captured at the time an item is added or manually refreshed by the user (re-running autofill on an existing item). Refresh calls `link-autofill` with `pricesOnly: true` (no image re-download). The decision lives in `lib/price-check.ts` (`applyPriceCheck`): only a _readable_ page updates prices, so a failed read never wipes a known price. Only a lower sale price counts as a sale, and a missing sale price on re-check means the sale ended (it's cleared).
-- **V1.5/V2:** a scheduled Edge Function periodically re-checks prices for a user's active (non-purchased) items and updates `sale_price`/`discount_percent`, since always-on price monitoring is meaningfully more infrastructure than "check on add."
+- **V1.5 (built, KAM-43): automatic checks.** `pg_cron` runs **hourly** and calls the `daily-price-check` Edge Function via `pg_net`. Each run checks up to 25 active wishlist items with a link that **haven't been checked in ~20h** (oldest first, 1s between pages, stopping after ~100s), so each item gets checked about once a day and load is spread out.
+  - **One write path:** both the manual Check price and the job call the SQL function `record_price_check()`, which logs `item_price_checks` history, stamps `items.price_checked_at`, and only changes prices when a price was read. Cards show "Checked 3h ago".
+  - **Sanctioned RLS bypass:** the job uses the service role key, because it checks every user's items. The function is `verify_jwt = false` but refuses any request without the `x-cron-secret` header matching its `PRICE_CHECK_CRON_SECRET` secret; pg_cron reads the same value from Vault. Neither the URL nor the secret is in the repo.
+  - Page fetching and extraction are shared by both functions in `supabase/functions/_shared/`.
 
 ## Category ↔ Item Type Relationship
 
