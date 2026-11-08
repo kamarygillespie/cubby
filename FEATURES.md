@@ -31,7 +31,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 ### Sale detection (V1 scope)
 
-- Sale price + discount % captured at add-time or on manual refresh
+- Sale price + discount % captured at add-time or on manual refresh: **Check price** on any wishlist card with a link, and **Check all prices** on the Wishlist tab (checks what the tab is showing, one item at a time, with a summary like "2 now on sale, 5 unchanged")
 - Visual "on sale" indicator
 
 ### Wishlist sharing

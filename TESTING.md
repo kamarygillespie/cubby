@@ -36,6 +36,10 @@ Goal: real confidence when shipping changes, without building test infrastructur
 
 The original plan ran e2e against the preview/production deployment after merge. Changed (KAM-31): those deployments talk to the real Supabase project, and the tests sign up users and write data — that would pollute production. Running against a production build wired to `supabase start` exercises the same code and real RLS/auth, runs _before_ merge (a true gate), and needs no secrets. A read-only smoke check against the live deployment can be added later if it proves useful.
 
+### Local Edge Functions
+
+`npx supabase start` serves `link-autofill` from the `supabase_edge_runtime_cubby` container, which can stay **Exited** after a restart even when the rest of the stack is up (seen Nov 2026). Paste-a-link and Check price then fail with "Couldn't reach this page." Fix: `docker start supabase_edge_runtime_cubby`.
+
 ### Running e2e locally
 
 - `npx supabase start`, then `npm run test:e2e`. Playwright builds the app and serves it on port 3100 with the local Supabase URL/key hard-wired in `playwright.config.ts` — it never touches `.env.local`'s hosted project, and it won't reuse an existing server.

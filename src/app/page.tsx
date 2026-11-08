@@ -24,6 +24,7 @@ import { ViewTabs } from "./view-tabs";
 import { TotalsDashboard } from "./totals-dashboard";
 import { ItemSelectionProvider } from "./item-selection";
 import { AddToWishlistBar } from "./add-to-wishlist-bar";
+import { CheckAllPricesButton } from "./check-price";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -185,6 +186,11 @@ export default async function Home({
           <FilterBar categories={categories} itemTypes={itemTypes} />
           {view === "wishlist" && (
             <AddToWishlistBar
+              extraActions={
+                <CheckAllPricesButton
+                  itemIds={visibleItems.filter((i) => i.link).map((i) => i.id)}
+                />
+              }
               itemIds={visibleItems.map((i) => i.id)}
               wishlists={wishlists.map((w) => ({
                 id: w.id,
