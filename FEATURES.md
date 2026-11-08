@@ -61,7 +61,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 - **Outfit planning:** create outfit "boards" from closet items, or upload outfit photos to save
 - **Favorite stores:** mark favorite stores/brands, track when they're running a sale
 - **Gift card recommendations:** group wishlist items by store/brand, ranked by relevance (most items from that store first)
-- **Native mobile app:** React Native, once usage justifies the investment
+- **Mobile app = the installable PWA** (decided Nov 8, 2026): no separate React Native codebase. The PWA gets a native feel instead: bottom tab bar on phones, offline shell, camera upload, share-to-Cubby (Android), install prompt (KAM-51). Revisit a true native app only if usage demands it
 
 ## V3 — Intelligence Layer
 
@@ -70,7 +70,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 ## V4 — Notifications & Deeper Analytics
 
-- App and email notifications (price drops on wishlist items, favorite-store sales)
+- Notifications for price drops on wishlist items and favorite-store sales, delivered as **phone push via the installed PWA** plus an in-app notifications list (decided Nov 8, 2026; no email for now) (KAM-54)
 - Spending breakdown by month, using `purchased_date` already captured since V1
 
 ## Explicitly Out of Scope (for now)
@@ -81,4 +81,4 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 ## Open Questions to Revisit
 
 - Final app name/branding (see `README.md`)
-- Whether V3 recommendations need any external data source or stay purely first-party
+- ~~Whether V3 recommendations need any external data source or stay purely first-party~~ → **first-party only** (decided Nov 8, 2026, KAM-52)

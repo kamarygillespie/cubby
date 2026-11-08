@@ -53,6 +53,17 @@ Today is Sept 4, 2026 — this is **~5 weeks**, not 8. Scope in `FEATURES.md` V1
 - Production deploy
 - **Oct 10: V1 live for personal use**
 
+## Nov 2026: Full-scope build (V1 finish → V4), then UX tuning
+
+V1 didn't launch on Oct 10. On Nov 8, 2026, Kamary chose to build the **entire** designed scope (`FEATURES.md` V1 → V4) before launch, then load her real wishlist, use it, and do a UX-tuning round from her notes. Tickets in Linear, in build order:
+
+1. **Finish V1:** custom item types/categories (KAM-35), Check price + Check all (KAM-36), keep-alive (KAM-42); Kamary verifies the live site (KAM-41) and phone install (KAM-37)
+2. **V1.5:** daily price checks + history (KAM-43), taxonomy tools (KAM-44), performance pass (KAM-45), onboarding (KAM-46)
+3. **V2:** closet (KAM-47) → outfits (KAM-48), favorite stores (KAM-49), gift card ideas (KAM-50), PWA-as-mobile-app (KAM-51)
+4. **V3:** recommendations (KAM-52), even-split generator (KAM-53)
+5. **V4:** push notifications (KAM-54), spending by month (KAM-55)
+6. **Final QA + launch** (KAM-38)
+
 ## After Launch
 
 - Live with it through a real use cycle before deciding what from `FEATURES.md` V1.5/V2 to tackle next
