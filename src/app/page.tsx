@@ -6,7 +6,7 @@ import { signOut } from "@/app/auth/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { listItems } from "@/lib/db/items";
-import { listItemTypes } from "@/lib/db/item-types";
+import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
 import {
   filterByView,
@@ -192,6 +192,7 @@ export default async function Home({
                 />
               }
               itemIds={visibleItems.map((i) => i.id)}
+              itemTypeGroups={groupItemTypesByCategory(itemTypes)}
               wishlists={wishlists.map((w) => ({
                 id: w.id,
                 name: w.name,

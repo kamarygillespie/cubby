@@ -301,6 +301,10 @@ export type Database = {
       };
       is_visible_category: { Args: { category: string }; Returns: boolean };
       is_visible_item_type: { Args: { item_type: string }; Returns: boolean };
+      merge_item_type: {
+        Args: { p_source: string; p_target: string };
+        Returns: number;
+      };
       record_price_check: {
         Args: { p_item_id: string; p_price: number; p_sale_price: number };
         Returns: undefined;

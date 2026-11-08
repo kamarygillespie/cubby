@@ -327,6 +327,20 @@ create function public.record_price_check(p_item_id uuid, p_price numeric, p_sal
 select cron.schedule('daily-price-checks', '23 * * * *', $$ ... $$);
 ```
 
+## SQL — Merge Item Types (migration `20261109010000`, KAM-44)
+
+```sql
+-- Merge one of your own item types into another (system or own): moves your
+-- items to the target, then deletes the source, in one transaction.
+-- SECURITY INVOKER; returns the number of items moved. Errors:
+--   22023 merging a type into itself; 42501 source isn't your own custom
+--   type, or target isn't visible to you.
+create function public.merge_item_type(p_source uuid, p_target uuid) returns integer ...
+```
+
+Bulk "change type" needs no SQL: it's a plain `update items set item_type_id`
+under the existing items RLS (own items only, visible types only).
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

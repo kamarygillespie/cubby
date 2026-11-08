@@ -17,16 +17,20 @@ import { Label } from "@/components/ui/label";
 import { WISHLIST_NAME_MAX_LENGTH } from "@/lib/wishlists";
 import { addToWishlists } from "./wishlists/actions";
 import { useItemSelection } from "./item-selection";
+import { ChangeTypeButton } from "./change-type-dialog";
+import type { ItemTypeGroup } from "./item-type-select";
 
 type WishlistOption = { id: string; name: string; itemIds: string[] };
 
 export function AddToWishlistBar({
   itemIds,
   wishlists,
+  itemTypeGroups,
   extraActions,
 }: {
   itemIds: string[];
   wishlists: WishlistOption[];
+  itemTypeGroups: ItemTypeGroup[];
   // Shown beside Select when not selecting (e.g. Check all prices).
   extraActions?: React.ReactNode;
 }) {
@@ -85,10 +89,20 @@ export function AddToWishlistBar({
           <p className="text-sm" aria-live="polite">
             {count} selected
           </p>
-          <Button disabled={count === 0} onClick={() => setOpen(true)}>
-            <ListPlus />
-            Add to wishlist
-          </Button>
+          <div className="flex gap-2">
+            <ChangeTypeButton
+              selectedIds={[...selection.selected]}
+              itemTypeGroups={itemTypeGroups}
+              onDone={(message) => {
+                selection.stop();
+                setNotice(message);
+              }}
+            />
+            <Button disabled={count === 0} onClick={() => setOpen(true)}>
+              <ListPlus />
+              Add to wishlist
+            </Button>
+          </div>
         </div>
       </div>
 

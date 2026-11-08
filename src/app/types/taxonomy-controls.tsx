@@ -1,14 +1,24 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Check, Pencil, Plus, Trash2 } from "lucide-react";
+import { Check, Merge, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TAXONOMY_NAME_MAX_LENGTH } from "@/lib/taxonomy";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ItemTypeSelect, type ItemTypeGroup } from "../item-type-select";
+import {
   addItemTypeAction,
   createCategoryAction,
   deleteAction,
+  mergeItemTypeAction,
   renameAction,
   type TaxonomyFormState,
 } from "./actions";
@@ -109,6 +119,7 @@ export function TaxonomyRow({
   detail,
   canDelete,
   heading = false,
+  mergeTargets,
 }: {
   kind: "category" | "item type";
   id: string;
@@ -117,6 +128,8 @@ export function TaxonomyRow({
   detail: string;
   canDelete: boolean;
   heading?: boolean;
+  // Item types only: every type this one could be merged into.
+  mergeTargets?: ItemTypeGroup[];
 }) {
   const [editing, setEditing] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -172,6 +185,9 @@ export function TaxonomyRow({
           </span>
         ) : (
           <span className="ml-auto flex gap-1">
+            {mergeTargets && (
+              <MergeTypeButton id={id} name={name} targets={mergeTargets} />
+            )}
             <Button
               size="icon-xs"
               variant="ghost"
@@ -206,5 +222,83 @@ export function TaxonomyRow({
       </div>
       <FormError error={deleteError} />
     </div>
+  );
+}
+
+function MergeTypeButton({
+  id,
+  name,
+  targets,
+}: {
+  id: string;
+  name: string;
+  targets: ItemTypeGroup[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [targetId, setTargetId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function close() {
+    setOpen(false);
+    setTargetId(null);
+    setError(null);
+  }
+
+  return (
+    <>
+      <Button
+        size="icon-xs"
+        variant="ghost"
+        aria-label={`Merge ${name}`}
+        title="Merge into another type"
+        onClick={() => setOpen(true)}
+      >
+        <Merge />
+      </Button>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => (next ? setOpen(true) : close())}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Merge “{name}”</DialogTitle>
+            <DialogDescription>
+              Its items move to the type you pick, then “{name}” is deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <ItemTypeSelect
+            id={`merge-${id}`}
+            label="Merge into"
+            groups={targets}
+            value={targetId}
+            onChange={setTargetId}
+            excludeId={id}
+          />
+          {error && (
+            <p role="alert" className="text-destructive text-sm">
+              {error}
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={close}>
+              Cancel
+            </Button>
+            <Button
+              disabled={pending || !targetId}
+              onClick={() =>
+                startTransition(async () => {
+                  const result = await mergeItemTypeAction(id, targetId!);
+                  if (result) setError(result.error);
+                  else close();
+                })
+              }
+            >
+              {pending ? "Merging…" : "Merge"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
