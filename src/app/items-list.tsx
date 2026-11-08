@@ -16,6 +16,7 @@ import type { listItems } from "@/lib/db/items";
 import { setItemFlag } from "./items/status-actions";
 import { ItemSelectCheckbox } from "./item-selection";
 import { CheckPriceButton } from "./check-price";
+import { formatTimeAgo } from "@/lib/relative-time";
 import { formatCurrency } from "@/lib/format";
 import { displayDiscountPercent, itemMetaParts } from "@/lib/items-view";
 
@@ -183,7 +184,11 @@ export function ItemsList({
                     Edit
                   </Link>
                   {item.link && !item.purchased && !item.gifted && (
-                    <CheckPriceButton itemId={item.id} title={item.title} />
+                    <CheckPriceButton
+                      itemId={item.id}
+                      title={item.title}
+                      checkedAgo={formatTimeAgo(item.price_checked_at)}
+                    />
                   )}
                 </div>
               </div>

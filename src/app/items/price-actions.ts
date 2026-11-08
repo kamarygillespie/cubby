@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getItem, updateItem } from "@/lib/db/items";
+import { getItem, recordPriceCheck } from "@/lib/db/items";
 import {
   applyPriceCheck,
   type FetchedPrices,
@@ -34,13 +34,14 @@ export async function checkItemPriceAction(
     return { outcome: "unreadable", message: "Couldn't reach this page." };
   }
 
-  const result = applyPriceCheck(item, {
+  const fetched = {
     price: data.price ?? null,
     salePrice: data.salePrice ?? null,
-  });
-  if (result.update) {
-    await updateItem(supabase, itemId, result.update);
-    revalidatePath("/", "layout");
-  }
+  };
+  // The message is worked out here; the write (incl. "never wipe a known
+  // price") happens in the database's record_price_check().
+  const result = applyPriceCheck(item, fetched);
+  await recordPriceCheck(supabase, itemId, fetched);
+  revalidatePath("/", "layout");
   return { outcome: result.outcome, message: result.message };
 }

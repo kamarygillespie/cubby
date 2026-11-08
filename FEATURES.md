@@ -50,7 +50,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 ## V1.5 — Post-Launch Hardening (no fixed date)
 
-- Scheduled sale-price re-checks (not just at add-time)
+- Scheduled sale-price re-checks (not just at add-time): **built (KAM-43)**. Every active wishlist item with a link is re-checked about once a day automatically; cards show "Checked 3h ago"; every check is kept as price history
 - Admin/taxonomy management UI polish (bulk edit, merge duplicate item types)
 - Performance pass on large wishlists (100+ items)
 - Public launch readiness (onboarding flow, empty states, error states)

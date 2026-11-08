@@ -15,9 +15,12 @@ const GOOD_NEWS: string[] = ["now_on_sale", "price_dropped"];
 export function CheckPriceButton({
   itemId,
   title,
+  checkedAgo,
 }: {
   itemId: string;
   title: string;
+  // "3h ago" from the last manual or automatic check, or null if never.
+  checkedAgo: string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<{
@@ -42,6 +45,11 @@ export function CheckPriceButton({
         <RefreshCw className={cn(pending && "animate-spin")} />
         {pending ? "Checking…" : "Check price"}
       </Button>
+      {checkedAgo && !result && !pending && (
+        <span className="text-muted-foreground self-center text-xs">
+          Checked {checkedAgo}
+        </span>
+      )}
       {result && (
         <p
           role="status"

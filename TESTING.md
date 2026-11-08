@@ -49,6 +49,17 @@ The original plan ran e2e against the preview/production deployment after merge.
 
 `npx supabase start` serves `link-autofill` from the `supabase_edge_runtime_cubby` container, which can stay **Exited** after a restart even when the rest of the stack is up (seen Nov 2026). Paste-a-link and Check price then fail with "Couldn't reach this page." Fix: `docker start supabase_edge_runtime_cubby`.
 
+### Running the scheduled price check locally
+
+The hourly `daily-price-check` job needs a secret that `supabase start` doesn't provide, so locally it's a no-op (401). To exercise the full chain:
+
+1. `printf 'PRICE_CHECK_CRON_SECRET=local-test-secret\n' > supabase/functions/.env` (gitignored).
+2. `npx supabase functions serve --env-file supabase/functions/.env` (in another terminal).
+3. Once per local DB, add `project_url = http://supabase_kong_cubby:8000` and `price_check_cron_secret = local-test-secret` to Vault (`select vault.create_secret(value, name)`).
+4. Run the job's SQL now instead of waiting for :23: `select command from cron.job where jobname = 'daily-price-checks'` and execute it. The response lands in `net._http_response`.
+
+Note: stopping `functions serve` removes the edge-runtime container. Run `npx supabase stop && npx supabase start` to get it back (data is kept). The loop's logic itself is unit-tested in `daily-price-check/run.test.ts`.
+
 ### Running e2e locally
 
 - `npx supabase start`, then `npm run test:e2e`. Playwright builds the app and serves it on port 3100 with the local Supabase URL/key hard-wired in `playwright.config.ts` — it never touches `.env.local`'s hosted project, and it won't reuse an existing server.
