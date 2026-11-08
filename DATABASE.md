@@ -100,13 +100,22 @@ create policy "View system item types and own item types"
   on public.item_types for select
   using (is_system = true or user_id = auth.uid());
 
+-- Writes may only reference a category the caller can see (system or
+-- their own): see is_visible_category below (migration 20261108230000).
 create policy "Insert own item types"
   on public.item_types for insert
-  with check (user_id = auth.uid() and is_system = false);
+  with check (
+    user_id = auth.uid() and is_system = false
+    and public.is_visible_category(category_id)
+  );
 
 create policy "Update own non-system item types"
   on public.item_types for update
-  using (user_id = auth.uid() and is_system = false);
+  using (user_id = auth.uid() and is_system = false)
+  with check (
+    user_id = auth.uid() and is_system = false
+    and public.is_visible_category(category_id)
+  );
 
 create policy "Delete own non-system item types"
   on public.item_types for delete
@@ -144,10 +153,13 @@ create table public.items (
 
 alter table public.items enable row level security;
 
+-- An item may only use an item type the caller can see (system or own).
 create policy "Users manage their own items"
   on public.items for all
   using (user_id = auth.uid())
-  with check (user_id = auth.uid());
+  with check (
+    user_id = auth.uid() and public.is_visible_item_type(item_type_id)
+  );
 
 -- Keep purchased_date in sync with the purchased checkbox
 create function public.sync_purchased_date()
@@ -263,6 +275,28 @@ $$ language sql security definer stable set search_path = '';
 -- from becoming a broader data leak surface.
 grant execute on function public.get_shared_wishlist(uuid) to anon;
 ```
+
+## SQL — Custom Taxonomy Hardening (migration `20261108230000`)
+
+```sql
+-- "Visible" = a system row, or one owned by the caller. Used by the item_types
+-- and items write policies above so nobody can reference another user's
+-- custom category/type (which would leak its name and, via ON DELETE
+-- RESTRICT, block its owner from deleting it).
+create function public.is_visible_category(category uuid) returns boolean ...
+create function public.is_visible_item_type(item_type uuid) returns boolean ...
+
+-- Case-insensitive duplicate names: a category/item type can't share a name
+-- (ignoring case) with any system row or the same user's own rows. Raises
+-- unique_violation (23505), which the app turns into "You already have a …".
+create function public.reject_duplicate_taxonomy_name() returns trigger ...
+create trigger categories_reject_duplicate_name
+  before insert or update of name, user_id on public.categories ...
+create trigger item_types_reject_duplicate_name
+  before insert or update of name, user_id on public.item_types ...
+```
+
+See the migration file for full bodies.
 
 ## SQL — Seed Data (Default Taxonomy)
 
