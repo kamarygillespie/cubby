@@ -15,6 +15,10 @@ export const metadata: Metadata = { title: "Item types" };
 
 export default async function TypesPage() {
   const taxonomy = await listTaxonomy(await createClient());
+  const mergeTargets = taxonomy.map((c) => ({
+    category: c.name,
+    itemTypes: c.item_types.map((t) => ({ id: t.id, name: t.name })),
+  }));
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
@@ -62,6 +66,7 @@ export default async function TypesPage() {
                         isSystem={type.is_system}
                         detail={`${type.itemCount} item${type.itemCount === 1 ? "" : "s"}`}
                         canDelete={type.itemCount === 0}
+                        mergeTargets={mergeTargets}
                       />
                     </li>
                   ))}

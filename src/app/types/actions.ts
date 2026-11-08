@@ -7,8 +7,10 @@ import {
   createItemType,
   deleteCategory,
   deleteItemType,
+  mergeItemType,
   renameCategory,
   renameItemType,
+  setItemsType,
 } from "@/lib/db/taxonomy";
 import { parseTaxonomyName, taxonomyErrorMessage } from "@/lib/taxonomy";
 
@@ -132,6 +134,53 @@ export async function deleteAction(
     else await deleteItemType(supabase, id);
   } catch (error) {
     return { error: taxonomyErrorMessage(error, kind) };
+  }
+  revalidateTaxonomyViews();
+  return null;
+}
+
+export type BulkResult =
+  { ok: true; message: string } | { ok: false; error: string };
+
+// "Change type" on items picked in Select mode.
+export async function changeItemsTypeAction(
+  itemIds: string[],
+  itemTypeId: string,
+): Promise<BulkResult> {
+  if (itemIds.length === 0) return { ok: false, error: "Select some items." };
+  if (!itemTypeId) return { ok: false, error: "Pick an item type." };
+  try {
+    const changed = await setItemsType(
+      await createClient(),
+      itemIds,
+      itemTypeId,
+    );
+    revalidateTaxonomyViews();
+    return {
+      ok: true,
+      message: `Changed the type of ${changed} item${changed === 1 ? "" : "s"}.`,
+    };
+  } catch {
+    return { ok: false, error: "Couldn't change the type. Try again." };
+  }
+}
+
+export async function mergeItemTypeAction(
+  sourceId: string,
+  targetId: string,
+): Promise<TaxonomyFormState> {
+  try {
+    await mergeItemType(await createClient(), sourceId, targetId);
+  } catch (error) {
+    const message = (error as { message?: string } | null)?.message;
+    const code = (error as { code?: string } | null)?.code;
+    // merge_item_type() raises human-readable messages for these.
+    return {
+      error:
+        code === "22023" || code === "42501"
+          ? (message ?? "Couldn't merge.")
+          : "Couldn't merge. Try again.",
+    };
   }
   revalidateTaxonomyViews();
   return null;

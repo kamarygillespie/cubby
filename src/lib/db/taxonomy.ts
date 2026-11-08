@@ -110,3 +110,37 @@ export async function deleteItemType(supabase: DbClient, id: string) {
     supabase.from("item_types").delete().eq("id", id).select("id"),
   );
 }
+
+// Moves the caller's items to another item type. RLS limits it to the
+// caller's own items, and the items policy only accepts visible types.
+// Returns how many items actually changed.
+export async function setItemsType(
+  supabase: DbClient,
+  itemIds: string[],
+  itemTypeId: string,
+) {
+  if (itemIds.length === 0) return 0;
+  const { data, error } = await supabase
+    .from("items")
+    .update({ item_type_id: itemTypeId })
+    .in("id", itemIds)
+    .select("id");
+  if (error) throw error;
+  return data.length;
+}
+
+// Merges one of the caller's own item types into another (system or own):
+// moves its items over and deletes it, atomically (merge_item_type()).
+// Returns how many items moved.
+export async function mergeItemType(
+  supabase: DbClient,
+  sourceId: string,
+  targetId: string,
+) {
+  const { data, error } = await supabase.rpc("merge_item_type", {
+    p_source: sourceId,
+    p_target: targetId,
+  });
+  if (error) throw error;
+  return data;
+}
