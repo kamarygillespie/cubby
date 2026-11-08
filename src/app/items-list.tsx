@@ -15,6 +15,7 @@ import { StarRating } from "@/components/star-rating";
 import type { listItems } from "@/lib/db/items";
 import { setItemFlag } from "./items/status-actions";
 import { ItemSelectCheckbox } from "./item-selection";
+import { CheckPriceButton } from "./check-price";
 import { formatCurrency } from "@/lib/format";
 import { displayDiscountPercent, itemMetaParts } from "@/lib/items-view";
 
@@ -181,6 +182,9 @@ export function ItemsList({
                     <Pencil />
                     Edit
                   </Link>
+                  {item.link && !item.purchased && !item.gifted && (
+                    <CheckPriceButton itemId={item.id} title={item.title} />
+                  )}
                 </div>
               </div>
             </CardContent>

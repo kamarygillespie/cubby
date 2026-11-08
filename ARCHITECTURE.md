@@ -57,7 +57,7 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
 
 ## Sale Detection
 
-- **V1:** price and sale price captured at the time an item is added or manually refreshed by the user (re-running autofill on an existing item).
+- **V1:** price and sale price captured at the time an item is added or manually refreshed by the user (re-running autofill on an existing item). Refresh calls `link-autofill` with `pricesOnly: true` (no image re-download). The decision lives in `lib/price-check.ts` (`applyPriceCheck`): only a _readable_ page updates prices, so a failed read never wipes a known price. Only a lower sale price counts as a sale, and a missing sale price on re-check means the sale ended (it's cleared).
 - **V1.5/V2:** a scheduled Edge Function periodically re-checks prices for a user's active (non-purchased) items and updates `sale_price`/`discount_percent`, since always-on price monitoring is meaningfully more infrastructure than "check on add."
 
 ## Category ↔ Item Type Relationship

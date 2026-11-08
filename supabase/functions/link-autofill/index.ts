@@ -105,7 +105,9 @@ async function autofill(url: URL): Promise<AutofillResult> {
 
 const handler = {
   fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
-    let body: { url?: unknown };
+    // pricesOnly: used by "Check price" on an existing item, which only
+    // needs prices; skips downloading/copying the image into Storage.
+    let body: { url?: unknown; pricesOnly?: unknown };
     try {
       body = await req.json();
     } catch {
@@ -128,6 +130,10 @@ const handler = {
     }
 
     const result = await autofill(parsedUrl);
+
+    if (body.pricesOnly === true) {
+      return Response.json({ ...result, image: null });
+    }
 
     if (result.image && ctx.userClaims) {
       try {

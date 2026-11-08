@@ -23,9 +23,12 @@ type WishlistOption = { id: string; name: string; itemIds: string[] };
 export function AddToWishlistBar({
   itemIds,
   wishlists,
+  extraActions,
 }: {
   itemIds: string[];
   wishlists: WishlistOption[];
+  // Shown beside Select when not selecting (e.g. Check all prices).
+  extraActions?: React.ReactNode;
 }) {
   const selection = useItemSelection();
   const [open, setOpen] = useState(false);
@@ -35,7 +38,8 @@ export function AddToWishlistBar({
 
   if (!selection.selecting) {
     return (
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {extraActions}
         {notice && (
           <p role="status" className="text-muted-foreground text-sm">
             {notice}
