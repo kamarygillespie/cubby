@@ -2,6 +2,8 @@
 
 import { useActionState, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +20,7 @@ import {
 import { StarRatingInput } from "./star-rating-input";
 import { LinkAutofillField } from "./link-autofill-field";
 import type { ItemFormState } from "./item-form-state";
+import { NewItemTypeDialog } from "../types/new-item-type-dialog";
 
 type ItemTypeOption = {
   id: string;
@@ -53,6 +56,7 @@ const numberField = (value: number | null | undefined) =>
 // is a separate action, KAM-36).
 export function ItemForm({
   itemTypesByCategory,
+  categories,
   action,
   initial,
   submitLabel,
@@ -60,6 +64,8 @@ export function ItemForm({
   withAutofill = false,
 }: {
   itemTypesByCategory: { category: string; itemTypes: ItemTypeOption[] }[];
+  // Every visible category (incl. ones with no types yet), for "+ New type".
+  categories: { id: string; name: string }[];
   action: (state: ItemFormState, formData: FormData) => Promise<ItemFormState>;
   initial?: ItemFormInitial;
   submitLabel: string;
@@ -78,15 +84,40 @@ export function ItemForm({
   const savedImageUrl = removeImage ? null : (initial?.image_url ?? null);
   const previewUrl = autofillImageUrl ?? savedImageUrl;
 
+  const [itemTypeId, setItemTypeId] = useState<string | null>(
+    initial?.item_type_id ?? null,
+  );
+  // Types created from this form via "+ New type", shown until the page's
+  // own data refreshes.
+  const [createdTypes, setCreatedTypes] = useState<ItemTypeOption[]>([]);
+  const [newTypeOpen, setNewTypeOpen] = useState(false);
+
+  const typeGroups = useMemo(() => {
+    const groups = itemTypesByCategory.map((g) => ({
+      ...g,
+      itemTypes: [...g.itemTypes],
+    }));
+    for (const created of createdTypes) {
+      if (groups.some((g) => g.itemTypes.some((t) => t.id === created.id))) {
+        continue;
+      }
+      const name = created.category?.name ?? "Uncategorized";
+      const group = groups.find((g) => g.category === name);
+      if (group) group.itemTypes.push(created);
+      else groups.push({ category: name, itemTypes: [created] });
+    }
+    return groups.sort((a, b) => a.category.localeCompare(b.category));
+  }, [itemTypesByCategory, createdTypes]);
+
   const itemTypeLabels = useMemo(() => {
     const labels = new Map<string, string>();
-    for (const { itemTypes } of itemTypesByCategory) {
+    for (const { itemTypes } of typeGroups) {
       for (const itemType of itemTypes) {
         labels.set(itemType.id, itemType.name);
       }
     }
     return labels;
-  }, [itemTypesByCategory]);
+  }, [typeGroups]);
 
   function handleAutofill(result: AutofillResult, autofilledLink: string) {
     if (result.title) setTitle(result.title);
@@ -164,7 +195,8 @@ export function ItemForm({
         <Select
           name="item_type_id"
           required
-          defaultValue={initial?.item_type_id}
+          value={itemTypeId}
+          onValueChange={(v) => setItemTypeId(v as string | null)}
         >
           <SelectTrigger id="item_type_id" className="w-full">
             <SelectValue placeholder="Choose an item type">
@@ -174,7 +206,7 @@ export function ItemForm({
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {itemTypesByCategory.map(({ category, itemTypes }) => (
+            {typeGroups.map(({ category, itemTypes }) => (
               <SelectGroup key={category}>
                 <SelectLabel>{category}</SelectLabel>
                 {itemTypes.map((itemType) => (
@@ -186,6 +218,33 @@ export function ItemForm({
             ))}
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="link"
+            size="xs"
+            className="h-auto p-0"
+            onClick={() => setNewTypeOpen(true)}
+          >
+            <Plus />
+            New type
+          </Button>
+          <Link
+            href="/types"
+            className="text-muted-foreground text-xs underline-offset-4 hover:underline"
+          >
+            Manage types
+          </Link>
+        </div>
+        <NewItemTypeDialog
+          open={newTypeOpen}
+          onOpenChange={setNewTypeOpen}
+          categories={categories}
+          onCreated={(created) => {
+            setCreatedTypes((prev) => [...prev, created]);
+            setItemTypeId(created.id);
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

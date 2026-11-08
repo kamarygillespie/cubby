@@ -12,7 +12,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 - Add item via pasted link → server-side autofill (title/image/price) with full manual edit + image replacement
 - Add/edit item manually (no link required). Edit at `/items/<id>/edit` (Edit on each card): all fields, plus replace or remove the image (the old file is deleted from storage). Delete lives on the edit page behind a confirmation that names any wishlists the item will drop off
 - Default system taxonomy for Category and Item Type, seeded on signup
-- Users can add their own custom Item Types (auto-mapped to a Category) and, if needed, custom Categories
+- Users can add their own custom Item Types (auto-mapped to a Category) and, if needed, custom Categories: "+ New type" on the add/edit form (optionally creating a new category in the same step), and a **Manage types** page at `/types` to add, rename and delete your own. Built-ins are read-only. Names are unique per user ignoring case, including against built-ins. A type that items still use, or a category that still has types, can't be deleted (with a message saying why)
 
 ### Views & organization
 

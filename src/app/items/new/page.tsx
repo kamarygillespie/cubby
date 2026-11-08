@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
+import { listCategories } from "@/lib/db/taxonomy";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { ItemForm } from "../item-form";
 import { addItem } from "../actions";
@@ -18,7 +19,10 @@ export const metadata: Metadata = { title: "Add item" };
 
 export default async function NewItemPage() {
   const supabase = await createClient();
-  const itemTypes = await listItemTypes(supabase);
+  const [itemTypes, categories] = await Promise.all([
+    listItemTypes(supabase),
+    listCategories(supabase),
+  ]);
 
   return (
     <div className="flex min-h-screen flex-col items-center gap-2 p-4">
@@ -41,6 +45,7 @@ export default async function NewItemPage() {
         <CardContent>
           <ItemForm
             itemTypesByCategory={groupItemTypesByCategory(itemTypes)}
+            categories={categories}
             action={addItem}
             submitLabel="Add item"
             pendingLabel="Adding..."

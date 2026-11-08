@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { listCategories } from "@/lib/db/taxonomy";
 import { getItem } from "@/lib/db/items";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
@@ -41,8 +42,9 @@ export default async function EditItemPage({
   if (!item) notFound();
 
   const supabase = await createClient();
-  const [itemTypes, wishlists] = await Promise.all([
+  const [itemTypes, categories, wishlists] = await Promise.all([
     listItemTypes(supabase),
+    listCategories(supabase),
     listWishlists(supabase),
   ]);
   const onLists = wishlists
@@ -72,6 +74,7 @@ export default async function EditItemPage({
         <CardContent>
           <ItemForm
             itemTypesByCategory={groupItemTypesByCategory(itemTypes)}
+            categories={categories}
             action={updateItemAction.bind(null, item.id)}
             initial={item}
             submitLabel="Save changes"

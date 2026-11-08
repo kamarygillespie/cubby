@@ -31,6 +31,8 @@ flowchart TD
 
 Every user-owned table (`items`, `wishlists`, `wishlist_items`, custom `categories`/`item_types`) carries a `user_id` column tied to `auth.uid()`. Row Level Security policies enforce that a user can only read/write their own rows — this is enforced at the database layer, so even a bug in application code can't leak cross-user data.
 
+**Write policies must also check what a row _points to_.** Owning the row you insert isn't enough: a reference to another user's row (by UUID) can leak its data through joins or `SECURITY DEFINER` functions, or pin it in place via `ON DELETE RESTRICT`. This bit us twice and is fixed by policy: `wishlist_items` requires owning both the wishlist and the item (KAM-28), and `item_types`/`items` may only reference categories/types that are system or the caller's own (KAM-35). Any new table with a foreign key to user-owned data needs the same check.
+
 System-level defaults (the default Category/Item Type taxonomy) live in the same tables with `user_id IS NULL` and `is_system = true`. Every user sees the system defaults plus any rows they've added themselves. See `DATABASE.md` for the exact policies.
 
 ## Public Wishlist Sharing
