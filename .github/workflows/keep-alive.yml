@@ -1,0 +1,25 @@
+name: Live site health
+
+# Daily check that the live app and its Supabase database answer. Vercel
+# Cron (vercel.json) is what keeps the free-tier database from pausing; this
+# is the alarm: if /api/health isn't OK the run fails and GitHub emails you.
+# Note: GitHub disables scheduled workflows in public repos after 60 days
+# with no commits — the Vercel cron keeps working regardless.
+on:
+  schedule:
+    - cron: "47 15 * * *"
+  workflow_dispatch:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check https://cubby-one.vercel.app/api/health
+        run: |
+          status=$(curl -sS --max-time 30 -o body.json -w "%{http_code}" \
+            https://cubby-one.vercel.app/api/health || echo "000")
+          echo "HTTP $status: $(cat body.json 2>/dev/null)"
+          if [ "$status" != "200" ]; then
+            echo "::error::Live site or database is down (HTTP $status). If Supabase shows the project as paused, restore it in the dashboard."
+            exit 1
+          fi

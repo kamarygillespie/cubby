@@ -32,6 +32,15 @@ Goal: real confidence when shipping changes, without building test infrastructur
 
 **On merge to `main`:** Vercel promotes to production; Sentry release tagged with the commit SHA, so errors map back to the exact deploy that caused them.
 
+### Keeping production awake (KAM-42)
+
+The free-tier Supabase project **auto-pauses after ~1 week without activity** (it happened Oct–Nov 2026). Two daily jobs hit `GET /api/health`, a public route that runs one tiny read (`lib/db/health.ts`, 8s timeout) and returns `200 {ok:true}` or `503 {ok:false}`:
+
+- **Vercel Cron** (`vercel.json`, daily): the keep-alive itself. Runs on the production deployment and isn't subject to GitHub's inactivity rules.
+- **GitHub Action `Live site health`** (`.github/workflows/keep-alive.yml`, daily + manual): the alarm. A non-200 fails the run, and GitHub emails the repo owner. GitHub disables scheduled workflows in public repos after 60 days without commits, so if that happens, re-enable it in the Actions tab; the Vercel cron keeps the database awake meanwhile.
+
+If the database is paused anyway, restore it in the Supabase dashboard (Project → Restore).
+
 ### Why e2e runs against local Supabase, not a deployment
 
 The original plan ran e2e against the preview/production deployment after merge. Changed (KAM-31): those deployments talk to the real Supabase project, and the tests sign up users and write data — that would pollute production. Running against a production build wired to `supabase start` exercises the same code and real RLS/auth, runs _before_ merge (a true gate), and needs no secrets. A read-only smoke check against the live deployment can be added later if it proves useful.
