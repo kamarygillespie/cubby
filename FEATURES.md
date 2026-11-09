@@ -70,7 +70,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 ## V4 — Notifications & Deeper Analytics
 
-- Notifications for price drops on wishlist items and favorite-store sales, delivered as **phone push via the installed PWA** plus an in-app notifications list (decided Nov 8, 2026; no email for now) (KAM-54)
+- Notifications for price drops on wishlist items and favorite-store sales, delivered as **phone push via the installed PWA** plus an in-app notifications list (decided Nov 8, 2026; no email for now) (KAM-54). **Built (KAM-54):** after each daily price check, an alert is created when a wishlist item's price drops by at least your threshold (default 10%), or a sale starts at a favorite store (once per store per week). Alerts show under the bell (`/notifications`, with an unread count); push is **one daily digest** per device, turned on per device. Settings: each alert type on/off and the drop threshold
 - Spending breakdown by month, using `purchased_date` already captured since V1. **Built (KAM-55)** on Totals: a monthly bar chart (last 12 months, or any year with purchases); tap a month for its category breakdown and what was bought; a table view; undated purchases are counted separately. Months follow the **viewer's own time zone** (grouped in the browser)
 
 ## Explicitly Out of Scope (for now)

@@ -44,6 +44,7 @@ jobs:
         run: |
           (cd link-autofill && deno check index.ts && deno test --allow-net --allow-read --config deno.json ../_shared/)
           (cd daily-price-check && deno check index.ts && deno test --allow-net --allow-read)
+          (cd send-push-digest && deno check index.ts && deno test --allow-net --allow-read)
 
       # lib/db/ integration tests run against a real local Supabase stack
       # (RLS + triggers exercised for real), not mocks — see TESTING.md.

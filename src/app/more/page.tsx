@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BarChart3, ChevronRight, Sparkles, Tags } from "lucide-react";
+import { BarChart3, Bell, ChevronRight, Sparkles, Tags } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { InstallPrompt } from "@/components/install-prompt";
 export const metadata: Metadata = { title: "More" };
 
 const LINKS = [
+  { href: "/notifications", label: "Notifications", Icon: Bell },
   { href: "/?view=totals", label: "Totals & insights", Icon: BarChart3 },
   { href: "/outfits", label: "Outfits", Icon: Sparkles },
   { href: "/types", label: "Item types", Icon: Tags },
