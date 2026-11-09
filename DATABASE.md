@@ -449,6 +449,13 @@ create table public.notifications (
   - `store_sale`: a sale started (`sale_price` null → set) on an item whose store is a favorite. At most one per store per 7 days.
 - **Cron `daily-push-digest`** at 17:00 UTC calls the `send-push-digest` Edge Function (same Vault secrets as the price-check job).
 
+## SQL — Onboarding (migration `20261109070000`, KAM-46)
+
+```sql
+alter table public.profiles add column onboarding_dismissed_at timestamptz;
+-- profiles' update policy gains an explicit WITH CHECK (auth.uid() = id).
+```
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

@@ -44,6 +44,17 @@ export default async function StoresPage() {
         </p>
       </div>
 
+      {stores.length === 0 && (
+        <p className="text-muted-foreground text-sm">
+          No stores yet.{" "}
+          <Link href="/items/new" className="text-foreground underline">
+            Add an item
+          </Link>{" "}
+          with a store or brand (pasting a link fills it in), then star it here
+          to hear when it&apos;s running a sale.
+        </p>
+      )}
+
       <ul className="flex flex-col gap-3">
         {stores.map((store) => (
           <li key={store.key}>
