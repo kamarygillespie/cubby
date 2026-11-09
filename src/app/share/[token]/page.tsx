@@ -8,6 +8,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { getSharedWishlist } from "@/lib/db/wishlists";
 import { PriceDisplay } from "../../items-list";
+import { GiftCardIdeas } from "@/components/gift-card-ideas";
+import { giftCardIdeas } from "@/lib/stores";
 
 // Shared between generateMetadata and the page so the RPC runs once.
 const loadSharedWishlist = cache(async (token: string) => {
@@ -103,6 +105,12 @@ export default async function SharedWishlistPage({
           ))}
         </ul>
       )}
+
+      <GiftCardIdeas
+        ideas={giftCardIdeas(wishlist.items)}
+        description="Not sure which to pick? A gift card to one of these stores covers several things on this list."
+        limit={3}
+      />
 
       <footer className="text-muted-foreground mt-auto pt-8 text-center text-xs">
         Made with Cubby

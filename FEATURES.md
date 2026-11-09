@@ -60,7 +60,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 - **Closet view:** purchased items automatically appear in a closet gallery; ability to add standalone closet photos and replace item images from here. **Built (KAM-47)** at `/closet`. **Rule:** the closet = pieces added straight to it + things you bought for yourself (purchased, not gifted) + gifts you received (gifted, not purchased). Purchased _and_ gifted means you bought it for someone else, so it's not in your closet. Pieces added straight to the closet never count toward wishlist, spending or totals. Tap a piece to edit it or change its photo
 - **Outfit planning:** create outfit "boards" from closet items, or upload outfit photos to save
 - **Favorite stores:** mark favorite stores/brands, track when they're running a sale
-- **Gift card recommendations:** group wishlist items by store/brand, ranked by relevance (most items from that store first)
+- **Gift card recommendations:** group wishlist items by store/brand, ranked by relevance (most items from that store first). **Built (KAM-50):** shown on Totals, on each list's page, and on its **public share page** (scoped to that list). Ranked by item count, then total value; a store needs **2+ items** to be suggested; store names match regardless of case or spacing
 - **Mobile app = the installable PWA** (decided Nov 8, 2026): no separate React Native codebase. The PWA gets a native feel instead: bottom tab bar on phones, offline shell, camera upload, share-to-Cubby (Android), install prompt (KAM-51). Revisit a true native app only if usage demands it
 
 ## V3 — Intelligence Layer
