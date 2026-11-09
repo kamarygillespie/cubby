@@ -364,7 +364,7 @@ create index idx_items_user_source on public.items(user_id, source);
 
 ## SQL — Outfits (migration `20261109040000`, KAM-48)
 
-```sql
+````sql
 create table public.outfits (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -384,7 +384,22 @@ create table public.outfit_items (
 create index idx_outfit_items_item on public.outfit_items(item_id);
 -- RLS: the outfit must be yours; writes also require the item to be yours.
 -- The app additionally only accepts closet pieces (lib/closet.ts).
-```
+
+## SQL — Favorite Stores (migration `20261109050000`, KAM-49)
+
+```sql
+-- Stores aren't a table: they're items.store_brand, matched case-insensitively
+-- (lib/stores.ts storeKey). This only records the ones you starred.
+create table public.favorite_stores (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  store_key text not null check (store_key = lower(btrim(store_key)) and store_key <> ''),
+  display_name text not null,
+  sale_url text check (sale_url is null or sale_url ~* '^https?://'),
+  created_at timestamptz not null default now(),
+  primary key (user_id, store_key)
+);
+-- RLS: own rows only.
+````
 
 ## SQL — Seed Data (Default Taxonomy)
 
