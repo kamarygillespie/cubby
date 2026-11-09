@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { listItems } from "@/lib/db/items";
+import { listItems, listRecentPriceHighs } from "@/lib/db/items";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
 import { listFavoriteStores } from "@/lib/db/stores";
@@ -247,7 +247,10 @@ export default async function Home({
         </div>
       </div>
       {showTotals ? (
-        <TotalsDashboard items={items} />
+        <TotalsDashboard
+          items={items}
+          recentHighs={await listRecentPriceHighs(supabase)}
+        />
       ) : (
         <ItemSelectionProvider key={view}>
           <FilterBar

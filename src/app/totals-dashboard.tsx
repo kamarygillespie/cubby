@@ -13,6 +13,8 @@ import { giftCardIdeas } from "@/lib/stores";
 import { GiftCardIdeas } from "@/components/gift-card-ideas";
 import { SpendingChart } from "./spending-chart";
 import { effectivePrice } from "@/lib/items-view";
+import { BuyNextCard, TasteCard } from "./recommendations-cards";
+import { buyNext, tasteProfile, toRecItem } from "@/lib/recommendations";
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -56,8 +58,16 @@ function BreakdownList({
   );
 }
 
-export function TotalsDashboard({ items }: { items: Item[] }) {
+export function TotalsDashboard({
+  items,
+  recentHighs,
+}: {
+  items: Item[];
+  // Highest recent price per item, for "price dropped" picks (KAM-52).
+  recentHighs: ReadonlyMap<string, number>;
+}) {
   const active = activeWishlistItems(items);
+  const purchased = items.filter((i) => i.purchased).map(toRecItem);
 
   return (
     <div className="flex flex-col gap-6">
@@ -82,6 +92,10 @@ export function TotalsDashboard({ items }: { items: Item[] }) {
             category: item.item_type.category.name,
           }))}
       />
+      <BuyNextCard
+        picks={buyNext(active.map(toRecItem), purchased, recentHighs)}
+      />
+      <TasteCard taste={tasteProfile(purchased)} />
       <GiftCardIdeas
         ideas={giftCardIdeas(active)}
         description="Stores with several things on your wishlist: handy when someone asks what to get you."

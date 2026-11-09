@@ -65,7 +65,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 ## V3 — Intelligence Layer
 
-- Item recommendations based on interest level, category affinity, and purchase history (approach TBD — likely starts simple: "more like this item type/store" before anything ML-driven)
+- Item recommendations based on interest level, category affinity, and purchase history. **Built (KAM-52), first-party only, no ML:** **Buy next** on Totals ranks wishlist items by interest (40), current discount (30), a recent drop vs. the last 30 days of price history (15), category affinity (10), and having bought from that store (5), and every pick shows its reasons. **Your taste** (top categories, go-to stores, the middle half of what you pay; needs 3+ purchases). **More like this** on each item's page (same type or store)
 - Even-price-distribution wishlist generator: select items, choose N target wishlists, and auto-distribute items so each list ends up with a comparable total price. **Built (KAM-53)** as **Split** in Select mode: 2–6 _new_ lists, a live preview of each list's items and total, then create. Algorithm: highest price first, each item to the list with the lowest running total (greedy). Tighter than the originally planned round-robin, and just as simple. The server recomputes the split from database prices
 
 ## V4 — Notifications & Deeper Analytics

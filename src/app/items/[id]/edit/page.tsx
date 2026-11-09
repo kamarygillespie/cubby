@@ -13,7 +13,8 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { listCategories } from "@/lib/db/taxonomy";
-import { getItem } from "@/lib/db/items";
+import { getItem, listClosetItems, listItems } from "@/lib/db/items";
+import { moreLikeThis, toRecItem } from "@/lib/recommendations";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
 import { listOutfitsForItem } from "@/lib/db/outfits";
@@ -47,12 +48,22 @@ export default async function EditItemPage({
   if (!item) notFound();
 
   const supabase = await createClient();
-  const [itemTypes, categories, wishlists, outfits] = await Promise.all([
-    listItemTypes(supabase),
-    listCategories(supabase),
-    listWishlists(supabase),
-    listOutfitsForItem(supabase, item.id),
-  ]);
+  const [itemTypes, categories, wishlists, outfits, wishItems, closetItems] =
+    await Promise.all([
+      listItemTypes(supabase),
+      listCategories(supabase),
+      listWishlists(supabase),
+      listOutfitsForItem(supabase, item.id),
+      listItems(supabase),
+      listClosetItems(supabase),
+    ]);
+  // "More like this" (KAM-52): your other items of the same type or store.
+  const candidates = [
+    ...new Map(
+      [...wishItems, ...closetItems].map((i) => [i.id, toRecItem(i)]),
+    ).values(),
+  ];
+  const similar = moreLikeThis(toRecItem(item), candidates);
   const onLists = wishlists
     .filter((w) => w.wishlist_items.some((wi) => wi.item_id === item.id))
     .map((w) => w.name);
@@ -104,6 +115,29 @@ export default async function EditItemPage({
           />
         </CardContent>
       </Card>
+      {similar.length > 0 && (
+        <section className="w-full max-w-md" aria-labelledby="similar-title">
+          <h2 id="similar-title" className="mb-2 text-sm font-medium">
+            More like this
+          </h2>
+          <ul className="flex flex-col gap-1">
+            {similar.map((s) => (
+              <li key={s.id} className="flex justify-between gap-3 text-sm">
+                <Link
+                  href={`/items/${s.id}/edit`}
+                  className="truncate underline-offset-4 hover:underline"
+                >
+                  {s.title}
+                </Link>
+                <span className="text-muted-foreground shrink-0 text-xs">
+                  {s.itemType}
+                  {s.store_brand && ` · ${s.store_brand}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="w-full max-w-md border-t pt-4">
         <DeleteItemButton
           itemId={item.id}
