@@ -8,7 +8,9 @@ export type ItemFilters = {
   onSaleOnly?: boolean;
 };
 
-export function isOnSale(item: Item): boolean {
+type Prices = Pick<Item, "price" | "sale_price">;
+
+export function isOnSale(item: Prices): boolean {
   return (
     item.sale_price !== null &&
     item.price !== null &&
@@ -16,7 +18,7 @@ export function isOnSale(item: Item): boolean {
   );
 }
 
-export function effectivePrice(item: Item): number {
+export function effectivePrice(item: Prices): number {
   return (isOnSale(item) ? item.sale_price : item.price) ?? 0;
 }
 
@@ -149,4 +151,37 @@ export function itemMetaParts(item: Item): string[] {
     ...(category.toLowerCase() === type.toLowerCase() ? [] : [category]),
     ...(item.store_brand ? [item.store_brand] : []),
   ];
+}
+
+// How many item cards a page renders at first, and per "Show more". Totals,
+// counts, filters and group sums always use every matching item; only the
+// number of rendered cards is capped (KAM-45).
+export const ITEMS_PAGE_SIZE = 50;
+
+export function parseShowCount(raw: string | undefined): number {
+  const n = Number(raw);
+  return Number.isInteger(n) && n > ITEMS_PAGE_SIZE ? n : ITEMS_PAGE_SIZE;
+}
+
+// Caps the rendered cards across groups (in order) while keeping each
+// group's full count/total, so headers stay truthful. Groups past the cap
+// are dropped; `hidden` is how many cards weren't rendered.
+export function limitGroups(
+  groups: ItemGroup[],
+  limit: number,
+): { groups: ItemGroup[]; hidden: number } {
+  let remaining = limit;
+  let hidden = 0;
+  const shown: ItemGroup[] = [];
+  for (const group of groups) {
+    if (remaining <= 0) {
+      hidden += group.items.length;
+      continue;
+    }
+    const items = group.items.slice(0, remaining);
+    hidden += group.items.length - items.length;
+    remaining -= items.length;
+    shown.push({ ...group, items });
+  }
+  return { groups: shown, hidden };
 }

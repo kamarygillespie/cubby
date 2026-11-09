@@ -22,6 +22,18 @@ export async function listWishlists(supabase: DbClient) {
 
 export type Wishlist = Awaited<ReturnType<typeof listWishlists>>[number];
 
+// For the /wishlists overview: each list with just the prices of its items
+// (not every item in full), so totals don't load the whole wishlist (KAM-45).
+export async function listWishlistsWithPrices(supabase: DbClient) {
+  const { data, error } = await supabase
+    .from("wishlists")
+    .select("id, name, wishlist_items(item:items(price, sale_price))")
+    .order("name");
+
+  if (error) throw error;
+  return data;
+}
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

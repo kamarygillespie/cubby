@@ -97,7 +97,11 @@ export function ItemsList({
   return (
     <ul className="flex w-full flex-col gap-3">
       {items.map((item) => (
-        <li key={item.id}>
+        // Lets the browser skip layout/paint for off-screen cards.
+        <li
+          key={item.id}
+          className="[contain-intrinsic-size:auto_180px] [content-visibility:auto]"
+        >
           <Card className="has-data-checked:ring-primary has-data-checked:ring-2">
             <CardContent className="flex gap-3">
               <ItemSelectCheckbox itemId={item.id} title={item.title} />

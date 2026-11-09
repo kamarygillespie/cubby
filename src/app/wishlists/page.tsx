@@ -4,8 +4,7 @@ import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
-import { listItems } from "@/lib/db/items";
-import { listWishlists } from "@/lib/db/wishlists";
+import { listWishlistsWithPrices } from "@/lib/db/wishlists";
 import { effectivePrice } from "@/lib/items-view";
 import { formatCurrency } from "@/lib/format";
 import { CreateWishlistForm } from "./create-wishlist-form";
@@ -14,11 +13,7 @@ export const metadata: Metadata = { title: "Wishlists" };
 
 export default async function WishlistsPage() {
   const supabase = await createClient();
-  const [wishlists, items] = await Promise.all([
-    listWishlists(supabase),
-    listItems(supabase),
-  ]);
-  const itemsById = new Map(items.map((item) => [item.id, item]));
+  const wishlists = await listWishlistsWithPrices(supabase);
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
@@ -44,10 +39,9 @@ export default async function WishlistsPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {wishlists.map((list) => {
-            const entries = list.wishlist_items.flatMap((wi) => {
-              const item = itemsById.get(wi.item_id);
-              return item ? [item] : [];
-            });
+            const entries = list.wishlist_items.flatMap((wi) =>
+              wi.item ? [wi.item] : [],
+            );
             const total = entries.reduce(
               (sum, item) => sum + effectivePrice(item),
               0,
