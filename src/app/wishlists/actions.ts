@@ -11,6 +11,12 @@ import {
   renameWishlist,
 } from "@/lib/db/wishlists";
 import { parseWishlistName } from "@/lib/wishlists";
+import { getEffectivePrices } from "@/lib/db/items";
+import {
+  SPLIT_MAX_LISTS,
+  SPLIT_MIN_LISTS,
+  splitEvenly,
+} from "@/lib/even-split";
 
 export type AddToWishlistsResult =
   { ok: true; message: string } | { ok: false; error: string };
@@ -112,4 +118,50 @@ export async function removeFromWishlistAction(
   await removeItemFromWishlist(supabase, wishlistId, itemId);
   revalidatePath("/");
   revalidatePath("/wishlists");
+}
+
+// Even-split generator (KAM-53): spread the selected items across new lists
+// with comparable totals. Prices come from the database, not the client, so
+// the split is authoritative (the dialog's preview uses the same function).
+export async function splitIntoWishlists(input: {
+  itemIds: string[];
+  names: string[];
+}): Promise<AddToWishlistsResult> {
+  const { itemIds } = input;
+  if (itemIds.length === 0) return { ok: false, error: "Select some items." };
+  if (
+    input.names.length < SPLIT_MIN_LISTS ||
+    input.names.length > SPLIT_MAX_LISTS
+  ) {
+    return {
+      ok: false,
+      error: `Split into ${SPLIT_MIN_LISTS}–${SPLIT_MAX_LISTS} lists.`,
+    };
+  }
+  const names: string[] = [];
+  for (const raw of input.names) {
+    const parsed = parseWishlistName(raw);
+    if (!parsed.ok) return { ok: false, error: parsed.error };
+    names.push(parsed.name);
+  }
+
+  const supabase = await createClient();
+  try {
+    const prices = await getEffectivePrices(supabase, itemIds);
+    if (prices.length === 0) return { ok: false, error: "Select some items." };
+    const split = splitEvenly(prices, names.length);
+    for (const [i, name] of names.entries()) {
+      const list = await createWishlist(supabase, name);
+      await addItemsToWishlists(supabase, split[i].itemIds, [list.id]);
+    }
+  } catch {
+    return { ok: false, error: "Couldn't create the lists. Try again." };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/wishlists");
+  return {
+    ok: true,
+    message: `Split ${itemIds.length} items into ${names.length} lists.`,
+  };
 }

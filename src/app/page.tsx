@@ -10,6 +10,7 @@ import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
 import {
   ITEMS_PAGE_SIZE,
+  effectivePrice,
   filterByView,
   filterItems,
   groupByCategory,
@@ -234,6 +235,15 @@ export default async function Home({
               // Select all = what's on screen; Check all prices = every match.
               itemIds={shownItems.map((i) => i.id)}
               itemTypeGroups={groupItemTypesByCategory(itemTypes)}
+              itemInfo={Object.fromEntries(
+                shownItems.map((i) => [
+                  i.id,
+                  {
+                    title: i.title,
+                    price: i.price === null ? null : effectivePrice(i),
+                  },
+                ]),
+              )}
               wishlists={wishlists.map((w) => ({
                 id: w.id,
                 name: w.name,

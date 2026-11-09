@@ -122,3 +122,23 @@ export async function recordPriceCheck(
   });
   if (error) throw error;
 }
+
+// Effective prices (sale price when on sale) for the given items, for the
+// even-split generator. RLS limits it to the caller's own items.
+export async function getEffectivePrices(supabase: DbClient, ids: string[]) {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from("items")
+    .select("id, price, sale_price")
+    .in("id", ids);
+  if (error) throw error;
+  return data.map((row) => ({
+    id: row.id,
+    price:
+      row.price === null
+        ? null
+        : row.sale_price !== null && row.sale_price < row.price
+          ? row.sale_price
+          : row.price,
+  }));
+}

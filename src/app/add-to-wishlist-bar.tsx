@@ -18,6 +18,7 @@ import { WISHLIST_NAME_MAX_LENGTH } from "@/lib/wishlists";
 import { addToWishlists } from "./wishlists/actions";
 import { useItemSelection } from "./item-selection";
 import { ChangeTypeButton } from "./change-type-dialog";
+import { SplitButton, type SplitItemInfo } from "./split-dialog";
 import type { ItemTypeGroup } from "./item-type-select";
 
 type WishlistOption = { id: string; name: string; itemIds: string[] };
@@ -26,11 +27,14 @@ export function AddToWishlistBar({
   itemIds,
   wishlists,
   itemTypeGroups,
+  itemInfo,
   extraActions,
 }: {
   itemIds: string[];
   wishlists: WishlistOption[];
   itemTypeGroups: ItemTypeGroup[];
+  // Title + effective price per shown item, for the split preview.
+  itemInfo: Record<string, SplitItemInfo>;
   // Shown beside Select when not selecting (e.g. Check all prices).
   extraActions?: React.ReactNode;
 }) {
@@ -90,6 +94,14 @@ export function AddToWishlistBar({
             {count} selected
           </p>
           <div className="flex gap-2">
+            <SplitButton
+              selectedIds={[...selection.selected]}
+              itemInfo={itemInfo}
+              onDone={(message) => {
+                selection.stop();
+                setNotice(message);
+              }}
+            />
             <ChangeTypeButton
               selectedIds={[...selection.selected]}
               itemTypeGroups={itemTypeGroups}
