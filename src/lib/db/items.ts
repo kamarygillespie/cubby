@@ -18,10 +18,14 @@ export type ItemUpdate = Omit<RawItemUpdate, AppReadonlyField>;
 export const ITEM_SELECT =
   "*, item_type:item_types(id, name, category:categories(id, name))";
 
+// Wishlist items only (incl. purchased/gifted). Pieces added straight to the
+// closet (source 'closet') are excluded here so they never reach the
+// wishlist tabs or any total — see listClosetItems.
 export async function listItems(supabase: DbClient) {
   const { data, error } = await supabase
     .from("items")
     .select(ITEM_SELECT)
+    .eq("source", "wishlist")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -29,6 +33,22 @@ export async function listItems(supabase: DbClient) {
 }
 
 export type Item = Awaited<ReturnType<typeof listItems>>[number];
+
+// The closet (lib/closet.ts isInCloset): pieces added to the closet, things
+// bought for yourself (purchased, not gifted), and gifts you received
+// (gifted, not purchased). Newest first.
+export async function listClosetItems(supabase: DbClient) {
+  const { data, error } = await supabase
+    .from("items")
+    .select(ITEM_SELECT)
+    .or(
+      "source.eq.closet,and(purchased.eq.true,gifted.eq.false),and(purchased.eq.false,gifted.eq.true)",
+    )
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

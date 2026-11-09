@@ -13,6 +13,11 @@ function chosenFile(formData: FormData): File | null {
   return file instanceof File && file.size > 0 ? file : null;
 }
 
+// Only known in-app destinations, so return_to can't become an open redirect.
+function safeReturnTo(formData: FormData): "/" | "/closet" {
+  return formData.get("return_to") === "/closet" ? "/closet" : "/";
+}
+
 function revalidateItemViews() {
   revalidatePath("/");
   revalidatePath("/wishlists", "layout");
@@ -96,10 +101,13 @@ export async function updateItemAction(
   }
 
   revalidateItemViews();
-  redirect("/");
+  redirect(safeReturnTo(formData));
 }
 
-export async function deleteItemAction(itemId: string) {
+export async function deleteItemAction(
+  itemId: string,
+  returnTo: "/" | "/closet" = "/",
+) {
   const supabase = await createClient();
   const existing = await getItem(supabase, itemId);
   if (existing) {
@@ -108,5 +116,40 @@ export async function deleteItemAction(itemId: string) {
     await deleteItemImage(supabase, existing.image_url);
   }
   revalidateItemViews();
-  redirect("/");
+  redirect(returnTo === "/closet" ? "/closet" : "/");
+}
+
+// "Add to closet": a piece you already own, never on a wishlist. Stored with
+// source 'closet' so it never counts toward wishlist totals or spending.
+export async function addClosetItem(
+  _prevState: ItemFormState,
+  formData: FormData,
+): Promise<ItemFormState> {
+  const parsed = parseItemForm(formData);
+  if (!parsed.ok) return { error: parsed.error };
+
+  const supabase = await createClient();
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { error: "Not authenticated" };
+
+    const file = chosenFile(formData);
+    await createItem(supabase, {
+      ...parsed.values,
+      price: null,
+      sale_price: null,
+      interest_level: null,
+      source: "closet",
+      image_url: file ? await uploadItemImage(supabase, user.id, file) : null,
+    });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Failed to add piece.",
+    };
+  }
+
+  revalidateItemViews();
+  redirect("/closet");
 }

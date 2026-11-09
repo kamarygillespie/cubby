@@ -349,6 +349,19 @@ under the existing items RLS (own items only, visible types only).
 create index if not exists idx_wishlist_items_item_id on public.wishlist_items(item_id);
 ```
 
+## SQL — Closet (migration `20261109030000`, KAM-47)
+
+```sql
+-- Pieces you already own, added straight to the closet, live in `items` too
+-- (so outfits can reference any closet piece) but with source = 'closet'.
+-- lib/db listItems() returns only source = 'wishlist', so closet-only pieces
+-- never reach the wishlist tabs or any total.
+alter table public.items
+  add column source text not null default 'wishlist'
+  check (source in ('wishlist', 'closet'));
+create index idx_items_user_source on public.items(user_id, source);
+```
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

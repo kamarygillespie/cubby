@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ListChecks } from "lucide-react";
+import { ListChecks, Shirt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -193,18 +193,31 @@ export default async function Home({
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <ViewTabs />
-        <Link
-          href="/wishlists"
-          className={buttonVariants({
-            variant: "ghost",
-            size: "sm",
-            // Slightly tighter on phones so this fits beside the tabs.
-            className: "max-sm:px-2",
-          })}
-        >
-          <ListChecks />
-          Lists
-        </Link>
+        <div className="flex gap-1">
+          <Link
+            href="/wishlists"
+            className={buttonVariants({
+              variant: "ghost",
+              size: "sm",
+              // Slightly tighter on phones so this fits beside the tabs.
+              className: "max-sm:px-2",
+            })}
+          >
+            <ListChecks />
+            Lists
+          </Link>
+          <Link
+            href="/closet"
+            className={buttonVariants({
+              variant: "ghost",
+              size: "sm",
+              className: "max-sm:px-2",
+            })}
+          >
+            <Shirt />
+            Closet
+          </Link>
+        </div>
       </div>
       {showTotals ? (
         <TotalsDashboard items={items} />

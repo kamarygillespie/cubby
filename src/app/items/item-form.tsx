@@ -62,6 +62,8 @@ export function ItemForm({
   submitLabel,
   pendingLabel,
   withAutofill = false,
+  variant = "wishlist",
+  returnTo,
 }: {
   itemTypesByCategory: { category: string; itemTypes: ItemTypeOption[] }[];
   // Every visible category (incl. ones with no types yet), for "+ New type".
@@ -71,6 +73,10 @@ export function ItemForm({
   submitLabel: string;
   pendingLabel: string;
   withAutofill?: boolean;
+  // "closet": a piece you already own — no prices or interest level.
+  variant?: "wishlist" | "closet";
+  // Where to go after saving ("/" or "/closet"); validated server-side.
+  returnTo?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
 
@@ -130,6 +136,7 @@ export function ItemForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {withAutofill && <LinkAutofillField onAutofill={handleAutofill} />}
+      {returnTo && <input type="hidden" name="return_to" value={returnTo} />}
       <input type="hidden" name="remove_image" value={removeImage ? "1" : ""} />
 
       <input
@@ -247,42 +254,46 @@ export function ItemForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="price">Price</Label>
-          <Input
-            id="price"
-            name="price"
-            type="number"
-            step="0.01"
-            min="0"
-            inputMode="decimal"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="sale_price">Sale price</Label>
-          <Input
-            id="sale_price"
-            name="sale_price"
-            type="number"
-            step="0.01"
-            min="0"
-            inputMode="decimal"
-            value={salePrice}
-            onChange={(e) => setSalePrice(e.target.value)}
-          />
-        </div>
-      </div>
+      {variant === "wishlist" && (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="price">Price</Label>
+              <Input
+                id="price"
+                name="price"
+                type="number"
+                step="0.01"
+                min="0"
+                inputMode="decimal"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="sale_price">Sale price</Label>
+              <Input
+                id="sale_price"
+                name="sale_price"
+                type="number"
+                step="0.01"
+                min="0"
+                inputMode="decimal"
+                value={salePrice}
+                onChange={(e) => setSalePrice(e.target.value)}
+              />
+            </div>
+          </div>
 
-      <div className="flex flex-col gap-2">
-        <Label>Interest level</Label>
-        <StarRatingInput
-          name="interest_level"
-          defaultValue={initial?.interest_level ?? null}
-        />
-      </div>
+          <div className="flex flex-col gap-2">
+            <Label>Interest level</Label>
+            <StarRatingInput
+              name="interest_level"
+              defaultValue={initial?.interest_level ?? null}
+            />
+          </div>
+        </>
+      )}
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="store_brand">Store / brand</Label>
