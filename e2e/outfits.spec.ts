@@ -25,7 +25,7 @@ test("build an outfit from closet pieces, edit it, then delete it", async ({
   // The board
   await expect(page).toHaveURL(/\/outfits\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("heading", { name: "E2E Friday" })).toBeVisible();
-  const board = page.getByRole("listitem");
+  const board = page.getByRole("listitem").filter({ hasText: /E2E / });
   await expect(board).toHaveCount(2);
 
   // From a piece, see which outfits use it

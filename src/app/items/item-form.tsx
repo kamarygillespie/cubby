@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhotoInput } from "@/components/photo-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -62,6 +63,7 @@ export function ItemForm({
   submitLabel,
   pendingLabel,
   withAutofill = false,
+  sharedLink = null,
   variant = "wishlist",
   returnTo,
 }: {
@@ -73,6 +75,8 @@ export function ItemForm({
   submitLabel: string;
   pendingLabel: string;
   withAutofill?: boolean;
+  // A link from the phone share sheet (Share to Cubby), prefilled to fetch.
+  sharedLink?: string | null;
   // "closet": a piece you already own — no prices or interest level.
   variant?: "wishlist" | "closet";
   // Where to go after saving ("/" or "/closet"); validated server-side.
@@ -83,7 +87,7 @@ export function ItemForm({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [price, setPrice] = useState(numberField(initial?.price));
   const [salePrice, setSalePrice] = useState(numberField(initial?.sale_price));
-  const [link, setLink] = useState(initial?.link ?? "");
+  const [link, setLink] = useState(initial?.link ?? sharedLink ?? "");
   const [autofillImageUrl, setAutofillImageUrl] = useState<string | null>(null);
   // Editing: the saved image, unless the user chose to remove it.
   const [removeImage, setRemoveImage] = useState(false);
@@ -135,7 +139,12 @@ export function ItemForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      {withAutofill && <LinkAutofillField onAutofill={handleAutofill} />}
+      {withAutofill && (
+        <LinkAutofillField
+          onAutofill={handleAutofill}
+          initialLink={sharedLink ?? ""}
+        />
+      )}
       {returnTo && <input type="hidden" name="return_to" value={returnTo} />}
       <input type="hidden" name="remove_image" value={removeImage ? "1" : ""} />
 
@@ -167,11 +176,9 @@ export function ItemForm({
             className="size-20 rounded-md object-cover"
           />
         )}
-        <Input
+        <PhotoInput
           id="image"
           name="image"
-          type="file"
-          accept="image/*"
           onChange={() => setAutofillImageUrl(null)}
         />
         {autofillImageUrl && (

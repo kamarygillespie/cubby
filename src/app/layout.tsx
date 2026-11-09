@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { InlineScript } from "@/components/inline-script";
 import { ThemeSync } from "@/components/theme-sync";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
+import { BottomNav } from "@/components/bottom-nav";
 import { THEME_COLORS, themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -29,6 +31,8 @@ export const metadata: Metadata = {
 // Matches the OS setting by default; ThemeSync overwrites these with the
 // user's chosen theme (light/dim/dark) once the page hydrates.
 export const viewport: Viewport = {
+  // Lets the phone tab bar sit in the home-indicator area (safe-area insets).
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: THEME_COLORS.light },
     { media: "(prefers-color-scheme: dark)", color: THEME_COLORS.dark },
@@ -49,7 +53,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         <ThemeSync />
+        <ServiceWorkerRegister />
         {children}
+        <BottomNav />
       </body>
     </html>
   );

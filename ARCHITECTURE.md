@@ -94,6 +94,13 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
 - The inline script is rendered through `components/inline-script.tsx`, a **Client Component** that emits `type="text/plain"` when React renders on the client, so React never sees an executable `<script>` outside the initial HTML parse (otherwise it warns on client-side renders such as Next's not-found recovery).
 - PWA/browser chrome color: `viewport.themeColor` defaults to light/dark by OS media query; `ThemeSync` overwrites it with the chosen palette's color (`THEME_COLORS`) after hydration.
 
+## PWA (KAM-51)
+
+- **Service worker** `public/sw.js` (registered in production only by `ServiceWorkerRegister`): page navigations go network-first with `/offline` as the fallback; hashed `/_next/static/` assets are cache-first. **Nothing else is cached** — no user data, API or Supabase responses — so a shared device never shows someone's wishlist offline. Bump `VERSION` to drop old caches. `sw.js` is served `no-cache` with a strict CSP (`next.config.ts`) and skipped by `proxy.ts`.
+- **Share target** in `app/manifest.ts` → `GET /items/new?url&text&title`; `sharedLinkFromParams` (`lib/item-form.ts`) pulls the first http(s) link out of `url` or `text` and prefills the autofill field (the user still taps Fetch details).
+- **Phone chrome:** `BottomNav` (`sm:hidden`, safe-area padding; hidden on auth/share/offline pages) replaces the header's links on phones; fixed bars (e.g. the selection bar) sit above it with `max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))]`. `viewportFit: "cover"` lets the app use the full screen under notches.
+- **Photo uploads** go through `PhotoInput`, which resizes in the browser (`lib/resize-image.ts`) and swaps the file on the input, so server actions are unchanged.
+
 ## Future Extension Points (kept in mind now, not built yet)
 
 - **Closet view (V2):** `items` already has an image; a `closets` table can reference existing items plus new standalone closet photos without restructuring `items`.

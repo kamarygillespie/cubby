@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { admin } from "../src/lib/db/integration-test-utils";
-import { createUser, logIn } from "./fixtures";
+import { createUser, logIn, logOut } from "./fixtures";
 
 test("sign up (with password confirmation), then log out and back in", async ({
   page,
@@ -31,7 +31,7 @@ test("sign up (with password confirmation), then log out and back in", async ({
   // Local Supabase skips email confirmation (supabase/config.toml), so
   // signup signs you straight in — no "check your email" dead end.
   await expect(page).toHaveURL(/\/$/);
-  await page.getByRole("button", { name: "Log out" }).click();
+  await logOut(page);
   await expect(page).toHaveURL(/\/login/);
 
   await logIn(page, { id: "", email, password });

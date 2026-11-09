@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { InstallPrompt } from "@/components/install-prompt";
 import { listItems, listRecentPriceHighs } from "@/lib/db/items";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
@@ -185,31 +186,37 @@ export default async function Home({
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
-      <div className="flex items-center justify-between gap-2 max-sm:justify-end">
-        {/* Hidden on phones, where the header is tight and Log out already
-            says you're signed in. min-w-0 + wrap-anywhere: a long email
-            must wrap, not widen the page into horizontal scroll. */}
+      <div className="flex items-center justify-between gap-2">
+        {/* Phones: the app title; theme, log out and section links live in
+            the bottom tab bar's More (KAM-51). min-w-0 + wrap-anywhere: a
+            long email must wrap, not widen the page into horizontal scroll. */}
+        <h1 className="text-lg font-semibold sm:hidden">Cubby</h1>
         <p className="text-muted-foreground min-w-0 text-sm wrap-anywhere max-sm:hidden">
           Signed in as {user.email}
         </p>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
+          <div className="max-sm:hidden">
+            <ThemeToggle />
+          </div>
           <Link
             href="/items/new"
             className={buttonVariants({ variant: "default" })}
           >
             Add item
           </Link>
-          <form action={signOut}>
+          <form action={signOut} className="max-sm:hidden">
             <Button type="submit" variant="outline">
               Log out
             </Button>
           </form>
         </div>
       </div>
+      <div className="sm:hidden">
+        <InstallPrompt variant="card" />
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <ViewTabs />
-        <div className="flex gap-1">
+        <div className="flex gap-1 max-sm:hidden">
           <Link
             href="/wishlists"
             className={buttonVariants({

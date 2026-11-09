@@ -3,7 +3,15 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // /share/<token> is the no-login public wishlist page (ARCHITECTURE.md);
 // /api/health is the keep-alive/uptime check (TESTING.md).
-const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/share", "/api/health"];
+// /offline is the service worker's cached fallback page (KAM-51).
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/auth",
+  "/share",
+  "/api/health",
+  "/offline",
+];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(
