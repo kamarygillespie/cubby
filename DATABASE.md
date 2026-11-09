@@ -456,6 +456,10 @@ alter table public.profiles add column onboarding_dismissed_at timestamptz;
 -- profiles' update policy gains an explicit WITH CHECK (auth.uid() = id).
 ```
 
+## SQL — Share Page Hides Notes (migration `20261109080000`, KAM-38)
+
+`get_shared_wishlist()` keeps its signature but always returns `notes` as null: the owner's notes are private (decided Nov 9, 2026).
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql
