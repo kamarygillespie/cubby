@@ -10,6 +10,13 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#ffffff",
+    // Share to Cubby (KAM-51): the installed app shows up in the phone's
+    // share sheet (Android/Chrome; iOS Safari doesn't support share targets).
+    share_target: {
+      action: "/items/new",
+      method: "GET",
+      params: { title: "title", text: "text", url: "url" },
+    },
     icons: [
       {
         src: "/icon-192.png",

@@ -14,10 +14,20 @@ import { listCategories } from "@/lib/db/taxonomy";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { ItemForm } from "../item-form";
 import { addItem } from "../actions";
+import { sharedLinkFromParams } from "@/lib/item-form";
 
 export const metadata: Metadata = { title: "Add item" };
 
-export default async function NewItemPage() {
+export default async function NewItemPage({
+  searchParams,
+}: PageProps<"/items/new">) {
+  const params = await searchParams;
+  const one = (v: string | string[] | undefined) =>
+    Array.isArray(v) ? v[0] : v;
+  const sharedLink = sharedLinkFromParams({
+    url: one(params.url),
+    text: one(params.text),
+  });
   const supabase = await createClient();
   const [itemTypes, categories] = await Promise.all([
     listItemTypes(supabase),
@@ -50,6 +60,7 @@ export default async function NewItemPage() {
             submitLabel="Add item"
             pendingLabel="Adding..."
             withAutofill
+            sharedLink={sharedLink}
           />
         </CardContent>
       </Card>

@@ -88,7 +88,7 @@ export function AddToWishlistBar({
         </Button>
       </div>
 
-      <div className="bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur">
+      <div className="bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 p-4">
           <p className="text-sm" aria-live="polite">
             {count} selected

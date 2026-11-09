@@ -27,10 +27,12 @@ function fixLocalStorageUrl(url: string): string {
 
 export function LinkAutofillField({
   onAutofill,
+  initialLink = "",
 }: {
   onAutofill: (result: AutofillResult, link: string) => void;
+  initialLink?: string;
 }) {
-  const [link, setLink] = useState("");
+  const [link, setLink] = useState(initialLink);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
 
   async function handleFetch() {

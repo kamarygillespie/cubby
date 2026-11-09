@@ -84,3 +84,25 @@ export function itemImagePathFromUrl(url: string | null): string | null {
     return null;
   }
 }
+
+// Share-to-Cubby (KAM-51): the installed app is a Web Share Target, so the
+// phone's share sheet opens /items/new?url=…&text=…&title=…. Most shopping
+// apps put the link in `text` ("Check this out! https://…"), not `url`.
+export function sharedLinkFromParams(params: {
+  url?: string | null;
+  text?: string | null;
+}): string | null {
+  for (const candidate of [params.url, ...(params.text?.split(/\s+/) ?? [])]) {
+    if (!candidate) continue;
+    const trimmed = candidate.trim().replace(/[)\].,!?]+$/, "");
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+        return parsed.toString();
+      }
+    } catch {
+      // not a URL — keep looking
+    }
+  }
+  return null;
+}

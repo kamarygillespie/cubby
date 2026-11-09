@@ -6,6 +6,7 @@ import { Check, Shirt } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhotoInput } from "@/components/photo-input";
 import { Label } from "@/components/ui/label";
 import { WISHLIST_NAME_MAX_LENGTH } from "@/lib/wishlists";
 import type { OutfitFormState } from "./actions";
@@ -79,7 +80,7 @@ export function OutfitForm({
             className="h-40 w-30 rounded-lg object-cover"
           />
         )}
-        <Input id="outfit-photo" name="photo" type="file" accept="image/*" />
+        <PhotoInput id="outfit-photo" name="photo" />
         {initial?.photo_url && (
           <Button
             type="button"

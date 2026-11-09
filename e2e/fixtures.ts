@@ -80,7 +80,20 @@ export async function logIn(page: Page, user: TestUser) {
   await page.getByLabel("Password", { exact: true }).fill(user.password);
   await page.getByRole("button", { name: /log in/i }).click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Add item" })).toBeVisible();
+}
+
+// Desktop logs out from the header; phones from More in the tab bar (KAM-51).
+export async function logOut(page: Page) {
+  await expect(page.getByRole("link", { name: "Add item" })).toBeVisible();
+  const headerButton = page.getByRole("button", { name: "Log out" });
+  if (!(await headerButton.isVisible())) {
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "More" })
+      .click();
+  }
+  await page.getByRole("button", { name: "Log out" }).click();
 }
 
 // Catches layouts wider than the viewport (e.g. an unbreakable long email),

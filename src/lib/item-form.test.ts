@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { itemImagePathFromUrl, parseItemForm } from "./item-form";
+import {
+  itemImagePathFromUrl,
+  parseItemForm,
+  sharedLinkFromParams,
+} from "./item-form";
 
 const form = (fields: Record<string, string>) => {
   const data = new FormData();
@@ -92,5 +96,30 @@ describe("itemImagePathFromUrl", () => {
         "https://abc.supabase.co/storage/v1/object/public/other-bucket/u/x.jpg",
       ),
     ).toBeNull();
+  });
+});
+
+describe("sharedLinkFromParams", () => {
+  it("prefers the url param", () => {
+    expect(
+      sharedLinkFromParams({
+        url: "https://shop.example/a",
+        text: "https://other.example/b",
+      }),
+    ).toBe("https://shop.example/a");
+  });
+
+  it("pulls the link out of shared text", () => {
+    expect(
+      sharedLinkFromParams({
+        text: "Check this out! https://us.puma.com/us/en/pd/catch/402744?swatch=01.",
+      }),
+    ).toBe("https://us.puma.com/us/en/pd/catch/402744?swatch=01");
+  });
+
+  it("ignores non-web links and plain text", () => {
+    expect(sharedLinkFromParams({ url: "javascript:alert(1)" })).toBeNull();
+    expect(sharedLinkFromParams({ text: "no link here" })).toBeNull();
+    expect(sharedLinkFromParams({})).toBeNull();
   });
 });
