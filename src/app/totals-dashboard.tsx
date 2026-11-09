@@ -11,6 +11,8 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { giftCardIdeas } from "@/lib/stores";
 import { GiftCardIdeas } from "@/components/gift-card-ideas";
+import { SpendingChart } from "./spending-chart";
+import { effectivePrice } from "@/lib/items-view";
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -69,6 +71,17 @@ export function TotalsDashboard({ items }: { items: Item[] }) {
           value={formatCurrency(totalWishlistValue(items))}
         />
       </div>
+      <SpendingChart
+        purchases={items
+          .filter((item) => item.purchased)
+          .map((item) => ({
+            id: item.id,
+            title: item.title,
+            date: item.purchased_date,
+            amount: effectivePrice(item),
+            category: item.item_type.category.name,
+          }))}
+      />
       <GiftCardIdeas
         ideas={giftCardIdeas(active)}
         description="Stores with several things on your wishlist: handy when someone asks what to get you."

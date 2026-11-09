@@ -71,7 +71,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 ## V4 — Notifications & Deeper Analytics
 
 - Notifications for price drops on wishlist items and favorite-store sales, delivered as **phone push via the installed PWA** plus an in-app notifications list (decided Nov 8, 2026; no email for now) (KAM-54)
-- Spending breakdown by month, using `purchased_date` already captured since V1
+- Spending breakdown by month, using `purchased_date` already captured since V1. **Built (KAM-55)** on Totals: a monthly bar chart (last 12 months, or any year with purchases); tap a month for its category breakdown and what was bought; a table view; undated purchases are counted separately. Months follow the **viewer's own time zone** (grouped in the browser)
 
 ## Explicitly Out of Scope (for now)
 
