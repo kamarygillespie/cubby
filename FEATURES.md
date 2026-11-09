@@ -57,7 +57,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 ## V2 — Expansion
 
-- **Closet view:** purchased items automatically appear in a closet gallery; ability to add standalone closet photos and replace item images from here
+- **Closet view:** purchased items automatically appear in a closet gallery; ability to add standalone closet photos and replace item images from here. **Built (KAM-47)** at `/closet`. **Rule:** the closet = pieces added straight to it + things you bought for yourself (purchased, not gifted) + gifts you received (gifted, not purchased). Purchased _and_ gifted means you bought it for someone else, so it's not in your closet. Pieces added straight to the closet never count toward wishlist, spending or totals. Tap a piece to edit it or change its photo
 - **Outfit planning:** create outfit "boards" from closet items, or upload outfit photos to save
 - **Favorite stores:** mark favorite stores/brands, track when they're running a sale
 - **Gift card recommendations:** group wishlist items by store/brand, ranked by relevance (most items from that store first)

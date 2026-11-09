@@ -150,6 +150,7 @@ export type Database = {
           purchased: boolean;
           purchased_date: string | null;
           sale_price: number | null;
+          source: string;
           store_brand: string | null;
           title: string;
           updated_at: string;
@@ -170,6 +171,7 @@ export type Database = {
           purchased?: boolean;
           purchased_date?: string | null;
           sale_price?: number | null;
+          source?: string;
           store_brand?: string | null;
           title: string;
           updated_at?: string;
@@ -190,6 +192,7 @@ export type Database = {
           purchased?: boolean;
           purchased_date?: string | null;
           sale_price?: number | null;
+          source?: string;
           store_brand?: string | null;
           title?: string;
           updated_at?: string;

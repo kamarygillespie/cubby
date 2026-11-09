@@ -17,10 +17,12 @@ export function DeleteItemButton({
   itemId,
   title,
   onLists,
+  returnTo = "/",
 }: {
   itemId: string;
   title: string;
   onLists: string[];
+  returnTo?: "/" | "/closet";
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -49,7 +51,9 @@ export function DeleteItemButton({
             <Button
               variant="destructive"
               disabled={pending}
-              onClick={() => startTransition(() => deleteItemAction(itemId))}
+              onClick={() =>
+                startTransition(() => deleteItemAction(itemId, returnTo))
+              }
             >
               {pending ? "Deleting…" : "Delete item"}
             </Button>

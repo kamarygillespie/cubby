@@ -36,8 +36,12 @@ export async function generateMetadata({
 
 export default async function EditItemPage({
   params,
+  searchParams,
 }: PageProps<"/items/[id]/edit">) {
   const { id } = await params;
+  // Opened from the closet → go back there after saving/deleting.
+  const fromCloset = (await searchParams).from === "closet";
+  const returnTo = fromCloset ? "/closet" : "/";
   const item = await loadItem(id);
   if (!item) notFound();
 
@@ -55,11 +59,11 @@ export default async function EditItemPage({
     <div className="flex min-h-screen flex-col items-center gap-2 p-4">
       <div className="w-full max-w-md">
         <Link
-          href="/"
+          href={returnTo}
           className={buttonVariants({ variant: "ghost", size: "sm" })}
         >
           <ArrowLeft />
-          Items
+          {fromCloset ? "Closet" : "Items"}
         </Link>
       </div>
       <Card className="w-full max-w-md">
@@ -78,6 +82,8 @@ export default async function EditItemPage({
             action={updateItemAction.bind(null, item.id)}
             initial={item}
             submitLabel="Save changes"
+            variant={item.source === "closet" ? "closet" : "wishlist"}
+            returnTo={returnTo}
             pendingLabel="Saving..."
           />
         </CardContent>
@@ -87,6 +93,7 @@ export default async function EditItemPage({
           itemId={item.id}
           title={item.title}
           onLists={onLists}
+          returnTo={returnTo}
         />
       </div>
     </div>
