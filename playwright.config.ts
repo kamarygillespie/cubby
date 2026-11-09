@@ -41,6 +41,9 @@ export default defineConfig({
     env: {
       NEXT_PUBLIC_SUPABASE_URL: LOCAL_SUPABASE_URL,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: LOCAL_ANON_KEY,
+      // Blank, so test runs never report to the real Sentry project (the
+      // build would otherwise pick up .env.local's DSN).
+      NEXT_PUBLIC_SENTRY_DSN: "",
     },
   },
 });

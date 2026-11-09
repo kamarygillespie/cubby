@@ -62,7 +62,7 @@ Note: stopping `functions serve` removes the edge-runtime container. Run `npx su
 
 ### Running e2e locally
 
-- `npx supabase start`, then `npm run test:e2e`. Playwright builds the app and serves it on port 3100 with the local Supabase URL/key hard-wired in `playwright.config.ts` — it never touches `.env.local`'s hosted project, and it won't reuse an existing server.
+- `npx supabase start`, then `npm run test:e2e`. Playwright builds the app and serves it on port 3100 with the local Supabase URL/key hard-wired in `playwright.config.ts` — it never touches `.env.local`'s hosted project, and it won't reuse an existing server. It also blanks `NEXT_PUBLIC_SENTRY_DSN`, so test runs never report to the real Sentry project.
 - Specs live in `e2e/`; `e2e/fixtures.ts` seeds data via the local service-role client and gives each test a fresh signed-in user (deleted afterwards). Every spec runs at desktop and phone sizes.
 - On phones, Log out lives under More in the tab bar; use the `logOut(page)` fixture helper rather than clicking the header button. Unscoped `getByRole("listitem")` also matches the tab bar's five items on phones, so filter by text.
 - Covered: sign up / log in / log out, the login redirect, add an item, mark purchased → gifted (+ totals), multi-select → new wishlist → public share link as a signed-out visitor (purchased items drop off). Link autofill isn't e2e-tested: it fetches external URLs, and the Edge Function's SSRF guard (correctly) blocks local fixture servers. Its parsing is covered by the Deno tests.
