@@ -16,6 +16,7 @@ import { listCategories } from "@/lib/db/taxonomy";
 import { getItem } from "@/lib/db/items";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
+import { listOutfitsForItem } from "@/lib/db/outfits";
 import { ItemForm } from "../../item-form";
 import { updateItemAction } from "../../actions";
 import { DeleteItemButton } from "./delete-item-button";
@@ -46,10 +47,11 @@ export default async function EditItemPage({
   if (!item) notFound();
 
   const supabase = await createClient();
-  const [itemTypes, categories, wishlists] = await Promise.all([
+  const [itemTypes, categories, wishlists, outfits] = await Promise.all([
     listItemTypes(supabase),
     listCategories(supabase),
     listWishlists(supabase),
+    listOutfitsForItem(supabase, item.id),
   ]);
   const onLists = wishlists
     .filter((w) => w.wishlist_items.some((wi) => wi.item_id === item.id))
@@ -75,7 +77,21 @@ export default async function EditItemPage({
               : "Category is derived automatically from the item type you pick."}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
+          {outfits.length > 0 && (
+            <p className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-xs">
+              In outfits:
+              {outfits.map((o) => (
+                <Link
+                  key={o.id}
+                  href={`/outfits/${o.id}`}
+                  className="bg-accent text-accent-foreground hover:bg-accent/70 rounded px-1.5 py-0.5"
+                >
+                  {o.name}
+                </Link>
+              ))}
+            </p>
+          )}
           <ItemForm
             itemTypesByCategory={groupItemTypesByCategory(itemTypes)}
             categories={categories}
