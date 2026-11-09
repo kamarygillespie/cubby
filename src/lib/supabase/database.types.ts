@@ -208,6 +208,66 @@ export type Database = {
           },
         ];
       };
+      outfit_items: {
+        Row: {
+          added_at: string;
+          item_id: string;
+          outfit_id: string;
+        };
+        Insert: {
+          added_at?: string;
+          item_id: string;
+          outfit_id: string;
+        };
+        Update: {
+          added_at?: string;
+          item_id?: string;
+          outfit_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "outfit_items_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "outfit_items_outfit_id_fkey";
+            columns: ["outfit_id"];
+            isOneToOne: false;
+            referencedRelation: "outfits";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      outfits: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          photo_url: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          photo_url?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          photo_url?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           created_at: string;

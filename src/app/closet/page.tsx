@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Plus, Shirt } from "lucide-react";
+import { ArrowLeft, Plus, Shirt, Sparkles } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { listClosetItems } from "@/lib/db/items";
@@ -58,10 +58,19 @@ export default async function ClosetPage({
             {items.length} piece{items.length === 1 ? "" : "s"}
           </p>
         </div>
-        <Link href="/closet/new" className={buttonVariants()}>
-          <Plus />
-          Add a piece
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/outfits"
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <Sparkles />
+            Outfits
+          </Link>
+          <Link href="/closet/new" className={buttonVariants()}>
+            <Plus />
+            Add a piece
+          </Link>
+        </div>
       </div>
 
       {categories.length > 1 && (

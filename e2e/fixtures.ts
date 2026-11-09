@@ -26,6 +26,7 @@ export async function seedItems(
     price?: number;
     sale_price?: number;
     store_brand?: string;
+    source?: "wishlist" | "closet";
   }[],
 ) {
   const { data: itemType, error: typeError } = await admin
@@ -47,6 +48,7 @@ export async function seedItems(
         price: item.price ?? null,
         sale_price: item.sale_price ?? null,
         store_brand: item.store_brand ?? null,
+        source: item.source ?? "wishlist",
       })),
     )
     .select("id, title");

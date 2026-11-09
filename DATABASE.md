@@ -362,6 +362,30 @@ alter table public.items
 create index idx_items_user_source on public.items(user_id, source);
 ```
 
+## SQL — Outfits (migration `20261109040000`, KAM-48)
+
+```sql
+create table public.outfits (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  photo_url text,              -- optional outfit photo, in item-images/<user>/
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+-- RLS: own rows only.
+
+create table public.outfit_items (
+  outfit_id uuid not null references public.outfits(id) on delete cascade,
+  item_id uuid not null references public.items(id) on delete cascade,
+  added_at timestamptz not null default now(),
+  primary key (outfit_id, item_id)
+);
+create index idx_outfit_items_item on public.outfit_items(item_id);
+-- RLS: the outfit must be yours; writes also require the item to be yours.
+-- The app additionally only accepts closet pieces (lib/closet.ts).
+```
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql
