@@ -1,6 +1,9 @@
 import { describe, expect, test } from "vitest";
 import type { Item } from "@/lib/db/items";
 import {
+  ITEMS_PAGE_SIZE,
+  limitGroups,
+  parseShowCount,
   activeWishlistItems,
   displayDiscountPercent,
   itemMetaParts,
@@ -318,5 +321,45 @@ describe("itemMetaParts", () => {
       itemMetaParts(withTaxonomy("Technology", "Technology", "Apple")),
     ).toEqual(["Technology", "Apple"]);
     expect(itemMetaParts(withTaxonomy("Misc", "misc", null))).toEqual(["Misc"]);
+  });
+});
+
+describe("parseShowCount", () => {
+  test("defaults to one page and only grows", () => {
+    expect(parseShowCount(undefined)).toBe(ITEMS_PAGE_SIZE);
+    expect(parseShowCount("abc")).toBe(ITEMS_PAGE_SIZE);
+    expect(parseShowCount("10")).toBe(ITEMS_PAGE_SIZE);
+    expect(parseShowCount("100")).toBe(100);
+    expect(parseShowCount("100.5")).toBe(ITEMS_PAGE_SIZE);
+  });
+});
+
+describe("limitGroups", () => {
+  const group = (id: string, n: number) => ({
+    id,
+    name: id,
+    count: n,
+    totalPrice: n * 10,
+    items: Array.from({ length: n }, () => makeItem()),
+  });
+
+  test("caps cards across groups but keeps full counts/totals", () => {
+    const { groups, hidden } = limitGroups(
+      [group("a", 3), group("b", 4), group("c", 2)],
+      5,
+    );
+    expect(
+      groups.map((g) => [g.id, g.items.length, g.count, g.totalPrice]),
+    ).toEqual([
+      ["a", 3, 3, 30],
+      ["b", 2, 4, 40],
+    ]);
+    expect(hidden).toBe(4);
+  });
+
+  test("returns everything when under the cap", () => {
+    const { groups, hidden } = limitGroups([group("a", 2)], 50);
+    expect(groups[0].items).toHaveLength(2);
+    expect(hidden).toBe(0);
   });
 });

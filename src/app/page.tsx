@@ -9,10 +9,13 @@ import { listItems } from "@/lib/db/items";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
 import {
+  ITEMS_PAGE_SIZE,
   filterByView,
   filterItems,
   groupByCategory,
   groupByItemType,
+  limitGroups,
+  parseShowCount,
   sortItems,
   type ItemView,
   type SortOption,
@@ -99,6 +102,7 @@ export default async function Home({
   const onSaleOnly = firstParam(params.onSale) === "1";
   const sort = (firstParam(params.sort) as SortOption | undefined) ?? null;
   const group = firstParam(params.group);
+  const show = parseShowCount(firstParam(params.show));
   const rawView = firstParam(params.view);
   const showTotals = rawView === "totals";
   const view =
@@ -139,6 +143,29 @@ export default async function Home({
     }),
     sort,
   );
+
+  // Cap the rendered cards (KAM-45); counts, group totals, filters and
+  // Check all prices still use every matching item.
+  const allGroups =
+    group === "category"
+      ? groupByCategory(visibleItems)
+      : group === "itemType"
+        ? groupByItemType(visibleItems)
+        : null;
+  const limited = allGroups ? limitGroups(allGroups, show) : null;
+  const shownGroups = limited?.groups ?? null;
+  const shownItems = shownGroups
+    ? shownGroups.flatMap((g) => g.items)
+    : visibleItems.slice(0, show);
+  const hiddenCount = visibleItems.length - shownItems.length;
+  const showMoreParams = new URLSearchParams(
+    Object.entries(params).flatMap(([key, value]) =>
+      key === "show" || value === undefined
+        ? []
+        : [[key, Array.isArray(value) ? value[0] : value] as [string, string]],
+    ),
+  );
+  showMoreParams.set("show", String(show + ITEMS_PAGE_SIZE));
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
@@ -191,7 +218,8 @@ export default async function Home({
                   itemIds={visibleItems.filter((i) => i.link).map((i) => i.id)}
                 />
               }
-              itemIds={visibleItems.map((i) => i.id)}
+              // Select all = what's on screen; Check all prices = every match.
+              itemIds={shownItems.map((i) => i.id)}
               itemTypeGroups={groupItemTypesByCategory(itemTypes)}
               wishlists={wishlists.map((w) => ({
                 id: w.id,
@@ -200,24 +228,31 @@ export default async function Home({
               }))}
             />
           )}
-          {group === "category" ? (
+          {shownGroups ? (
             <ItemsGroupedList
-              groups={groupByCategory(visibleItems)}
-              listsByItem={listsByItem}
-              emptyState={emptyState}
-            />
-          ) : group === "itemType" ? (
-            <ItemsGroupedList
-              groups={groupByItemType(visibleItems)}
+              groups={shownGroups}
               listsByItem={listsByItem}
               emptyState={emptyState}
             />
           ) : (
             <ItemsList
-              items={visibleItems}
+              items={shownItems}
               listsByItem={listsByItem}
               emptyState={emptyState}
             />
+          )}
+          {hiddenCount > 0 && (
+            <Link
+              href={`/?${showMoreParams.toString()}`}
+              scroll={false}
+              className={buttonVariants({
+                variant: "outline",
+                className: "self-center",
+              })}
+            >
+              Show {Math.min(ITEMS_PAGE_SIZE, hiddenCount)} more ({hiddenCount}{" "}
+              not shown)
+            </Link>
           )}
         </ItemSelectionProvider>
       )}

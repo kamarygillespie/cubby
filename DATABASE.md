@@ -341,6 +341,14 @@ create function public.merge_item_type(p_source uuid, p_target uuid) returns int
 Bulk "change type" needs no SQL: it's a plain `update items set item_type_id`
 under the existing items RLS (own items only, visible types only).
 
+## SQL — Index (migration `20261109020000`, KAM-45)
+
+```sql
+-- wishlist_items' PK (wishlist_id, item_id) can't serve item_id-only lookups:
+-- the cascade on item delete and "which lists is this item on".
+create index if not exists idx_wishlist_items_item_id on public.wishlist_items(item_id);
+```
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

@@ -52,7 +52,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 - Scheduled sale-price re-checks (not just at add-time): **built (KAM-43)**. Every active wishlist item with a link is re-checked about once a day automatically; cards show "Checked 3h ago"; every check is kept as price history
 - Admin/taxonomy management UI polish (bulk edit, merge duplicate item types): **built (KAM-44)**. **Change type** in Select mode moves all selected items to one type; **Merge** on Manage types folds one of your types into another (built-in or yours), moving its items and deleting the duplicate atomically
-- Performance pass on large wishlists (100+ items)
+- Performance pass on large wishlists (100+ items): **done (KAM-45)**. Lists render 50 cards at a time with "Show more" (counts, group totals, filters and Check all prices still cover every item); off-screen cards skip layout; /wishlists loads only prices
 - Public launch readiness (onboarding flow, empty states, error states)
 
 ## V2 — Expansion
