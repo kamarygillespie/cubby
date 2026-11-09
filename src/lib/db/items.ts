@@ -142,3 +142,25 @@ export async function getEffectivePrices(supabase: DbClient, ids: string[]) {
           : row.price,
   }));
 }
+
+// Highest effective price each item has had in readable checks over the last
+// `days` days (price history, KAM-43). Used to spot recent price drops.
+export async function listRecentPriceHighs(supabase: DbClient, days = 30) {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const { data, error } = await supabase
+    .from("item_price_checks")
+    .select("item_id, price, sale_price")
+    .eq("status", "ok")
+    .gte("checked_at", since);
+  if (error) throw error;
+  const highs = new Map<string, number>();
+  for (const row of data) {
+    if (row.price === null) continue;
+    const eff =
+      row.sale_price !== null && row.sale_price < row.price
+        ? row.sale_price
+        : row.price;
+    highs.set(row.item_id, Math.max(highs.get(row.item_id) ?? 0, eff));
+  }
+  return highs;
+}

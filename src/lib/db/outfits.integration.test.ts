@@ -36,7 +36,8 @@ describe("outfits (integration)", () => {
       itemIds: [jeans.id, tee.id],
     });
     let outfit = await getOutfit(client, id);
-    expect(outfit?.outfit_items.map((p) => p.item?.title)).toEqual([
+    // Pieces added together share added_at, so compare without order.
+    expect(outfit?.outfit_items.map((p) => p.item?.title).sort()).toEqual([
       "Jeans",
       "Tee",
     ]);
