@@ -82,7 +82,6 @@ export default async function SharedWishlistPage({
                         {item.store_brand}
                       </p>
                     )}
-                    {item.notes && <p className="text-sm">{item.notes}</p>}
                     {item.link && (
                       <a
                         href={item.link}

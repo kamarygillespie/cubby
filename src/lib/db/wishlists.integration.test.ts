@@ -172,6 +172,7 @@ describe("lib/db/wishlists (integration)", () => {
       title: "Still wanted",
       item_type_id: itemTypeId,
       price: 50,
+      notes: "wait for a sale",
     });
     const bought = await createItem(client, {
       title: "Already bought",
@@ -196,6 +197,8 @@ describe("lib/db/wishlists (integration)", () => {
     expect(shared?.name).toBe("Birthday");
     expect(shared?.items.map((i) => i.title)).toEqual(["Still wanted"]);
     expect(shared?.items[0].price).toBe(50);
+    // Owner's notes are private (KAM-38).
+    expect(shared?.items[0].notes).toBeNull();
   });
 
   test("share link: an empty list still resolves (not a 404)", async () => {

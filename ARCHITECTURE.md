@@ -43,7 +43,7 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
 - A narrow, explicit RLS policy allows anonymous (`anon` role) `SELECT` on a wishlist and its items **only when the request includes a valid share token**, via a Postgres function (`get_shared_wishlist(token)`) rather than open table access.
 - Because that function bypasses RLS, what it returns is only as safe as what can get into `wishlist_items`: the insert policy requires the caller to own **both** the wishlist and the item, so no one can publish another user's item through their own share link.
 - The page lives at `/share/<share_token>` (exempted from the login redirect in `lib/supabase/middleware.ts`) and reads only through `getSharedWishlist()` → the RPC. It is `noindex`.
-- **What a visitor sees:** list name plus items that are neither purchased nor gifted (title, image, store, price/sale price, notes, link). An empty list renders a friendly empty state, not a 404; unknown or malformed tokens 404.
+- **What a visitor sees:** list name plus items that are neither purchased nor gifted (title, image, store, price/sale price, link — never the owner's notes; `get_shared_wishlist` returns `notes` as null). An empty list renders a friendly empty state, not a 404; unknown or malformed tokens 404.
 - **Gift card ideas** on the share page are computed in the app from fields the share function already returns (store, price, sale price). No extra data is exposed.
 - This keeps the "no login to view" requirement without opening the tables themselves to anonymous reads.
 - The schema leaves room for an optional, lightweight anonymous identifier (name + a browser cookie) to be added later for reservation-style features, without changing the sharing model itself.
