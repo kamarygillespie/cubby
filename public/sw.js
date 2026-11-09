@@ -3,7 +3,8 @@
 //    cached "You're offline" page instead of the browser's error.
 //  - Hashed build assets (/_next/static/) are immutable: cache-first.
 //  - Never caches user data (pages, API, Supabase) — no offline editing.
-// Push notification handlers are added in KAM-54. Bump VERSION to refresh.
+//  - Shows daily push digests (KAM-54); tapping one opens its page.
+// Bump VERSION to refresh.
 const VERSION = "cubby-v1";
 const OFFLINE_URL = "/offline";
 
@@ -57,4 +58,47 @@ self.addEventListener("fetch", (event) => {
       ),
     );
   }
+});
+
+// Push (KAM-54): the payload is {title, body, url, tag} from the
+// send-push-digest Edge Function.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    // not JSON — show a generic alert
+  }
+  const url =
+    typeof data.url === "string" && data.url.startsWith("/")
+      ? data.url
+      : "/notifications";
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Cubby", {
+      body: data.body || "You have new price alerts.",
+      tag: data.tag || "cubby",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(
+    event.notification.data?.url || "/notifications",
+    self.location.origin,
+  ).href;
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windows) => {
+        const open = windows.find(
+          (w) => new URL(w.url).origin === self.location.origin,
+        );
+        if (open) return open.focus().then((w) => w.navigate(target));
+        return self.clients.openWindow(target);
+      }),
+  );
 });

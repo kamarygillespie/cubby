@@ -20,7 +20,12 @@ const TABS = [
     match: ["/closet", "/outfits"],
   },
   { href: "/stores", label: "Stores", Icon: Store, match: ["/stores"] },
-  { href: "/more", label: "More", Icon: Menu, match: ["/more", "/types"] },
+  {
+    href: "/more",
+    label: "More",
+    Icon: Menu,
+    match: ["/more", "/types", "/notifications"],
+  },
 ] as const;
 
 // Pages where there's no signed-in app to navigate (or no room for it).

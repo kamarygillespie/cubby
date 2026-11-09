@@ -12,6 +12,8 @@ categories (system defaults + user custom)
         └── items (many, required FK to item_types)
 wishlists (user-owned)
   └── wishlist_items (join table: wishlists <-> items)
+notifications (user-owned; created by a trigger on items price checks)
+notification_settings (1:1 with user) · push_subscriptions (per device)
 ```
 
 ## SQL — Schema Setup
@@ -399,7 +401,53 @@ create table public.favorite_stores (
   primary key (user_id, store_key)
 );
 -- RLS: own rows only.
-````
+```
+
+## SQL — Notifications (migration `20261109060000`, KAM-54)
+
+```sql
+-- Per-user alert preferences; no row = defaults (both on, 10%).
+create table public.notification_settings (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  price_drops boolean not null default true,
+  store_sales boolean not null default true,
+  min_drop_percent integer not null default 10 check (min_drop_percent between 1 and 90),
+  updated_at timestamptz not null default now()
+);
+
+-- One row per device with push turned on. endpoint is unique: a device
+-- belongs to whoever enabled push on it last (save_push_subscription).
+create table public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  endpoint text not null unique check (endpoint ~ '^https://'),
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
+-- The alerts. Created only by the notify_price_change() trigger.
+create table public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  kind text not null check (kind in ('price_drop', 'store_sale')),
+  item_id uuid references public.items(id) on delete cascade,
+  store_key text,
+  price numeric(10,2),          -- new effective price, for de-duplication
+  title text not null,
+  body text not null,
+  url text not null check (url like '/%'),  -- app-relative only
+  created_at timestamptz not null default now(),
+  read_at timestamptz,
+  pushed_at timestamptz         -- set by the daily digest
+);
+```
+
+- **RLS:** settings — own rows, all operations. Subscriptions — select/delete own; saved only via `save_push_subscription()` (SECURITY DEFINER: it removes the same endpoint from a previous account on a shared device). Notifications — select/delete own; **no insert policy**, and update is column-granted to `read_at` only.
+- **`notify_price_change()`** (SECURITY DEFINER trigger, `after update ... on items`, only when `price_checked_at` changed — i.e. a price check, never a manual edit). Active wishlist items only. Rules:
+  - `price_drop`: effective price (sale price, else price) fell by ≥ `min_drop_percent`. Not repeated for the same item within 7 days unless lower than the last alert.
+  - `store_sale`: a sale started (`sale_price` null → set) on an item whose store is a favorite. At most one per store per 7 days.
+- **Cron `daily-push-digest`** at 17:00 UTC calls the `send-push-digest` Edge Function (same Vault secrets as the price-check job).
 
 ## SQL — Seed Data (Default Taxonomy)
 
@@ -465,5 +513,6 @@ from (values
 
 - `closets` (V2) — references `items.id` for purchased items plus new standalone photo rows
 - `outfits` / `outfit_items` (V2)
-- `favorite_stores` (V2)
-- `notifications` (V4)
+- `favorite_stores` (V2) — built (KAM-49)
+- `notifications` (V4) — built (KAM-54)
+````

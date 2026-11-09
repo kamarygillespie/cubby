@@ -6,6 +6,8 @@ import { signOut } from "@/app/auth/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { InstallPrompt } from "@/components/install-prompt";
+import { NotificationsBell } from "@/components/notifications-bell";
+import { countUnreadNotifications } from "@/lib/db/notifications";
 import { listItems, listRecentPriceHighs } from "@/lib/db/items";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
@@ -112,12 +114,14 @@ export default async function Home({
   const view =
     (showTotals ? undefined : (rawView as ItemView | undefined)) ?? "wishlist";
 
-  const [items, itemTypes, wishlists, favoriteStores] = await Promise.all([
-    listItems(supabase),
-    listItemTypes(supabase),
-    listWishlists(supabase),
-    listFavoriteStores(supabase),
-  ]);
+  const [items, itemTypes, wishlists, favoriteStores, unread] =
+    await Promise.all([
+      listItems(supabase),
+      listItemTypes(supabase),
+      listWishlists(supabase),
+      listFavoriteStores(supabase),
+      countUnreadNotifications(supabase),
+    ]);
   const favoriteKeys = new Set(favoriteStores.map((f) => f.store_key));
   const favoritesOnly = firstParam(params.fav) === "1";
   const storeFilter = storeKey(firstParam(params.store));
@@ -195,6 +199,7 @@ export default async function Home({
           Signed in as {user.email}
         </p>
         <div className="flex items-center gap-2">
+          <NotificationsBell unread={unread} />
           <div className="max-sm:hidden">
             <ThemeToggle />
           </div>

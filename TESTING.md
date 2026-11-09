@@ -23,7 +23,7 @@ Goal: real confidence when shipping changes, without building test infrastructur
 1. Install dependencies (cached)
 2. `npm run lint`
 3. `npm run typecheck`
-4. Edge Function check + `deno test`
+4. Edge Function check + `deno test` (no local Deno install needed: `npx -y deno@2 test ...` works the same)
 5. `npx supabase start` (local stack: real Postgres, RLS, triggers, auth)
 6. `npm run test` (unit + integration)
 7. `npm run build`

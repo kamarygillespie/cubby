@@ -421,6 +421,13 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/daily-price-check/deno.json"
 
+[functions.send-push-digest]
+enabled = true
+# No user JWT: called daily by pg_cron, guarded in code by the same
+# x-cron-secret header as daily-price-check.
+verify_jwt = false
+import_map = "./functions/send-push-digest/deno.json"
+
 [functions.link-autofill]
 enabled = true
 verify_jwt = false

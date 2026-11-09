@@ -64,6 +64,14 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
   - **Sanctioned RLS bypass:** the job uses the service role key, because it checks every user's items. The function is `verify_jwt = false` but refuses any request without the `x-cron-secret` header matching its `PRICE_CHECK_CRON_SECRET` secret; pg_cron reads the same value from Vault. Neither the URL nor the secret is in the repo.
   - Page fetching and extraction are shared by both functions in `supabase/functions/_shared/`.
 
+## Notifications (KAM-54)
+
+- **Alerts are created in Postgres**, by the `notify_price_change()` trigger on items, when `record_price_check()` stamps a check (manual "Check price" included; ordinary edits never alert). Rules and de-duplication: DATABASE.md. Keeping them in SQL means one place decides, whatever triggered the check.
+- **Delivery is a daily digest:** pg_cron → `send-push-digest` Edge Function (17:00 UTC, `x-cron-secret`, service role like the price-check job). One push per user per day per device: a single alert as is, several summarized ("3 price alerts", tap → `/notifications`). Unpushed alerts older than 2 days are skipped. Devices answering 404/410 are deleted. Alerts are marked pushed even with no devices, so a device added later doesn't get a backlog.
+- **Web Push is hand-written** (`supabase/functions/_shared/web-push.ts`, WebCrypto only): RFC 8291 payload encryption (tested against the RFC's worked example) and RFC 8292 VAPID. No npm web-push: it depends on Node crypto internals.
+- **Keys:** the VAPID public key is in `src/lib/push.ts` (public by design; `NEXT_PUBLIC_VAPID_PUBLIC_KEY` overrides). The private key exists only as the Supabase secret `VAPID_PRIVATE_KEY` (plus `VAPID_PUBLIC_KEY`; optional `VAPID_SUBJECT`). Rotating keys invalidates every device subscription.
+- **Client:** `/notifications` (list + settings + "Push alerts" toggle); header bell with unread count; the service worker shows pushes and opens their URL on tap. Each device subscribes separately. iPhone: push works only from the Home Screen app (iOS 16.4+), and the toggle says so. Logging out doesn't unsubscribe the device; the next account to turn alerts on there takes it over.
+
 ## Category ↔ Item Type Relationship
 
 `item_types` has a required `category_id` foreign key — a category is a property of the item type, not something chosen independently on each item. When a user picks an item type (e.g. "Makeup"), the category ("Beauty") is derived automatically via that relationship, never stored redundantly on the item itself. This is what guarantees the category is always correct and never drifts out of sync.
