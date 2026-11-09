@@ -71,6 +71,12 @@ export function TotalsDashboard({
 
   return (
     <div className="flex flex-col gap-6">
+      {items.length === 0 && (
+        <p className="text-muted-foreground text-sm">
+          Totals fill in as you add items to your wishlist and mark them
+          purchased.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <StatCard
           label="Total spent"

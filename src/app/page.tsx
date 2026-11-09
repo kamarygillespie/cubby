@@ -7,6 +7,9 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { InstallPrompt } from "@/components/install-prompt";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { OnboardingCard } from "@/components/onboarding-card";
+import { getOnboardingState } from "@/lib/db/profile";
+import { onboardingSteps, showOnboarding } from "@/lib/onboarding";
 import { countUnreadNotifications } from "@/lib/db/notifications";
 import { listItems, listRecentPriceHighs } from "@/lib/db/items";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
@@ -114,14 +117,21 @@ export default async function Home({
   const view =
     (showTotals ? undefined : (rawView as ItemView | undefined)) ?? "wishlist";
 
-  const [items, itemTypes, wishlists, favoriteStores, unread] =
+  const [items, itemTypes, wishlists, favoriteStores, unread, onboarding] =
     await Promise.all([
       listItems(supabase),
       listItemTypes(supabase),
       listWishlists(supabase),
       listFavoriteStores(supabase),
       countUnreadNotifications(supabase),
+      getOnboardingState(supabase),
     ]);
+  const onboardingFacts = {
+    ...onboarding,
+    itemCount: items.length,
+    wishlistCount: wishlists.length,
+    favoriteStoreCount: favoriteStores.length,
+  };
   const favoriteKeys = new Set(favoriteStores.map((f) => f.store_key));
   const favoritesOnly = firstParam(params.fav) === "1";
   const storeFilter = storeKey(firstParam(params.store));
@@ -216,6 +226,9 @@ export default async function Home({
           </form>
         </div>
       </div>
+      {!showTotals && showOnboarding(onboardingFacts) && (
+        <OnboardingCard steps={onboardingSteps(onboardingFacts)} />
+      )}
       <div className="sm:hidden">
         <InstallPrompt variant="card" />
       </div>
