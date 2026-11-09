@@ -15,6 +15,8 @@ import { removeFromWishlistAction } from "../actions";
 import { RenameWishlistForm } from "./rename-wishlist-form";
 import { DeleteWishlistButton } from "./delete-wishlist-button";
 import { ShareLink } from "./share-link";
+import { GiftCardIdeas } from "@/components/gift-card-ideas";
+import { giftCardIdeas } from "@/lib/stores";
 
 // Shared between generateMetadata and the page so the query runs once.
 const loadWishlist = cache(async (id: string) => {
@@ -62,6 +64,11 @@ export default async function WishlistPage({
         {formatCurrency(total)}
       </p>
       <ShareLink shareToken={wishlist.share_token} />
+      <GiftCardIdeas
+        ideas={giftCardIdeas(items.filter((i) => !i.purchased && !i.gifted))}
+        description="Shown to people you share this list with, too."
+        limit={3}
+      />
 
       {items.length === 0 ? (
         <p className="text-muted-foreground text-sm">

@@ -21,7 +21,12 @@ export async function createUser(): Promise<TestUser> {
 
 export async function seedItems(
   userId: string,
-  items: { title: string; price?: number; sale_price?: number }[],
+  items: {
+    title: string;
+    price?: number;
+    sale_price?: number;
+    store_brand?: string;
+  }[],
 ) {
   const { data: itemType, error: typeError } = await admin
     .from("item_types")
@@ -41,6 +46,7 @@ export async function seedItems(
         title: item.title,
         price: item.price ?? null,
         sale_price: item.sale_price ?? null,
+        store_brand: item.store_brand ?? null,
       })),
     )
     .select("id, title");

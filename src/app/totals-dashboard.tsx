@@ -9,6 +9,8 @@ import {
   type ItemGroup,
 } from "@/lib/items-view";
 import { formatCurrency } from "@/lib/format";
+import { giftCardIdeas } from "@/lib/stores";
+import { GiftCardIdeas } from "@/components/gift-card-ideas";
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -67,6 +69,10 @@ export function TotalsDashboard({ items }: { items: Item[] }) {
           value={formatCurrency(totalWishlistValue(items))}
         />
       </div>
+      <GiftCardIdeas
+        ideas={giftCardIdeas(active)}
+        description="Stores with several things on your wishlist: handy when someone asks what to get you."
+      />
       <BreakdownList title="By category" groups={groupByCategory(active)} />
       <BreakdownList title="By item type" groups={groupByItemType(active)} />
     </div>
