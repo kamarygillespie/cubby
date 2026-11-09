@@ -31,7 +31,13 @@ const SORT_LABELS: Record<string, string> = {
 export function FilterBar({
   categories,
   itemTypes,
+  hasFavoriteStores = false,
+  storeName = null,
 }: {
+  // Show the "Favorite stores" toggle only once some are starred.
+  hasFavoriteStores?: boolean;
+  // Display name for an active ?store= filter (from the Stores page).
+  storeName?: string | null;
   categories: Category[];
   itemTypes: ItemType[];
 }) {
@@ -62,6 +68,8 @@ export function FilterBar({
   const category = searchParams.get("category") ?? ALL;
   const itemType = searchParams.get("itemType") ?? ALL;
   const onSale = searchParams.get("onSale") === "1";
+  const favoritesOnly = searchParams.get("fav") === "1";
+  const store = searchParams.get("store");
   const sort = searchParams.get("sort") ?? ALL;
 
   const hasActiveFilters =
@@ -69,6 +77,8 @@ export function FilterBar({
     category !== ALL ||
     itemType !== ALL ||
     onSale ||
+    favoritesOnly ||
+    Boolean(store) ||
     sort !== ALL;
 
   return (
@@ -141,6 +151,29 @@ export function FilterBar({
       >
         On sale
       </Button>
+
+      {hasFavoriteStores && (
+        <Button
+          type="button"
+          size="sm"
+          variant={favoritesOnly ? "default" : "outline"}
+          onClick={() => setParam("fav", favoritesOnly ? null : "1")}
+        >
+          Favorite stores
+        </Button>
+      )}
+
+      {store && (
+        <Button
+          type="button"
+          size="sm"
+          variant="default"
+          aria-label={`Showing ${storeName ?? store} only. Remove store filter`}
+          onClick={() => setParam("store", null)}
+        >
+          {storeName ?? store} ×
+        </Button>
+      )}
 
       {hasActiveFilters && (
         <Button

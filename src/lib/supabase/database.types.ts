@@ -61,6 +61,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      favorite_stores: {
+        Row: {
+          created_at: string;
+          display_name: string;
+          sale_url: string | null;
+          store_key: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_name: string;
+          sale_url?: string | null;
+          store_key: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          display_name?: string;
+          sale_url?: string | null;
+          store_key?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       item_price_checks: {
         Row: {
           checked_at: string;

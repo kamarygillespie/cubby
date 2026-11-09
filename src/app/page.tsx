@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ListChecks, Shirt } from "lucide-react";
+import { ListChecks, Shirt, Store } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { listItems } from "@/lib/db/items";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
+import { listFavoriteStores } from "@/lib/db/stores";
+import { storeKey } from "@/lib/stores";
 import {
   ITEMS_PAGE_SIZE,
   effectivePrice,
@@ -109,17 +111,23 @@ export default async function Home({
   const view =
     (showTotals ? undefined : (rawView as ItemView | undefined)) ?? "wishlist";
 
-  const [items, itemTypes, wishlists] = await Promise.all([
+  const [items, itemTypes, wishlists, favoriteStores] = await Promise.all([
     listItems(supabase),
     listItemTypes(supabase),
     listWishlists(supabase),
+    listFavoriteStores(supabase),
   ]);
+  const favoriteKeys = new Set(favoriteStores.map((f) => f.store_key));
+  const favoritesOnly = firstParam(params.fav) === "1";
+  const storeFilter = storeKey(firstParam(params.store));
 
   const emptyState = (
     <EmptyItems
       hasAnyItems={items.length > 0}
       view={view}
-      filtered={Boolean(categoryId || itemTypeId || onSaleOnly)}
+      filtered={Boolean(
+        categoryId || itemTypeId || onSaleOnly || favoritesOnly || storeFilter,
+      )}
     />
   );
 
@@ -141,6 +149,13 @@ export default async function Home({
       categoryId,
       itemTypeId,
       onSaleOnly,
+    }).filter((item) => {
+      // Store filters (KAM-49): ?store=<key> from the Stores page, and the
+      // "Favorite stores" toggle.
+      const key = storeKey(item.store_brand);
+      if (storeFilter && key !== storeFilter) return false;
+      if (favoritesOnly && !(key && favoriteKeys.has(key))) return false;
+      return true;
     }),
     sort,
   );
@@ -208,6 +223,17 @@ export default async function Home({
             Lists
           </Link>
           <Link
+            href="/stores"
+            className={buttonVariants({
+              variant: "ghost",
+              size: "sm",
+              className: "max-sm:px-2",
+            })}
+          >
+            <Store />
+            Stores
+          </Link>
+          <Link
             href="/closet"
             className={buttonVariants({
               variant: "ghost",
@@ -224,7 +250,17 @@ export default async function Home({
         <TotalsDashboard items={items} />
       ) : (
         <ItemSelectionProvider key={view}>
-          <FilterBar categories={categories} itemTypes={itemTypes} />
+          <FilterBar
+            categories={categories}
+            itemTypes={itemTypes}
+            hasFavoriteStores={favoriteStores.length > 0}
+            storeName={
+              storeFilter
+                ? (items.find((i) => storeKey(i.store_brand) === storeFilter)
+                    ?.store_brand ?? storeFilter)
+                : null
+            }
+          />
           {view === "wishlist" && (
             <AddToWishlistBar
               extraActions={
