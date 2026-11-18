@@ -4,16 +4,16 @@ This file is read automatically by Claude Code. Keep it short — it's a **route
 
 ## What this project is
 
-Cubby: a multi-tenant wishlist/spending tracker (Next.js + Supabase). See `/planning/README.md` for the full vision.
+Cubby: a multi-tenant wishlist/spending tracker (Next.js + Supabase). See `README.md` for the full vision.
 
 ## Doc index — load only what the task needs
 
-- Schema/DB work → `/planning/DATABASE.md`
-- New feature, unsure of scope/version → `/planning/FEATURES.md`
-- System design / where does this logic belong → `/planning/ARCHITECTURE.md`
-- Dependency or tooling choice → `/planning/TECH_STACK.md`
-- Writing/running tests, CI → `/planning/TESTING.md`
-- "What's this week's work" → `/planning/ROADMAP.md`
+- Schema/DB work → `DATABASE.md`
+- New feature, unsure of scope/version → `FEATURES.md`
+- System design / where does this logic belong → `ARCHITECTURE.md`
+- Dependency or tooling choice → `TECH_STACK.md`
+- Writing/running tests, CI → `TESTING.md`
+- "What's this week's work" → `ROADMAP.md`
 
 Do not load every doc for every task — pick the one(s) relevant to the change at hand.
 
