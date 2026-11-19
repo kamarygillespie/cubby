@@ -61,7 +61,7 @@ export function parseItemForm(form: FormLike): ParsedItemForm {
       sale_price: salePrice,
       interest_level: interest,
       store_brand: text(form, "store_brand"),
-      link: text(form, "link"),
+      link: removeTrackingParams(text(form, "link")),
       notes: text(form, "notes"),
     },
   };
@@ -105,4 +105,57 @@ export function sharedLinkFromParams(params: {
     }
   }
   return null;
+}
+
+const TRACKING_PARAMS = new Set([
+  "_ga",
+  "_gl",
+  "dclid",
+  "epik",
+  "fbclid",
+  "gad_campaignid",
+  "gad_source",
+  "gbraid",
+  "gclid",
+  "gclsrc",
+  "igsh",
+  "igshid",
+  "mc_cid",
+  "mc_eid",
+  "msclkid",
+  "srsltid",
+  "ttclid",
+  "twclid",
+  "wbraid",
+  "yclid",
+]);
+
+// Drops ad and analytics values from a link, keeping things like the size or
+// color it points at. Anything that isn't a valid link is returned unchanged.
+export function removeTrackingParams<T extends string | null>(link: T): T {
+  if (!link) return link;
+  try {
+    const url = new URL(link);
+    const tracking = [...url.searchParams.keys()].filter((key) => {
+      const name = key.toLowerCase();
+      return name.startsWith("utm_") || TRACKING_PARAMS.has(name);
+    });
+    if (tracking.length === 0) return link;
+    for (const key of tracking) url.searchParams.delete(key);
+    return url.toString() as T;
+  } catch {
+    return link;
+  }
+}
+
+// What someone pasted or typed as a product link: a full web address, a bare
+// domain ("puma.com/shoes"), or a share message with a link inside it.
+export function normalizeProductLink(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  const found = sharedLinkFromParams({ text: value });
+  if (found) return removeTrackingParams(found);
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+([/?#]\S*)?$/i.test(value)
+    ? removeTrackingParams(sharedLinkFromParams({ url: `https://${value}` }))
+    : null;
 }

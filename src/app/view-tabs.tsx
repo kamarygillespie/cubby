@@ -1,8 +1,10 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useOptimistic } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import type { ItemView } from "@/lib/items-view";
+import { useItemsNavigation } from "./items-navigation";
 
 type Tab = ItemView | "totals";
 
@@ -14,10 +16,12 @@ const TABS: { value: Tab; label: string }[] = [
 ];
 
 export function ViewTabs() {
-  const router = useRouter();
+  const { navigate } = useItemsNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentView = (searchParams.get("view") as Tab | null) ?? "wishlist";
+  // Highlights the tapped tab right away, before its items have loaded.
+  const [activeView, setActiveView] = useOptimistic(currentView);
 
   function setView(view: Tab) {
     const params = new URLSearchParams(searchParams.toString());
@@ -26,18 +30,20 @@ export function ViewTabs() {
     } else {
       params.set("view", view);
     }
-    router.push(params.size ? `${pathname}?${params.toString()}` : pathname);
+    navigate(params.size ? `${pathname}?${params.toString()}` : pathname, {
+      onStart: () => setActiveView(view),
+    });
   }
 
   return (
-    <div className="flex gap-1">
+    <div className="flex min-w-0 gap-0.5 overflow-x-auto">
       {TABS.map((tab) => (
         <Button
           key={tab.value}
           type="button"
           size="sm"
-          variant={currentView === tab.value ? "default" : "ghost"}
-          className="max-sm:px-2"
+          variant={activeView === tab.value ? "default" : "ghost"}
+          className="shrink-0 rounded-full px-3 max-sm:px-2.5"
           onClick={() => setView(tab.value)}
         >
           {tab.label}

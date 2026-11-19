@@ -487,6 +487,8 @@ from (values
   ('Lounge Underwear', 'Clothing'),
   ('Gym Pants', 'Clothing'),
   ('Gym Tops', 'Clothing'),
+  ('Jackets & Coats', 'Clothing'),
+  ('Active Jackets', 'Clothing'),
   ('Skincare', 'Beauty'),
   ('Makeup', 'Beauty'),
   ('Bodycare', 'Beauty'),

@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
+  // The dev badge sits on top of the phone tab bar when previewing locally.
+  devIndicators: false,
   // The service worker must never be served stale, and may only run
   // same-origin scripts (per Next's PWA guide).
   async headers() {

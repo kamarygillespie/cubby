@@ -83,11 +83,33 @@ export async function logIn(page: Page, user: TestUser) {
   await expect(page.getByRole("link", { name: "Add item" })).toBeVisible();
 }
 
-// Desktop logs out from the header; phones from More in the tab bar (KAM-51).
+// Opens an item's details from its card in the grid (KAM-60).
+export async function openItem(page: Page, title: string) {
+  await page
+    .getByRole("listitem")
+    .filter({ hasText: title })
+    .getByRole("button")
+    .first()
+    .click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
+
+// Select mode lives in the toolbar's "…" menu (KAM-61).
+export async function startSelecting(page: Page) {
+  await page.getByRole("button", { name: "More actions" }).click();
+  await page.getByRole("button", { name: "Select", exact: true }).click();
+}
+
+// Desktop logs out from the account menu; phones from More in the tab bar
+// (KAM-51).
 export async function logOut(page: Page) {
   await expect(page.getByRole("link", { name: "Add item" })).toBeVisible();
-  const headerButton = page.getByRole("button", { name: "Log out" });
-  if (!(await headerButton.isVisible())) {
+  const account = page.getByRole("button", { name: "Account" });
+  if (await account.isVisible()) {
+    await account.click();
+  } else {
     await page
       .getByRole("navigation", { name: "Main" })
       .getByRole("link", { name: "More" })

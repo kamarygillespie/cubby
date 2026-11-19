@@ -65,7 +65,7 @@ export function ItemSelectCheckbox({
 
   return (
     <Checkbox
-      className="mt-1"
+      className="bg-background absolute top-2 left-2 z-10 size-5 shadow-sm"
       checked={selection.selected.has(itemId)}
       onCheckedChange={(checked) => selection.toggle(itemId, checked)}
       aria-label={`Select ${title}`}

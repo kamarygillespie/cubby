@@ -12,9 +12,9 @@ export const DEFAULT_THEME_PREFERENCE: ThemePreference = "system";
 // Must match each palette's --background in globals.css (converted to hex),
 // used for the browser/PWA chrome color.
 export const THEME_COLORS: Record<ResolvedTheme, string> = {
-  light: "#ffffff",
-  dim: "#21272f",
-  dark: "#0a0a0a",
+  light: "#fcf9f3",
+  dim: "#322924",
+  dark: "#15100e",
 };
 
 const SYSTEM_DARK_QUERY = "(prefers-color-scheme: dark)";

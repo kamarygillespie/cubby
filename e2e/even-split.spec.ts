@@ -1,4 +1,4 @@
-import { test, expect, seedItems } from "./fixtures";
+import { test, expect, seedItems, startSelecting } from "./fixtures";
 
 test("split selected items evenly into new lists", async ({ page, user }) => {
   await seedItems(user.id, [
@@ -9,7 +9,7 @@ test("split selected items evenly into new lists", async ({ page, user }) => {
   ]);
   await page.reload();
 
-  await page.getByRole("button", { name: "Select", exact: true }).click();
+  await startSelecting(page);
   await page.getByRole("button", { name: "Select all" }).click();
   await page
     .getByRole("button", { name: "Split selected items evenly into lists" })

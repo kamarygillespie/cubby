@@ -68,6 +68,35 @@ export async function getItem(supabase: DbClient, id: string) {
   return data;
 }
 
+// The saved item for a product page, ignoring differences like the size or
+// color in the link's query. RLS limits it to the caller's own items.
+export async function findItemByProductLink(supabase: DbClient, link: string) {
+  let page: URL;
+  try {
+    page = new URL(link);
+  } catch {
+    return null;
+  }
+  const base = `${page.origin}${page.pathname}`;
+  const pattern = base.replace(/[\\%_]/g, "\\$&");
+  const { data, error } = await supabase
+    .from("items")
+    .select(ITEM_SELECT)
+    .like("link", `${pattern}%`)
+    .limit(20);
+  if (error) throw error;
+  return (
+    data.find((item) => {
+      try {
+        const saved = new URL(item.link ?? "");
+        return `${saved.origin}${saved.pathname}` === base;
+      } catch {
+        return false;
+      }
+    }) ?? null
+  );
+}
+
 export async function createItem(
   supabase: DbClient,
   input: Omit<NewItem, "user_id">,
@@ -141,6 +170,30 @@ export async function getEffectivePrices(supabase: DbClient, ids: string[]) {
           ? row.sale_price
           : row.price,
   }));
+}
+
+// Items whose most recent price check couldn't read the store's page, so the
+// app doesn't imply a price is being tracked when it isn't.
+export async function listItemsWithFailedPriceCheck(
+  supabase: DbClient,
+  days = 3,
+) {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const { data, error } = await supabase
+    .from("item_price_checks")
+    .select("item_id, status")
+    .gte("checked_at", since)
+    .order("checked_at", { ascending: false });
+  if (error) throw error;
+  const latest = new Map<string, string>();
+  for (const row of data) {
+    if (!latest.has(row.item_id)) latest.set(row.item_id, row.status);
+  }
+  return new Set(
+    [...latest]
+      .filter(([, status]) => status === "unreadable")
+      .map(([id]) => id),
+  );
 }
 
 // Highest effective price each item has had in readable checks over the last

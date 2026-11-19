@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "A wishlist and spending tracker for fashion, beauty, and lifestyle items.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#ffffff",
+    background_color: "#fcf9f3",
+    theme_color: "#fcf9f3",
     // Share to Cubby (KAM-51): the installed app shows up in the phone's
     // share sheet (Android/Chrome; iOS Safari doesn't support share targets).
     share_target: {

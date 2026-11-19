@@ -1,20 +1,33 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ListChecks, Shirt, Store } from "lucide-react";
+import {
+  Gift,
+  Heart,
+  ListChecks,
+  SearchX,
+  Shirt,
+  ShoppingBag,
+  Sparkles,
+  Store,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "@/app/auth/actions";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { buttonVariants } from "@/components/ui/button";
+import { AccountMenu } from "@/components/account-menu";
 import { InstallPrompt } from "@/components/install-prompt";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { OnboardingCard } from "@/components/onboarding-card";
 import { getOnboardingState } from "@/lib/db/profile";
 import { onboardingSteps, showOnboarding } from "@/lib/onboarding";
 import { countUnreadNotifications } from "@/lib/db/notifications";
-import { listItems, listRecentPriceHighs } from "@/lib/db/items";
+import {
+  listItems,
+  listItemsWithFailedPriceCheck,
+  listRecentPriceHighs,
+} from "@/lib/db/items";
 import { groupItemTypesByCategory, listItemTypes } from "@/lib/db/item-types";
 import { listWishlists } from "@/lib/db/wishlists";
 import { listFavoriteStores } from "@/lib/db/stores";
+import { formatCurrency } from "@/lib/format";
 import { storeKey } from "@/lib/stores";
 import {
   ITEMS_PAGE_SIZE,
@@ -26,17 +39,21 @@ import {
   limitGroups,
   parseShowCount,
   sortItems,
+  wishlistHighlight,
   type ItemView,
   type SortOption,
 } from "@/lib/items-view";
 import { ItemsList } from "./items-list";
 import { ItemsGroupedList } from "./items-grouped-list";
-import { FilterBar } from "./filter-bar";
+import {
+  ItemsNavigationProvider,
+  ItemsPendingContent,
+} from "./items-navigation";
+import { ItemsToolbar } from "./items-toolbar";
 import { ViewTabs } from "./view-tabs";
 import { TotalsDashboard } from "./totals-dashboard";
 import { ItemSelectionProvider } from "./item-selection";
 import { AddToWishlistBar } from "./add-to-wishlist-bar";
-import { CheckAllPricesButton } from "./check-price";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -55,39 +72,63 @@ function EmptyItems({
   view: ItemView;
   filtered: boolean;
 }) {
-  if (!hasAnyItems) {
-    return (
-      <p>
-        No items yet.{" "}
-        <Link href="/items/new" className="text-foreground underline">
-          Add your first one
-        </Link>{" "}
-        — type it in or paste a product link.
-      </p>
-    );
-  }
-  if (filtered) {
-    return (
-      <p>
-        No items match these filters.{" "}
-        <Link
-          href={view === "wishlist" ? "/" : `/?view=${view}`}
-          className="text-foreground underline"
-        >
-          Clear filters
-        </Link>
-      </p>
-    );
-  }
-  if (view === "purchased") return <p>Nothing marked purchased yet.</p>;
-  if (view === "gifted") return <p>Nothing marked gifted yet.</p>;
+  const addItem = { href: "/items/new", label: "Add an item" };
+  const state = !hasAnyItems
+    ? {
+        Icon: Heart,
+        title: "Your cubby is empty",
+        body: "Paste a link to something you love and it will live here.",
+        action: { href: "/items/new", label: "Add your first item" },
+      }
+    : filtered
+      ? {
+          Icon: SearchX,
+          title: "Nothing matches",
+          body: "Try removing a filter to see more.",
+          action: {
+            href: view === "wishlist" ? "/" : `/?view=${view}`,
+            label: "Clear filters",
+          },
+        }
+      : view === "purchased"
+        ? {
+            Icon: ShoppingBag,
+            title: "Nothing purchased yet",
+            body: "The things you buy will collect here.",
+          }
+        : view === "gifted"
+          ? {
+              Icon: Gift,
+              title: "No gifts yet",
+              body: "Gifts will collect here once they're marked.",
+            }
+          : {
+              Icon: Sparkles,
+              title: "You got everything!",
+              body: "Every item has been bought or gifted.",
+              action: addItem,
+            };
+  const { Icon, title, body } = state;
+  const action = "action" in state ? state.action : null;
+
   return (
-    <p>
-      Your wishlist is empty — everything&apos;s been bought or gifted.{" "}
-      <Link href="/items/new" className="text-foreground underline">
-        Add an item
-      </Link>
-    </p>
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed px-6 py-12 text-center">
+      <span className="bg-secondary text-brand flex size-12 items-center justify-center rounded-full">
+        <Icon className="size-5" aria-hidden />
+      </span>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-foreground text-xl">{title}</h2>
+        <p>{body}</p>
+      </div>
+      {action && (
+        <Link
+          href={action.href}
+          className={buttonVariants({ className: "rounded-full px-4" })}
+        >
+          {action.label}
+        </Link>
+      )}
+    </div>
   );
 }
 
@@ -117,15 +158,23 @@ export default async function Home({
   const view =
     (showTotals ? undefined : (rawView as ItemView | undefined)) ?? "wishlist";
 
-  const [items, itemTypes, wishlists, favoriteStores, unread, onboarding] =
-    await Promise.all([
-      listItems(supabase),
-      listItemTypes(supabase),
-      listWishlists(supabase),
-      listFavoriteStores(supabase),
-      countUnreadNotifications(supabase),
-      getOnboardingState(supabase),
-    ]);
+  const [
+    items,
+    itemTypes,
+    wishlists,
+    favoriteStores,
+    unread,
+    onboarding,
+    failedPriceChecks,
+  ] = await Promise.all([
+    listItems(supabase),
+    listItemTypes(supabase),
+    listWishlists(supabase),
+    listFavoriteStores(supabase),
+    countUnreadNotifications(supabase),
+    getOnboardingState(supabase),
+    listItemsWithFailedPriceCheck(supabase),
+  ]);
   const onboardingFacts = {
     ...onboarding,
     itemCount: items.length,
@@ -198,151 +247,150 @@ export default async function Home({
   );
   showMoreParams.set("show", String(show + ITEMS_PAGE_SIZE));
 
+  const highlight = wishlistHighlight(items);
+
+  const sectionLinks = [
+    { href: "/wishlists", label: "Lists", Icon: ListChecks },
+    { href: "/stores", label: "Stores", Icon: Store },
+    { href: "/closet", label: "Closet", Icon: Shirt },
+  ];
+
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
-      <div className="flex items-center justify-between gap-2">
-        {/* Phones: the app title; theme, log out and section links live in
-            the bottom tab bar's More (KAM-51). min-w-0 + wrap-anywhere: a
-            long email must wrap, not widen the page into horizontal scroll. */}
-        <h1 className="text-lg font-semibold sm:hidden">Cubby</h1>
-        <p className="text-muted-foreground min-w-0 text-sm wrap-anywhere max-sm:hidden">
-          Signed in as {user.email}
-        </p>
-        <div className="flex items-center gap-2">
+    <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-3 p-4">
+      <header className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-col">
+          <h1 className="text-2xl leading-7 font-semibold">Cubby</h1>
+          {highlight.onSaleCount > 0 ? (
+            <Link
+              href="/?onSale=1"
+              className="text-brand truncate text-xs font-medium underline-offset-2 hover:underline"
+            >
+              {highlight.onSaleCount} on sale now · save{" "}
+              {formatCurrency(highlight.savings)}
+            </Link>
+          ) : (
+            highlight.count > 0 && (
+              <p className="text-muted-foreground truncate text-xs">
+                {highlight.count} on your wishlist
+              </p>
+            )
+          )}
+        </div>
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Phones get these from the bottom tab bar (KAM-51). */}
+          <nav aria-label="Sections" className="flex gap-1 max-sm:hidden">
+            {sectionLinks.map(({ href, label, Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className={buttonVariants({ variant: "ghost", size: "sm" })}
+              >
+                <Icon />
+                {label}
+              </Link>
+            ))}
+          </nav>
           <NotificationsBell unread={unread} />
-          <div className="max-sm:hidden">
-            <ThemeToggle />
-          </div>
           <Link
             href="/items/new"
-            className={buttonVariants({ variant: "default" })}
+            className={buttonVariants({ className: "rounded-full px-4" })}
           >
             Add item
           </Link>
-          <form action={signOut} className="max-sm:hidden">
-            <Button type="submit" variant="outline">
-              Log out
-            </Button>
-          </form>
+          <div className="max-sm:hidden">
+            <AccountMenu email={user.email} />
+          </div>
         </div>
-      </div>
+      </header>
       {!showTotals && showOnboarding(onboardingFacts) && (
         <OnboardingCard steps={onboardingSteps(onboardingFacts)} />
       )}
       <div className="sm:hidden">
         <InstallPrompt variant="card" />
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <ViewTabs />
-        <div className="flex gap-1 max-sm:hidden">
-          <Link
-            href="/wishlists"
-            className={buttonVariants({
-              variant: "ghost",
-              size: "sm",
-              // Slightly tighter on phones so this fits beside the tabs.
-              className: "max-sm:px-2",
-            })}
-          >
-            <ListChecks />
-            Lists
-          </Link>
-          <Link
-            href="/stores"
-            className={buttonVariants({
-              variant: "ghost",
-              size: "sm",
-              className: "max-sm:px-2",
-            })}
-          >
-            <Store />
-            Stores
-          </Link>
-          <Link
-            href="/closet"
-            className={buttonVariants({
-              variant: "ghost",
-              size: "sm",
-              className: "max-sm:px-2",
-            })}
-          >
-            <Shirt />
-            Closet
-          </Link>
-        </div>
-      </div>
-      {showTotals ? (
-        <TotalsDashboard
-          items={items}
-          recentHighs={await listRecentPriceHighs(supabase)}
-        />
-      ) : (
-        <ItemSelectionProvider key={view}>
-          <FilterBar
-            categories={categories}
-            itemTypes={itemTypes}
-            hasFavoriteStores={favoriteStores.length > 0}
-            storeName={
-              storeFilter
-                ? (items.find((i) => storeKey(i.store_brand) === storeFilter)
-                    ?.store_brand ?? storeFilter)
-                : null
-            }
-          />
-          {view === "wishlist" && (
-            <AddToWishlistBar
-              extraActions={
-                <CheckAllPricesButton
-                  itemIds={visibleItems.filter((i) => i.link).map((i) => i.id)}
+      <ItemsNavigationProvider>
+        {showTotals ? (
+          <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+            <ViewTabs />
+            <ItemsPendingContent>
+              <TotalsDashboard
+                items={items}
+                recentHighs={await listRecentPriceHighs(supabase)}
+              />
+            </ItemsPendingContent>
+          </div>
+        ) : (
+          <ItemSelectionProvider key={view}>
+            <ItemsToolbar
+              filterOptions={{
+                categories,
+                itemTypes,
+                hasFavoriteStores: favoriteStores.length > 0,
+                storeName: storeFilter
+                  ? (items.find((i) => storeKey(i.store_brand) === storeFilter)
+                      ?.store_brand ?? storeFilter)
+                  : null,
+              }}
+              showActions={view === "wishlist"}
+              canSelect={shownItems.length > 0}
+              priceCheckIds={visibleItems
+                .filter((i) => i.link)
+                .map((i) => i.id)}
+            />
+            {view === "wishlist" && (
+              <AddToWishlistBar
+                // Select all = what's on screen.
+                itemIds={shownItems.map((i) => i.id)}
+                itemTypeGroups={groupItemTypesByCategory(itemTypes)}
+                itemInfo={Object.fromEntries(
+                  shownItems.map((i) => [
+                    i.id,
+                    {
+                      title: i.title,
+                      price: i.price === null ? null : effectivePrice(i),
+                    },
+                  ]),
+                )}
+                wishlists={wishlists.map((w) => ({
+                  id: w.id,
+                  name: w.name,
+                  itemIds: w.wishlist_items.map((wi) => wi.item_id),
+                }))}
+              />
+            )}
+            <ItemsPendingContent>
+              {shownGroups ? (
+                <ItemsGroupedList
+                  groups={shownGroups}
+                  listsByItem={listsByItem}
+                  failedPriceChecks={failedPriceChecks}
+                  emptyState={emptyState}
                 />
-              }
-              // Select all = what's on screen; Check all prices = every match.
-              itemIds={shownItems.map((i) => i.id)}
-              itemTypeGroups={groupItemTypesByCategory(itemTypes)}
-              itemInfo={Object.fromEntries(
-                shownItems.map((i) => [
-                  i.id,
-                  {
-                    title: i.title,
-                    price: i.price === null ? null : effectivePrice(i),
-                  },
-                ]),
+              ) : (
+                <ItemsList
+                  items={shownItems}
+                  listsByItem={listsByItem}
+                  failedPriceChecks={failedPriceChecks}
+                  emptyState={emptyState}
+                />
               )}
-              wishlists={wishlists.map((w) => ({
-                id: w.id,
-                name: w.name,
-                itemIds: w.wishlist_items.map((wi) => wi.item_id),
-              }))}
-            />
-          )}
-          {shownGroups ? (
-            <ItemsGroupedList
-              groups={shownGroups}
-              listsByItem={listsByItem}
-              emptyState={emptyState}
-            />
-          ) : (
-            <ItemsList
-              items={shownItems}
-              listsByItem={listsByItem}
-              emptyState={emptyState}
-            />
-          )}
-          {hiddenCount > 0 && (
-            <Link
-              href={`/?${showMoreParams.toString()}`}
-              scroll={false}
-              className={buttonVariants({
-                variant: "outline",
-                className: "self-center",
-              })}
-            >
-              Show {Math.min(ITEMS_PAGE_SIZE, hiddenCount)} more ({hiddenCount}{" "}
-              not shown)
-            </Link>
-          )}
-        </ItemSelectionProvider>
-      )}
+              {hiddenCount > 0 && (
+                <Link
+                  href={`/?${showMoreParams.toString()}`}
+                  scroll={false}
+                  className={buttonVariants({
+                    variant: "outline",
+                    className: "self-center",
+                  })}
+                >
+                  Show {Math.min(ITEMS_PAGE_SIZE, hiddenCount)} more (
+                  {hiddenCount} not shown)
+                </Link>
+              )}
+            </ItemsPendingContent>
+          </ItemSelectionProvider>
+        )}
+      </ItemsNavigationProvider>
     </div>
   );
 }

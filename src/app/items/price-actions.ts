@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getItem, recordPriceCheck } from "@/lib/db/items";
@@ -26,10 +27,9 @@ export async function checkItemPriceAction(
     return { outcome: "error", message: "Add a link to check its price." };
   }
 
-  const { data, error } = await supabase.functions.invoke<FetchedPrices>(
-    "link-autofill",
-    { body: { url: item.link, pricesOnly: true } },
-  );
+  const { data, error } = await supabase.functions.invoke<
+    FetchedPrices & { blocked?: boolean; store?: string | null }
+  >("link-autofill", { body: { url: item.link, pricesOnly: true } });
   if (error || !data) {
     return { outcome: "unreadable", message: "Couldn't reach this page." };
   }
@@ -43,5 +43,31 @@ export async function checkItemPriceAction(
   const result = applyPriceCheck(item, fetched);
   await recordPriceCheck(supabase, itemId, fetched);
   revalidatePath("/", "layout");
-  return { outcome: result.outcome, message: result.message };
+  return {
+    outcome: result.outcome,
+    message: data.blocked
+      ? `${data.store ?? "This store"} doesn't let apps check its prices.`
+      : result.message,
+  };
+}
+
+// Save to Cubby on a saved item: the price the user sees on the store's page.
+export async function refreshPriceFromPage(
+  itemId: string,
+  price: number,
+  salePrice: number | null,
+): Promise<{ error: string } | void> {
+  const valid = (value: number) =>
+    Number.isFinite(value) && value > 0 && value < 10_000_000;
+  if (!valid(price) || (salePrice !== null && !valid(salePrice))) {
+    return { error: "That price doesn't look right." };
+  }
+
+  const supabase = await createClient();
+  const item = await getItem(supabase, itemId);
+  if (!item) return { error: "Item not found." };
+
+  await recordPriceCheck(supabase, itemId, { price, salePrice });
+  revalidatePath("/", "layout");
+  redirect("/");
 }

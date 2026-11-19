@@ -153,6 +153,26 @@ export function itemMetaParts(item: Item): string[] {
   ];
 }
 
+// The short line under the wordmark: what's worth knowing right now (KAM-62).
+export function wishlistHighlight(items: Item[]): {
+  count: number;
+  onSaleCount: number;
+  savings: number;
+} {
+  const wishlist = filterByView(items, "wishlist");
+  const onSale = wishlist.filter(
+    (item) => displayDiscountPercent(item.price, item.sale_price) !== null,
+  );
+  return {
+    count: wishlist.length,
+    onSaleCount: onSale.length,
+    savings: onSale.reduce(
+      (total, item) => total + (item.price! - item.sale_price!),
+      0,
+    ),
+  };
+}
+
 // How many item cards a page renders at first, and per "Show more". Totals,
 // counts, filters and group sums always use every matching item; only the
 // number of rendered cards is capped (KAM-45).

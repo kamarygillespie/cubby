@@ -6,10 +6,12 @@ import { formatCurrency } from "@/lib/format";
 export function ItemsGroupedList({
   groups,
   listsByItem,
+  failedPriceChecks,
   emptyState,
 }: {
   groups: ItemGroup[];
   listsByItem?: ListsByItem;
+  failedPriceChecks?: ReadonlySet<string>;
   emptyState?: ReactNode;
 }) {
   if (groups.length === 0) {
@@ -31,7 +33,11 @@ export function ItemsGroupedList({
               {formatCurrency(group.totalPrice)}
             </p>
           </div>
-          <ItemsList items={group.items} listsByItem={listsByItem} />
+          <ItemsList
+            items={group.items}
+            listsByItem={listsByItem}
+            failedPriceChecks={failedPriceChecks}
+          />
         </section>
       ))}
     </div>

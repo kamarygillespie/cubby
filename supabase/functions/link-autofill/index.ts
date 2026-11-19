@@ -60,7 +60,7 @@ const handler = {
   fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
     // pricesOnly: used by "Check price" on an existing item, which only
     // needs prices; skips downloading/copying the image into Storage.
-    let body: { url?: unknown; pricesOnly?: unknown };
+    let body: { url?: unknown; pricesOnly?: unknown; imageUrl?: unknown };
     try {
       body = await req.json();
     } catch {
@@ -80,6 +80,22 @@ const handler = {
 
     if (isBlockedUrl(parsedUrl)) {
       return Response.json({ error: "URL not allowed" }, { status: 400 });
+    }
+
+    // Save to Cubby: the user's browser read the page; just keep the photo.
+    if (typeof body.imageUrl === "string") {
+      if (!ctx.userClaims) return Response.json({ image: null });
+      try {
+        return Response.json({
+          image: await materializeImage(
+            ctx.supabase,
+            ctx.userClaims.id,
+            new URL(body.imageUrl),
+          ),
+        });
+      } catch {
+        return Response.json({ image: null });
+      }
     }
 
     const result = await fetchProductData(parsedUrl);

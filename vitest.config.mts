@@ -10,6 +10,7 @@ export default defineConfig({
   test: {
     environment: "node",
     passWithNoTests: true,
+    globalSetup: ["./vitest.global-setup.ts"],
     // Edge Functions run on Deno, not Node — tested separately via
     // `deno test`, not Vitest.
     // Playwright e2e specs run via `npm run test:e2e`, not Vitest.

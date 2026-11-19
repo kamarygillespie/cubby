@@ -23,5 +23,7 @@ export async function logIn(
     return { error: error.message };
   }
 
-  redirect(redirectTo || "/");
+  // Only ever a page inside Cubby, so a crafted login link can't send someone
+  // to another site.
+  redirect(/^\/(?![/\\])/.test(redirectTo) ? redirectTo : "/");
 }

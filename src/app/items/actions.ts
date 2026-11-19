@@ -106,7 +106,8 @@ export async function updateItemAction(
 
 export async function deleteItemAction(
   itemId: string,
-  returnTo: "/" | "/closet" = "/",
+  // null stays on the current page, keeping its tab and filters.
+  returnTo: "/" | "/closet" | null = "/",
 ) {
   const supabase = await createClient();
   const existing = await getItem(supabase, itemId);
@@ -116,7 +117,7 @@ export async function deleteItemAction(
     await deleteItemImage(supabase, existing.image_url);
   }
   revalidateItemViews();
-  redirect(returnTo === "/closet" ? "/closet" : "/");
+  if (returnTo) redirect(returnTo);
 }
 
 // "Add to closet": a piece you already own, never on a wishlist. Stored with

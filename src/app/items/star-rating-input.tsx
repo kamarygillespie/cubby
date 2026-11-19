@@ -41,7 +41,7 @@ export function StarRatingInput({
           <Star
             className={cn(
               "text-muted-foreground size-5 transition-colors",
-              level <= displayed && "fill-primary text-primary",
+              level <= displayed && "fill-brand text-brand",
             )}
           />
         </button>

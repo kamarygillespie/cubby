@@ -83,3 +83,9 @@ Note: stopping `functions serve` removes the edge-runtime container. Run `npx su
 - No untyped `any` slipping through review without a comment justifying it.
 - Every schema change (`DATABASE.md`) ships with any corresponding RLS-policy or trigger test updates in the same PR.
 - Critical-path Playwright tests are treated as a release gate, not a nice-to-have — if one fails, the deploy doesn't ship.
+
+## Local development data
+
+- `npm run dev:local` runs the app against `supabase start`. Plain `npm run dev` uses `.env.local`, which points at the live database.
+- Browse local data at http://127.0.0.1:54323 (Supabase Studio).
+- Test runs delete their throwaway accounts when they finish (`src/lib/db/delete-test-users.ts`). The cleanup is hard-coded to the local stack and only matches `test-`, `e2e-` and `e2e-signup-` accounts on `example.com`.

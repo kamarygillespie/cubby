@@ -2,6 +2,7 @@ import {
   test,
   expect,
   expectNoHorizontalScroll,
+  openItem,
   seedItems,
   seedWishlist,
 } from "./fixtures";
@@ -16,8 +17,9 @@ test("edit an item, then delete it (and it leaves its wishlist)", async ({
   const listId = await seedWishlist(user.id, "E2E Gifts", [item.id]);
   await page.reload();
 
-  // Edit from the card; the form starts from the saved values
-  await page.getByRole("link", { name: "Edit E2E Trench Coat" }).click();
+  // Edit from the item's details; the form starts from the saved values
+  const sheet = await openItem(page, "E2E Trench Coat");
+  await sheet.getByRole("link", { name: "Edit E2E Trench Coat" }).click();
   await expect(page).toHaveURL(new RegExp(`/items/${item.id}/edit$`));
   await expect(page.getByText(/On E2E Gifts/)).toBeVisible();
   await expect(page.getByLabel("Title")).toHaveValue("E2E Trench Coat");
@@ -40,7 +42,8 @@ test("edit an item, then delete it (and it leaves its wishlist)", async ({
   await expect(card).toContainText("Aritzia");
 
   // Validation: a blank title is rejected server-side too
-  await card.getByRole("link", { name: /^Edit / }).click();
+  const details = await openItem(page, "E2E Trench Coat (camel)");
+  await details.getByRole("link", { name: /^Edit / }).click();
   await page.getByLabel("Title").fill("   ");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.locator("form").getByRole("alert")).toHaveText(

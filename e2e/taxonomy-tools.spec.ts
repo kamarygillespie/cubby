@@ -1,4 +1,4 @@
-import { test, expect, seedItems } from "./fixtures";
+import { test, expect, seedItems, startSelecting } from "./fixtures";
 
 test("bulk-change item type, then merge a duplicate type away", async ({
   page,
@@ -19,7 +19,7 @@ test("bulk-change item type, then merge a duplicate type away", async ({
 
   // Select both items → Change type → the custom type
   await page.goto("/");
-  await page.getByRole("button", { name: "Select", exact: true }).click();
+  await startSelecting(page);
   await page.getByRole("checkbox", { name: "Select E2E Chelsea" }).click();
   await page.getByRole("checkbox", { name: "Select E2E Combat" }).click();
   await page

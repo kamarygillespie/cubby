@@ -53,7 +53,11 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && !isPublicPath(pathname)) {
     const redirectUrl = new URL("/login", request.url);
-    redirectUrl.searchParams.set("redirectTo", pathname);
+    // Keeps the query too: Save to Cubby carries the product in it.
+    redirectUrl.searchParams.set(
+      "redirectTo",
+      `${pathname}${request.nextUrl.search}`,
+    );
     return NextResponse.redirect(redirectUrl);
   }
 
