@@ -1,40 +1,15 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhotoInput } from "@/components/photo-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { StarRatingInput } from "./star-rating-input";
-import { LinkAutofillField } from "./link-autofill-field";
+import { ItemTypeField, type ItemTypeOption } from "./item-type-field";
 import type { ItemFormState } from "./item-form-state";
-import { NewItemTypeDialog } from "../types/new-item-type-dialog";
-
-type ItemTypeOption = {
-  id: string;
-  name: string;
-  category: { id: string; name: string } | null;
-};
-
-type AutofillResult = {
-  title: string | null;
-  image: string | null;
-  price: number | null;
-  salePrice: number | null;
-};
 
 // Starting values when editing an existing item.
 export type ItemFormInitial = {
@@ -52,9 +27,8 @@ export type ItemFormInitial = {
 const numberField = (value: number | null | undefined) =>
   value === null || value === undefined ? "" : String(value);
 
-// Shared by Add item and Edit item. Paste-a-link autofill is offered when
-// adding; editing starts from the saved values (re-checking a link's price
-// is a separate action, KAM-36).
+// Shared by Edit item and Add to closet. Adding to the wishlist has its own
+// link-first flow (items/new/add-item-flow.tsx, KAM-57).
 export function ItemForm({
   itemTypesByCategory,
   categories,
@@ -62,8 +36,6 @@ export function ItemForm({
   initial,
   submitLabel,
   pendingLabel,
-  withAutofill = false,
-  sharedLink = null,
   variant = "wishlist",
   returnTo,
 }: {
@@ -74,9 +46,6 @@ export function ItemForm({
   initial?: ItemFormInitial;
   submitLabel: string;
   pendingLabel: string;
-  withAutofill?: boolean;
-  // A link from the phone share sheet (Share to Cubby), prefilled to fetch.
-  sharedLink?: string | null;
   // "closet": a piece you already own — no prices or interest level.
   variant?: "wishlist" | "closet";
   // Where to go after saving ("/" or "/closet"); validated server-side.
@@ -87,72 +56,19 @@ export function ItemForm({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [price, setPrice] = useState(numberField(initial?.price));
   const [salePrice, setSalePrice] = useState(numberField(initial?.sale_price));
-  const [link, setLink] = useState(initial?.link ?? sharedLink ?? "");
-  const [autofillImageUrl, setAutofillImageUrl] = useState<string | null>(null);
+  const [link, setLink] = useState(initial?.link ?? "");
   // Editing: the saved image, unless the user chose to remove it.
   const [removeImage, setRemoveImage] = useState(false);
-  const savedImageUrl = removeImage ? null : (initial?.image_url ?? null);
-  const previewUrl = autofillImageUrl ?? savedImageUrl;
+  const previewUrl = removeImage ? null : (initial?.image_url ?? null);
 
   const [itemTypeId, setItemTypeId] = useState<string | null>(
     initial?.item_type_id ?? null,
   );
-  // Types created from this form via "+ New type", shown until the page's
-  // own data refreshes.
-  const [createdTypes, setCreatedTypes] = useState<ItemTypeOption[]>([]);
-  const [newTypeOpen, setNewTypeOpen] = useState(false);
-
-  const typeGroups = useMemo(() => {
-    const groups = itemTypesByCategory.map((g) => ({
-      ...g,
-      itemTypes: [...g.itemTypes],
-    }));
-    for (const created of createdTypes) {
-      if (groups.some((g) => g.itemTypes.some((t) => t.id === created.id))) {
-        continue;
-      }
-      const name = created.category?.name ?? "Uncategorized";
-      const group = groups.find((g) => g.category === name);
-      if (group) group.itemTypes.push(created);
-      else groups.push({ category: name, itemTypes: [created] });
-    }
-    return groups.sort((a, b) => a.category.localeCompare(b.category));
-  }, [itemTypesByCategory, createdTypes]);
-
-  const itemTypeLabels = useMemo(() => {
-    const labels = new Map<string, string>();
-    for (const { itemTypes } of typeGroups) {
-      for (const itemType of itemTypes) {
-        labels.set(itemType.id, itemType.name);
-      }
-    }
-    return labels;
-  }, [typeGroups]);
-
-  function handleAutofill(result: AutofillResult, autofilledLink: string) {
-    if (result.title) setTitle(result.title);
-    if (result.price !== null) setPrice(String(result.price));
-    if (result.salePrice !== null) setSalePrice(String(result.salePrice));
-    if (result.image) setAutofillImageUrl(result.image);
-    setLink(autofilledLink);
-  }
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      {withAutofill && (
-        <LinkAutofillField
-          onAutofill={handleAutofill}
-          initialLink={sharedLink ?? ""}
-        />
-      )}
       {returnTo && <input type="hidden" name="return_to" value={returnTo} />}
       <input type="hidden" name="remove_image" value={removeImage ? "1" : ""} />
-
-      <input
-        type="hidden"
-        name="autofill_image_url"
-        value={autofillImageUrl ?? ""}
-      />
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="title">Title</Label>
@@ -170,23 +86,14 @@ export function ItemForm({
         {previewUrl && (
           <Image
             src={previewUrl}
-            alt={autofillImageUrl ? "Fetched preview" : "Current image"}
+            alt="Current image"
             width={80}
             height={80}
             className="size-20 rounded-md object-cover"
           />
         )}
-        <PhotoInput
-          id="image"
-          name="image"
-          onChange={() => setAutofillImageUrl(null)}
-        />
-        {autofillImageUrl && (
-          <p className="text-muted-foreground text-xs">
-            Fetched from the link. Choose a file above to replace it.
-          </p>
-        )}
-        {initial?.image_url && !autofillImageUrl && (
+        <PhotoInput id="image" name="image" />
+        {initial?.image_url && (
           <p className="text-muted-foreground flex items-center gap-2 text-xs">
             {removeImage
               ? "The image will be removed when you save."
@@ -204,62 +111,12 @@ export function ItemForm({
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="item_type_id">Item type</Label>
-        <Select
-          name="item_type_id"
-          required
-          value={itemTypeId}
-          onValueChange={(v) => setItemTypeId(v as string | null)}
-        >
-          <SelectTrigger id="item_type_id" className="w-full">
-            <SelectValue placeholder="Choose an item type">
-              {(value: string | null) =>
-                value ? itemTypeLabels.get(value) : "Choose an item type"
-              }
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {typeGroups.map(({ category, itemTypes }) => (
-              <SelectGroup key={category}>
-                <SelectLabel>{category}</SelectLabel>
-                {itemTypes.map((itemType) => (
-                  <SelectItem key={itemType.id} value={itemType.id}>
-                    {itemType.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            variant="link"
-            size="xs"
-            className="h-auto p-0"
-            onClick={() => setNewTypeOpen(true)}
-          >
-            <Plus />
-            New type
-          </Button>
-          <Link
-            href="/types"
-            className="text-muted-foreground text-xs underline-offset-4 hover:underline"
-          >
-            Manage types
-          </Link>
-        </div>
-        <NewItemTypeDialog
-          open={newTypeOpen}
-          onOpenChange={setNewTypeOpen}
-          categories={categories}
-          onCreated={(created) => {
-            setCreatedTypes((prev) => [...prev, created]);
-            setItemTypeId(created.id);
-          }}
-        />
-      </div>
+      <ItemTypeField
+        itemTypesByCategory={itemTypesByCategory}
+        categories={categories}
+        value={itemTypeId}
+        onChange={setItemTypeId}
+      />
 
       {variant === "wishlist" && (
         <>

@@ -16,11 +16,14 @@ export function CheckPriceButton({
   itemId,
   title,
   checkedAgo,
+  lastCheckFailed = false,
 }: {
   itemId: string;
   title: string;
   // "3h ago" from the last manual or automatic check, or null if never.
   checkedAgo: string | null;
+  // The latest check couldn't read the store's page.
+  lastCheckFailed?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<{
@@ -47,7 +50,9 @@ export function CheckPriceButton({
       </Button>
       {checkedAgo && !result && !pending && (
         <span className="text-muted-foreground self-center text-xs">
-          Checked {checkedAgo}
+          {lastCheckFailed
+            ? "Couldn't read this store's price. Use Save to Cubby on its page to update it."
+            : `Checked ${checkedAgo}`}
         </span>
       )}
       {result && (
@@ -69,7 +74,7 @@ export function CheckPriceButton({
 
 // Re-checks every wishlist item with a link, one at a time so stores aren't
 // hammered, with progress and a summary.
-export function CheckAllPricesButton({ itemIds }: { itemIds: string[] }) {
+export function useCheckAllPrices(itemIds: string[]) {
   const [progress, setProgress] = useState<{
     done: number;
     total: number;
@@ -95,34 +100,12 @@ export function CheckAllPricesButton({ itemIds }: { itemIds: string[] }) {
     );
   }
 
-  if (itemIds.length === 0) return null;
-
-  return (
-    <div className="flex items-center gap-2">
-      {summary && !progress && (
-        <p role="status" className="text-muted-foreground text-sm">
-          {summary}
-        </p>
-      )}
-      {progress ? (
-        <>
-          <p aria-live="polite" className="text-muted-foreground text-sm">
-            Checking {progress.done + 1} of {progress.total}…
-          </p>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => (cancelled.current = true)}
-          >
-            Stop
-          </Button>
-        </>
-      ) : (
-        <Button size="sm" variant="outline" onClick={run}>
-          <RefreshCw />
-          Check all prices
-        </Button>
-      )}
-    </div>
-  );
+  return {
+    run,
+    stop: () => {
+      cancelled.current = true;
+    },
+    progress,
+    summary,
+  };
 }

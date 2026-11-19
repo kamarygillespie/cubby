@@ -7,6 +7,7 @@ import {
   activeWishlistItems,
   displayDiscountPercent,
   itemMetaParts,
+  wishlistHighlight,
   filterByView,
   filterItems,
   groupByCategory,
@@ -361,5 +362,42 @@ describe("limitGroups", () => {
     const { groups, hidden } = limitGroups([group("a", 2)], 50);
     expect(groups[0].items).toHaveLength(2);
     expect(hidden).toBe(0);
+  });
+});
+
+describe("wishlistHighlight", () => {
+  const item = (fields: Record<string, unknown>) =>
+    ({
+      price: null,
+      sale_price: null,
+      purchased: false,
+      gifted: false,
+      source: "wishlist",
+      ...fields,
+    }) as unknown as Parameters<typeof wishlistHighlight>[0][number];
+
+  test("counts wishlist items on sale and what they save", () => {
+    expect(
+      wishlistHighlight([
+        item({ price: 100, sale_price: 80 }),
+        item({ price: 50, sale_price: 25 }),
+        item({ price: 40 }),
+      ]),
+    ).toEqual({ count: 3, onSaleCount: 2, savings: 45 });
+  });
+
+  test("ignores purchased and gifted items", () => {
+    expect(
+      wishlistHighlight([
+        item({ price: 100, sale_price: 80, purchased: true }),
+        item({ price: 100, sale_price: 80, gifted: true }),
+      ]),
+    ).toEqual({ count: 0, onSaleCount: 0, savings: 0 });
+  });
+
+  test("doesn't count a sale price that isn't lower", () => {
+    expect(
+      wishlistHighlight([item({ price: 50, sale_price: 60 })]).onSaleCount,
+    ).toBe(0);
   });
 });

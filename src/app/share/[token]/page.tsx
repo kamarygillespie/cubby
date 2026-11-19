@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { getSharedWishlist } from "@/lib/db/wishlists";
-import { PriceDisplay } from "../../items-list";
+import { PriceDisplay } from "../../price-display";
 import { GiftCardIdeas } from "@/components/gift-card-ideas";
 import { giftCardIdeas } from "@/lib/stores";
 

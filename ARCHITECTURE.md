@@ -114,3 +114,25 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
 - **Closet view (V2):** `items` already has an image; a `closets` table can reference existing items plus new standalone closet photos without restructuring `items`.
 - **Native app (V2+):** business logic in `lib/` is framework-agnostic where possible, so it can be shared with a future React Native app.
 - **Recommendations (V3):** will need purchase-history and interest-level signals already captured in the V1 schema — no retrofit needed to start collecting the right data.
+
+## Visual Language
+
+- Warm palette in `app/globals.css` across Light, Dim and Dark. `--brand` (clay) is reserved for sales, ratings, the active tab and moments of delight. `--primary` (espresso) is for main actions.
+- Fraunces is the display face for the wordmark and headings; Geist stays the body face.
+- When a theme's `--background` changes, update `THEME_COLORS` in `lib/theme.ts` and the colors in `app/manifest.ts`.
+
+## Navigation and Loading
+
+- Every route has a `loading.tsx` shaped like that page (`components/page-skeleton.tsx`). Don't rely on the root `loading.tsx`, which is the main page's grid.
+- `app/template.tsx` fades each page and its placeholder in. Motion is off under reduced-motion settings.
+- Main-page tabs and filters navigate inside a transition (`app/items-navigation.tsx`): the tapped control updates optimistically and the current items stay on screen, softly dimmed, until the next ones arrive.
+
+## Reading Store Prices
+
+Product data comes from three sources, tried in this order:
+
+1. **Official store APIs** (`supabase/functions/_shared/store-apis.ts`) for Best Buy and Etsy, when `BESTBUY_API_KEY` or `ETSY_API_KEY` is set as a Supabase secret.
+2. **Reading the page from Cubby's server** (`_shared/fetch-page.ts`). Cubby identifies itself honestly and doesn't try to get past stores that refuse it.
+3. **Save to Cubby** (`lib/page-capture.ts`), which reads the page in the user's own browser. Its data arrives in a URL, so it's validated in `parseCapture` and always reviewed by the user before saving.
+
+Cubby shows prices in US dollars. A page's price in another currency is left blank for the user to enter, unless the page states a US price (`sale_price_usd`), which then wins even over data labeled USD.

@@ -1,4 +1,4 @@
-import { test, expect, seedItems } from "./fixtures";
+import { test, expect, openItem, seedItems } from "./fixtures";
 
 test("purchases land in the closet; owned pieces join without touching totals", async ({
   page,
@@ -8,11 +8,9 @@ test("purchases land in the closet; owned pieces join without touching totals", 
   await page.reload();
 
   // Buying something puts it in the closet
-  await page
-    .getByRole("listitem")
-    .filter({ hasText: "E2E Trench" })
-    .getByRole("button", { name: "Mark purchased" })
-    .click();
+  const sheet = await openItem(page, "E2E Trench");
+  await sheet.getByRole("button", { name: "Mark purchased" }).click();
+  await expect(sheet).toHaveCount(0); // saved; the sheet has closed
   await expect(
     page.getByRole("listitem").filter({ hasText: "E2E Trench" }),
   ).toHaveCount(0);

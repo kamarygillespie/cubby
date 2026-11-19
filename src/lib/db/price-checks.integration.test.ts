@@ -1,5 +1,11 @@
 import { beforeAll, describe, expect, test } from "vitest";
-import { createItem, getItem, recordPriceCheck } from "./items";
+import {
+  createItem,
+  findItemByProductLink,
+  getItem,
+  listItemsWithFailedPriceCheck,
+  recordPriceCheck,
+} from "./items";
 import { listItemTypes } from "./item-types";
 import { admin, createTestUser } from "./integration-test-utils";
 
@@ -22,6 +28,41 @@ describe("record_price_check (integration)", () => {
       link: "https://shop.example/sneakers",
     });
   }
+
+  test("finds a saved item from its product page, ignoring the query", async () => {
+    const { client } = await createTestUser();
+    const other = await createTestUser();
+    const item = await newItem(client);
+
+    const match = await findItemByProductLink(
+      client,
+      "https://shop.example/sneakers?size=8",
+    );
+    expect(match?.id).toBe(item.id);
+    expect(
+      await findItemByProductLink(client, "https://shop.example/sneakers-two"),
+    ).toBeNull();
+    // Another account's items are never matched
+    expect(
+      await findItemByProductLink(
+        other.client,
+        "https://shop.example/sneakers",
+      ),
+    ).toBeNull();
+  });
+
+  test("reports items whose latest check couldn't read the page", async () => {
+    const { client } = await createTestUser();
+    const item = await newItem(client);
+
+    await recordPriceCheck(client, item.id, { price: null, salePrice: null });
+    expect(await listItemsWithFailedPriceCheck(client)).toEqual(
+      new Set([item.id]),
+    );
+
+    await recordPriceCheck(client, item.id, { price: 73, salePrice: null });
+    expect(await listItemsWithFailedPriceCheck(client)).toEqual(new Set());
+  });
 
   test("a readable check updates prices, stamps the item, and logs history", async () => {
     const { client } = await createTestUser();

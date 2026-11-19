@@ -1,8 +1,15 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, ListChecks, Menu, Shirt, Store } from "lucide-react";
+import {
+  Heart,
+  ListChecks,
+  Menu,
+  Shirt,
+  Store,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "cn";
 
 const TABS = [
@@ -24,7 +31,7 @@ const TABS = [
     href: "/more",
     label: "More",
     Icon: Menu,
-    match: ["/more", "/types", "/notifications"],
+    match: ["/more", "/types", "/notifications", "/save-to-cubby"],
   },
 ] as const;
 
@@ -37,6 +44,34 @@ const isActive = (pathname: string, match: readonly string[]) =>
       ? pathname === "/"
       : pathname === m || pathname.startsWith(`${m}/`),
   );
+
+// Inside the Link so a tapped tab lights up right away (KAM-63).
+function TabContent({
+  label,
+  Icon,
+  active,
+}: {
+  label: string;
+  Icon: LucideIcon;
+  active: boolean;
+}) {
+  const { pending } = useLinkStatus();
+  const highlighted = active || pending;
+  return (
+    <span
+      className={cn(
+        "flex h-full flex-col items-center justify-center gap-0.5 text-[11px] transition-colors",
+        highlighted ? "text-brand font-medium" : "text-muted-foreground",
+      )}
+    >
+      <Icon
+        className={cn("size-5", highlighted && "fill-current/15")}
+        aria-hidden
+      />
+      {label}
+    </span>
+  );
+}
 
 // Phone tab bar (KAM-51): the installed app's main navigation. Desktop keeps
 // the header links. Includes a spacer so page content isn't hidden behind it.
@@ -63,18 +98,9 @@ export function BottomNav() {
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex h-full flex-col items-center justify-center gap-0.5 text-[11px]",
-                    active
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground",
-                  )}
+                  className="block h-full"
                 >
-                  <Icon
-                    className={cn("size-5", active && "fill-current/15")}
-                    aria-hidden
-                  />
-                  {label}
+                  <TabContent label={label} Icon={Icon} active={active} />
                 </Link>
               </li>
             );

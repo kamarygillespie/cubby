@@ -14,7 +14,7 @@ export function StarRating({ level }: { level: number | null }) {
           key={n}
           className={cn(
             "size-3.5",
-            n <= level ? "fill-primary text-primary" : "text-muted-foreground",
+            n <= level ? "fill-brand text-brand" : "text-muted-foreground",
           )}
         />
       ))}

@@ -5,11 +5,19 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --animate-page-in: page-in 180ms ease-out;
+  @keyframes page-in {
+    from {
+      opacity: 0;
+    }
+  }
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-fraunces);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,30 +57,30 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --background: oklch(0.982 0.008 80);
+  --foreground: oklch(0.24 0.02 50);
+  --card: oklch(0.995 0.004 80);
+  --card-foreground: oklch(0.24 0.02 50);
+  --popover: oklch(0.995 0.004 80);
+  --popover-foreground: oklch(0.24 0.02 50);
+  --primary: oklch(0.29 0.03 45);
+  --primary-foreground: oklch(0.98 0.008 80);
+  --secondary: oklch(0.945 0.014 75);
+  --secondary-foreground: oklch(0.29 0.03 45);
+  --muted: oklch(0.945 0.014 75);
+  --muted-foreground: oklch(0.48 0.025 55);
+  --accent: oklch(0.93 0.018 70);
+  --accent-foreground: oklch(0.29 0.03 45);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.895 0.016 70);
+  --input: oklch(0.895 0.016 70);
+  --ring: oklch(0.62 0.1 40);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --radius: 0.75rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -81,27 +89,29 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --brand: oklch(0.52 0.135 35);
+  --brand-foreground: oklch(0.985 0.008 80);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.18 0.01 50);
+  --foreground: oklch(0.95 0.01 75);
+  --card: oklch(0.225 0.012 50);
+  --card-foreground: oklch(0.95 0.01 75);
+  --popover: oklch(0.225 0.012 50);
+  --popover-foreground: oklch(0.95 0.01 75);
+  --primary: oklch(0.92 0.02 75);
+  --primary-foreground: oklch(0.22 0.015 50);
+  --secondary: oklch(0.285 0.014 50);
+  --secondary-foreground: oklch(0.95 0.01 75);
+  --muted: oklch(0.285 0.014 50);
+  --muted-foreground: oklch(0.74 0.02 65);
+  --accent: oklch(0.285 0.014 50);
+  --accent-foreground: oklch(0.95 0.01 75);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: oklch(0.62 0.09 45);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -115,36 +125,40 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --brand: oklch(0.75 0.12 45);
+  --brand-foreground: oklch(0.2 0.02 45);
 }
 
-/* "Dim" — the in-between theme: a soft slate palette with lower contrast
+/* "Dim" — the in-between theme: a soft mocha palette with lower contrast
    than dark. Applied alongside .dark (so dark: variants still match) and
    overrides its tokens; must stay after the .dark block. Keep --background
    in sync with THEME_COLORS.dim in src/lib/theme.ts. */
 .dim {
-  --background: oklch(0.27 0.018 255);
-  --foreground: oklch(0.94 0.008 255);
-  --card: oklch(0.31 0.02 255);
-  --card-foreground: oklch(0.94 0.008 255);
-  --popover: oklch(0.31 0.02 255);
-  --popover-foreground: oklch(0.94 0.008 255);
-  --primary: oklch(0.9 0.012 255);
-  --primary-foreground: oklch(0.27 0.018 255);
-  --secondary: oklch(0.36 0.02 255);
-  --secondary-foreground: oklch(0.94 0.008 255);
-  --muted: oklch(0.36 0.02 255);
-  --muted-foreground: oklch(0.76 0.015 255);
-  --accent: oklch(0.36 0.02 255);
-  --accent-foreground: oklch(0.94 0.008 255);
+  --background: oklch(0.29 0.016 50);
+  --foreground: oklch(0.94 0.012 75);
+  --card: oklch(0.33 0.018 50);
+  --card-foreground: oklch(0.94 0.012 75);
+  --popover: oklch(0.33 0.018 50);
+  --popover-foreground: oklch(0.94 0.012 75);
+  --primary: oklch(0.91 0.02 75);
+  --primary-foreground: oklch(0.27 0.016 50);
+  --secondary: oklch(0.38 0.018 50);
+  --secondary-foreground: oklch(0.94 0.012 75);
+  --muted: oklch(0.38 0.018 50);
+  --muted-foreground: oklch(0.79 0.02 65);
+  --accent: oklch(0.38 0.018 50);
+  --accent-foreground: oklch(0.94 0.012 75);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.6 0.02 255);
+  --ring: oklch(0.66 0.08 48);
   --sidebar: oklch(0.31 0.02 255);
   --sidebar-foreground: oklch(0.94 0.008 255);
   --sidebar-accent: oklch(0.36 0.02 255);
   --sidebar-accent-foreground: oklch(0.94 0.008 255);
   --sidebar-border: oklch(1 0 0 / 12%);
   --sidebar-ring: oklch(0.6 0.02 255);
+  --brand: oklch(0.79 0.11 48);
+  --brand-foreground: oklch(0.24 0.02 45);
 }
 
 @layer base {
@@ -156,5 +170,9 @@
   }
   html {
     @apply font-sans;
+  }
+  h1,
+  h2 {
+    @apply font-heading;
   }
 }

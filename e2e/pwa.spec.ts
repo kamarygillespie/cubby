@@ -32,12 +32,22 @@ test("phones get a bottom tab bar; More holds theme, install and log out", async
   await expectNoHorizontalScroll(page);
 });
 
-test("sharing a link to Cubby prefills the add form", async ({ page }) => {
+test("sharing a link to Cubby starts the add flow with it", async ({
+  page,
+}) => {
+  await page.route("**/functions/v1/link-autofill", (route) =>
+    route.fulfill({
+      status: 500,
+      json: { error: "nope" },
+      headers: { "access-control-allow-origin": "*" },
+    }),
+  );
   await page.goto(
     "/items/new?title=Sneakers&text=" +
       encodeURIComponent("Look at these https://shop.example/sneakers?id=4"),
   );
-  await expect(page.getByLabel("Paste a product link (optional)")).toHaveValue(
+  await page.getByRole("button", { name: "Add details" }).click();
+  await expect(page.getByLabel("Link", { exact: true })).toHaveValue(
     "https://shop.example/sneakers?id=4",
   );
 });

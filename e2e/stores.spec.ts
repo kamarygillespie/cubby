@@ -48,7 +48,10 @@ test("stores show sales; favorites float up, get a sale link, and filter the wis
   await expect(cards).toHaveCount(4);
 
   // Favorite stores toggle
-  await page.getByRole("button", { name: "Favorite stores" }).click();
+  await page.getByRole("button", { name: /^Filter/ }).click();
+  const filters = page.getByRole("dialog");
+  await filters.getByRole("button", { name: "Favorite stores" }).click();
+  await filters.getByRole("button", { name: "Done" }).click();
   await expect(cards).toHaveCount(1);
   await expect(cards).toContainText("E2E Tee");
 });

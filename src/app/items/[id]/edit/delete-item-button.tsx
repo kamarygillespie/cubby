@@ -22,7 +22,8 @@ export function DeleteItemButton({
   itemId: string;
   title: string;
   onLists: string[];
-  returnTo?: "/" | "/closet";
+  // null stays on the current page (the item details sheet).
+  returnTo?: "/" | "/closet" | null;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();

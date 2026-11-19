@@ -1,5 +1,10 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { extractFromHtml, parsePrice, resolvePrices } from "./extract.ts";
+import {
+  extractFromHtml,
+  parsePrice,
+  resolvePrices,
+  storeFromHostname,
+} from "./extract.ts";
 
 Deno.test("extracts Open Graph title and image when present", () => {
   const html = `
@@ -88,6 +93,9 @@ Deno.test("returns all-null result for a page with no structured data", () => {
     image: null,
     price: null,
     salePrice: null,
+    store: null,
+    category: null,
+    blocked: false,
   });
 });
 
@@ -247,4 +255,142 @@ Deno.test("resolvePrices", () => {
     price: null,
     salePrice: null,
   });
+});
+
+Deno.test("reads the brand and category from schema.org", () => {
+  const html = `
+    <html><head>
+      <meta property="og:site_name" content="Nordstrom">
+      <script type="application/ld+json">
+        {
+          "@type": "Product",
+          "name": "Speedcat",
+          "brand": { "@type": "Brand", "name": "PUMA" },
+          "category": "Women > Shoes > Sneakers"
+        }
+      </script>
+    </head></html>
+  `;
+  const result = extractFromHtml(html);
+  assertEquals(result.store, "PUMA");
+  assertEquals(result.category, "Women > Shoes > Sneakers");
+});
+
+Deno.test("falls back to the site name, without its tagline", () => {
+  const html = `
+    <html><head>
+      <meta property="og:title" content="Speedcat">
+      <meta property="og:site_name" content="Madewell | Official Site">
+    </head></html>
+  `;
+  assertEquals(extractFromHtml(html).store, "Madewell");
+});
+
+Deno.test("names a store from its web address", () => {
+  assertEquals(storeFromHostname("us.puma.com"), "PUMA");
+  assertEquals(storeFromHostname("www2.hm.com"), "H&M");
+  assertEquals(storeFromHostname("oldnavy.gap.com"), "Old Navy");
+  assertEquals(storeFromHostname("www.allbirds.com"), "Allbirds");
+  assertEquals(storeFromHostname("shop.example.co.uk"), "Example");
+  assertEquals(storeFromHostname("localhost"), null);
+});
+
+Deno.test("reads the price from a ProductGroup's first variant", () => {
+  const html = `
+    <html><head>
+      <script type="application/ld+json">{"@type":"Product","@id":"#awards"}</script>
+      <script type="application/ld+json">
+        {
+          "@type": "ProductGroup",
+          "name": "Revealer Concealer",
+          "brand": { "name": "Kosas" },
+          "hasVariant": [
+            {
+              "@type": "Product",
+              "image": "https://example.com/tone.jpg",
+              "offers": { "@type": "Offer", "price": "32.00" }
+            }
+          ]
+        }
+      </script>
+    </head></html>
+  `;
+  const result = extractFromHtml(html);
+  assertEquals(result.title, "Revealer Concealer");
+  assertEquals(result.price, 32);
+  assertEquals(result.image, "https://example.com/tone.jpg");
+  assertEquals(result.store, "Kosas");
+});
+
+Deno.test("reads a price nested inside an aggregate offer", () => {
+  const html = `
+    <html><head><script type="application/ld+json">
+      {
+        "@type": "Product",
+        "name": "Tee",
+        "offers": {
+          "@type": "AggregateOffer",
+          "offers": [{ "@type": "Offer", "price": "28.00" }]
+        }
+      }
+    </script></head></html>
+  `;
+  assertEquals(extractFromHtml(html).price, 28);
+});
+
+Deno.test(
+  "uses a store's stated US price over mislabeled home-currency prices",
+  () => {
+    const html = `
+    <html><head>
+      <meta property="product:price:amount" content="39.68" />
+      <meta property="product:price:currency" content="GBP" />
+      <script type="application/ld+json">
+        {
+          "@type": "Product",
+          "name": "Chunky Knit Sweater",
+          "offers": [{ "@type": "Offer", "priceCurrency": "USD", "price": 31.74 }]
+        }
+      </script>
+    </head><body><script>
+      self.__data = {"currency_code":"GBP","marketing":{"sale_price_usd":41.93},
+      "discount_price_list":[{"type":0,"sale_price":31.74}]};
+    </script></body></html>
+  `;
+    const result = extractFromHtml(html);
+    assertEquals(result.salePrice, 41.93);
+    assertEquals(result.price, 52.42);
+  },
+);
+
+Deno.test("doesn't show another currency as dollars", () => {
+  const html = `
+    <html><head><script type="application/ld+json">
+      {
+        "@type": "Product",
+        "name": "Wool Scarf",
+        "offers": { "@type": "Offer", "priceCurrency": "GBP", "price": "45.00" }
+      }
+    </script></head></html>
+  `;
+  const result = extractFromHtml(html);
+  assertEquals(result.title, "Wool Scarf");
+  assertEquals(result.price, null);
+  assertEquals(result.salePrice, null);
+});
+
+Deno.test("keeps US dollar prices as they are", () => {
+  const html = `
+    <html><head>
+      <meta property="product:price:currency" content="USD" />
+      <script type="application/ld+json">
+        {
+          "@type": "Product",
+          "name": "Tee",
+          "offers": { "@type": "Offer", "priceCurrency": "USD", "price": "28.00" }
+        }
+      </script>
+    </head></html>
+  `;
+  assertEquals(extractFromHtml(html).price, 28);
 });

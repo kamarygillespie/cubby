@@ -9,14 +9,15 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 ### Core data & item management
 
 - Full item schema: title, image, link, price, interest level (1–5 stars), purchased (+ auto purchased date), gifted, notes, store/brand, item type, category (auto-derived from item type)
-- Add item via pasted link → server-side autofill (title/image/price) with full manual edit + image replacement
+- Add item via pasted link → server-side autofill (title/image/price) with full manual edit + image replacement. **Link-first flow (KAM-57):** Add item opens with only a link field and fetches on paste. It then shows a product preview and asks for just item type, interest level and notes (where color, size and other specifics go); everything else is under **Add details**. **Add without a link** opens manual entry, and a page Cubby can't read falls back to manual entry with the link kept. **Suggestions (KAM-58):** the store fills in from the page's brand, then its site name, then its web address. Up to 3 likely item types appear as one-tap choices, matched by keyword on the product name, the store's category and the link (first-party, no AI), plus **Something else** for the full list. A type is never chosen without a tap. **Stores that block apps (KAM-64):** some stores refuse automated requests. Cubby names the store, fills in its name, keeps the link for manual entry, and shows when the latest price check couldn't read the page. Ad and tracking values are removed from saved links
+- **Save to Cubby (KAM-65):** a bookmark (computer) or Apple Shortcut (iPhone), set up at `/save-to-cubby`, reads the product page open in the user's own browser and opens Add item with the details filled in, so it works at stores that block Cubby. Using it on an already saved item offers to update its price. **Best Buy and Etsy (KAM-66)** use their official APIs for autofill and automatic price checks once API keys are configured
 - Add/edit item manually (no link required). Edit at `/items/<id>/edit` (Edit on each card): all fields, plus replace or remove the image (the old file is deleted from storage). Delete lives on the edit page behind a confirmation that names any wishlists the item will drop off
 - Default system taxonomy for Category and Item Type, seeded on signup
 - Users can add their own custom Item Types (auto-mapped to a Category) and, if needed, custom Categories: "+ New type" on the add/edit form (optionally creating a new category in the same step), and a **Manage types** page at `/types` to add, rename and delete your own. Built-ins are read-only. Names are unique per user ignoring case, including against built-ins. A type that items still use, or a category that still has types, can't be deleted (with a message saying why)
 
 ### Views & organization
 
-- All-items view
+- All-items view. **Photo-first grid (KAM-59):** items show as photo cards (2 columns on phones, up to 4 on desktop) with just the name, price and sale badge. **Item details (KAM-60):** tapping a card opens a sheet with the full details and every action: Mark purchased, Mark gifted, Open link, Edit, Check price, Delete (with a confirmation that names any lists it's on), and which lists it's on. **One toolbar (KAM-61):** tabs, a single **Filter** button (sort, on sale, favorite stores, category, item type, grouping), removable chips for what's applied, and a **…** menu for Select and Check all prices. On desktop, account details, theme and Log out sit in an account menu
 - Group by Category (count + total price per category)
 - Group by Item Type (count + total price per item type)
 - Purchased section (items move here automatically when marked purchased)
@@ -31,7 +32,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 ### Sale detection (V1 scope)
 
-- Sale price + discount % captured at add-time or on manual refresh: **Check price** on any wishlist card with a link, and **Check all prices** on the Wishlist tab (checks what the tab is showing, one item at a time, with a summary like "2 now on sale, 5 unchanged")
+- Sale price + discount % captured at add-time or on manual refresh: **Check price** in the details of any wishlist item with a link, and **Check all prices** in the Wishlist tab's **…** menu (checks what the tab is showing, one item at a time, with a summary like "2 now on sale, 5 unchanged")
 - Visual "on sale" indicator
 
 ### Wishlist sharing
@@ -39,7 +40,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 - Multi-select items → add to one or more named wishlists (Wishlist tab only — purchased/gifted items aren't offered; a new list can be created inline from the picker, and re-adding an item already on a list is a silent no-op)
 - Public, no-login share link per wishlist (`/share/<token>`, copied from the list page). Purchased/gifted items are hidden from it so givers don't duplicate a gift; the owner's notes are **not** shown (decided Nov 9, 2026, KAM-38: notes are personal, e.g. "wait for sale")
 - Clean, shareable export view (readable on any device, no account needed to view)
-- UI surfaces which wishlist(s) an item is already on, to avoid accidentally duplicating an item across two people's lists (an "On: …" chip row on each item card, plus "N already on it" in the add-to-wishlist picker)
+- UI surfaces which wishlist(s) an item is already on, to avoid accidentally duplicating an item across two people's lists (an "On: …" chip row in each item's details, plus "N already on it" in the add-to-wishlist picker)
 - Wishlist management at `/wishlists`: create, rename, delete (items stay in your wishlist; only the list and its share link go), view a list's items with count + total, remove an item from a list. A list keeps items after they're marked purchased/gifted and labels them, so a gift-giver's list reflects what's been bought
 
 ### Platform
@@ -72,6 +73,10 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 - Notifications for price drops on wishlist items and favorite-store sales, delivered as **phone push via the installed PWA** plus an in-app notifications list (decided Nov 8, 2026; no email for now) (KAM-54). **Built (KAM-54):** after each daily price check, an alert is created when a wishlist item's price drops by at least your threshold (default 10%), or a sale starts at a favorite store (once per store per week). Alerts show under the bell (`/notifications`, with an unread count); push is **one daily digest** per device, turned on per device. Settings: each alert type on/off and the drop threshold
 - Spending breakdown by month, using `purchased_date` already captured since V1. **Built (KAM-55)** on Totals: a monthly bar chart (last 12 months, or any year with purchases); tap a month for its category breakdown and what was bought; a table view; undated purchases are counted separately. Months follow the **viewer's own time zone** (grouped in the browser)
+
+## Later: After Cubby Has Real Traffic
+
+- **Automatic price tracking through retailer affiliate feeds (KAM-67):** the approved way to track prices at stores that block Cubby, and a possible source of commission. Networks approve partners individually, so revisit once Cubby has enough users to qualify.
 
 ## Explicitly Out of Scope (for now)
 

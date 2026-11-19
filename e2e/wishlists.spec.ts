@@ -1,4 +1,4 @@
-import { test, expect, seedItems } from "./fixtures";
+import { test, expect, openItem, seedItems, startSelecting } from "./fixtures";
 
 test("create a wishlist from selected items and open its public share link", async ({
   page,
@@ -13,7 +13,7 @@ test("create a wishlist from selected items and open its public share link", asy
   await page.reload();
 
   // Multi-select → add to a new list
-  await page.getByRole("button", { name: "Select", exact: true }).click();
+  await startSelecting(page);
   await page.getByRole("checkbox", { name: "Select E2E Sweater" }).click();
   await page.getByRole("checkbox", { name: "Select E2E Earrings" }).click();
   await page.getByRole("button", { name: "Add to wishlist" }).click();
@@ -21,8 +21,8 @@ test("create a wishlist from selected items and open its public share link", asy
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText("Added 2 items to 1 list.");
 
-  // Item cards now show which list they're on
-  const sweater = page.getByRole("listitem").filter({ hasText: "E2E Sweater" });
+  // An item's details now show which list it's on
+  const sweater = await openItem(page, "E2E Sweater");
   await expect(
     sweater.getByRole("link", { name: "E2E Birthday" }),
   ).toBeVisible();
@@ -53,11 +53,9 @@ test("create a wishlist from selected items and open its public share link", asy
 
   // Purchased items drop off the public page
   await page.goto("/");
-  await page
-    .getByRole("listitem")
-    .filter({ hasText: "E2E Earrings" })
-    .getByRole("button", { name: "Mark purchased" })
-    .click();
+  const earrings = await openItem(page, "E2E Earrings");
+  await earrings.getByRole("button", { name: "Mark purchased" }).click();
+  await expect(earrings).toHaveCount(0); // saved; the sheet has closed
   await expect(
     page.getByRole("listitem").filter({ hasText: "E2E Earrings" }),
   ).toHaveCount(0);

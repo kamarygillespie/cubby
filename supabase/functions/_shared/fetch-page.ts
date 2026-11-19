@@ -1,8 +1,10 @@
 import {
   EMPTY_RESULT,
   extractFromHtml,
+  storeFromHostname,
   type AutofillResult,
 } from "./extract.ts";
+import { fetchFromStoreApi } from "./store-apis.ts";
 
 export const USER_AGENT = "CubbyLinkAutofill/1.0 (+personal wishlist app)";
 
@@ -28,9 +30,15 @@ export function isBlockedUrl(url: URL): boolean {
   );
 }
 
+// How stores respond when they refuse automated requests.
+const BLOCKED_STATUSES = new Set([401, 403, 406, 429, 451, 501]);
+
 // Fetches a product page and extracts title/image/prices. Never throws:
 // network errors, timeouts and odd pages come back as EMPTY_RESULT.
 export async function fetchProductData(url: URL): Promise<AutofillResult> {
+  const fromApi = await fetchFromStoreApi(url);
+  if (fromApi) return fromApi;
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
 
@@ -43,13 +51,23 @@ export async function fetchProductData(url: URL): Promise<AutofillResult> {
       },
       redirect: "follow",
     });
-    if (!response.ok) return EMPTY_RESULT;
+    if (!response.ok) {
+      return {
+        ...EMPTY_RESULT,
+        store: storeFromHostname(url.hostname),
+        blocked: BLOCKED_STATUSES.has(response.status),
+      };
+    }
 
-    return extractFromHtml(await response.text());
+    const result = extractFromHtml(await response.text());
+    return {
+      ...result,
+      store: result.store ?? storeFromHostname(url.hostname),
+    };
   } catch {
     // Network error, timeout, or parse failure — fail gracefully to manual
     // entry per ARCHITECTURE.md, never a hard error.
-    return EMPTY_RESULT;
+    return { ...EMPTY_RESULT, store: storeFromHostname(url.hostname) };
   } finally {
     clearTimeout(timeout);
   }

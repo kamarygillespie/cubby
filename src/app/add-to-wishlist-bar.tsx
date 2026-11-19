@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ListPlus, SquareCheck } from "lucide-react";
+import { ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -28,15 +28,12 @@ export function AddToWishlistBar({
   wishlists,
   itemTypeGroups,
   itemInfo,
-  extraActions,
 }: {
   itemIds: string[];
   wishlists: WishlistOption[];
   itemTypeGroups: ItemTypeGroup[];
   // Title + effective price per shown item, for the split preview.
   itemInfo: Record<string, SplitItemInfo>;
-  // Shown beside Select when not selecting (e.g. Check all prices).
-  extraActions?: React.ReactNode;
 }) {
   const selection = useItemSelection();
   const [open, setOpen] = useState(false);
@@ -45,29 +42,11 @@ export function AddToWishlistBar({
   if (!selection) return null;
 
   if (!selection.selecting) {
-    return (
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        {extraActions}
-        {notice && (
-          <p role="status" className="text-muted-foreground text-sm">
-            {notice}
-          </p>
-        )}
-        {itemIds.length > 0 && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setNotice(null);
-              selection.start();
-            }}
-          >
-            <SquareCheck />
-            Select
-          </Button>
-        )}
-      </div>
-    );
+    return notice ? (
+      <p role="status" className="text-muted-foreground text-sm">
+        {notice}
+      </p>
+    ) : null;
   }
 
   const count = selection.selected.size;
@@ -83,13 +62,20 @@ export function AddToWishlistBar({
         >
           {allSelected ? "Select none" : "Select all"}
         </Button>
-        <Button size="sm" variant="outline" onClick={selection.stop}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setNotice(null);
+            selection.stop();
+          }}
+        >
           Cancel
         </Button>
       </div>
 
       <div className="bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))]">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 p-4">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 p-4">
           <p className="text-sm" aria-live="polite">
             {count} selected
           </p>

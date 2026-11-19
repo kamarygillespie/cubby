@@ -4,6 +4,7 @@ test("create a custom item type + category while adding an item, then manage it"
   page,
 }) => {
   await page.goto("/items/new");
+  await page.getByRole("button", { name: "Add without a link" }).click();
   await page.getByLabel("Title").fill("E2E Fig Candle");
 
   // "+ New type" with a brand-new category

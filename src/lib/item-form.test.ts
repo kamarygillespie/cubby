@@ -1,9 +1,57 @@
 import { describe, expect, it } from "vitest";
 import {
   itemImagePathFromUrl,
+  normalizeProductLink,
   parseItemForm,
+  removeTrackingParams,
   sharedLinkFromParams,
 } from "./item-form";
+
+describe("removeTrackingParams", () => {
+  it("removes ad tracking and keeps what identifies the product", () => {
+    expect(
+      removeTrackingParams(
+        "https://www2.hm.com/en_us/productpage.0998802055.html?utm_source=google&utm_term=&gclid=abc&gad_source=1&gbraid=x&size=M",
+      ),
+    ).toBe("https://www2.hm.com/en_us/productpage.0998802055.html?size=M");
+  });
+
+  it("leaves a clean link exactly as it was", () => {
+    const link = "https://shop.example/sneakers?id=4&color=red%20clay";
+    expect(removeTrackingParams(link)).toBe(link);
+  });
+
+  it("leaves blanks and non-links alone", () => {
+    expect(removeTrackingParams(null)).toBeNull();
+    expect(removeTrackingParams("not a link")).toBe("not a link");
+  });
+});
+
+describe("normalizeProductLink", () => {
+  it("keeps a full web address", () => {
+    expect(normalizeProductLink("  https://puma.com/shoes?id=4 ")).toBe(
+      "https://puma.com/shoes?id=4",
+    );
+  });
+
+  it("adds https to a bare domain", () => {
+    expect(normalizeProductLink("puma.com/shoes")).toBe(
+      "https://puma.com/shoes",
+    );
+  });
+
+  it("finds the link inside a share message", () => {
+    expect(normalizeProductLink("Look at these! https://puma.com/a.")).toBe(
+      "https://puma.com/a",
+    );
+  });
+
+  it("rejects text and unsafe addresses", () => {
+    expect(normalizeProductLink("")).toBeNull();
+    expect(normalizeProductLink("cute shoes")).toBeNull();
+    expect(normalizeProductLink("javascript:alert(1)")).toBeNull();
+  });
+});
 
 const form = (fields: Record<string, string>) => {
   const data = new FormData();

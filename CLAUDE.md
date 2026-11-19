@@ -20,7 +20,8 @@ Do not load every doc for every task — pick the one(s) relevant to the change 
 ## Commands
 
 ```bash
-npm run dev          # local dev server
+npm run dev:local    # dev server on the LOCAL database (use this one)
+npm run dev          # dev server on the LIVE database in .env.local
 npm run build         # production build
 npm run lint          # eslint
 npm run typecheck     # tsc --noEmit
