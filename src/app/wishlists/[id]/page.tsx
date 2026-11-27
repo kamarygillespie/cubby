@@ -3,11 +3,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ExternalLink, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, Gift, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { getWishlist } from "@/lib/db/wishlists";
+import { getShowClaims, listClaimsOnMyItems } from "@/lib/db/claims";
 import { effectivePrice } from "@/lib/items-view";
 import { formatCurrency } from "@/lib/format";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
@@ -43,6 +44,12 @@ export default async function WishlistPage({
     wi.item ? [wi.item] : [],
   );
   const total = items.reduce((sum, item) => sum + effectivePrice(item), 0);
+
+  // Gift claims (KAM-77), only when the owner chose to see them.
+  const supabase = await createClient();
+  const claims = (await getShowClaims(supabase))
+    ? await listClaimsOnMyItems(supabase)
+    : new Map<string, string | null>();
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
@@ -114,6 +121,14 @@ export default async function WishlistPage({
                       {item.purchased && " · Purchased"}
                       {item.gifted && " · Gifted"}
                     </span>
+                    {claims.has(item.id) && (
+                      <span className="text-brand flex items-center gap-1 text-xs font-medium">
+                        <Gift className="size-3.5" aria-hidden />
+                        {claims.get(item.id)
+                          ? `Claimed by ${claims.get(item.id)}`
+                          : "Claimed"}
+                      </span>
+                    )}
                   </div>
                   <form
                     action={removeFromWishlistAction.bind(

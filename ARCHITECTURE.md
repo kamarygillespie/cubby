@@ -46,7 +46,7 @@ Shared wishlists must be viewable with **no login**. This is the one deliberate 
 - **What a visitor sees:** list name plus items that are neither purchased nor gifted (title, image, store, price/sale price, link — never the owner's notes; `get_shared_wishlist` returns `notes` as null). An empty list renders a friendly empty state, not a 404; unknown or malformed tokens 404.
 - **Gift card ideas** on the share page are computed in the app from fields the share function already returns (store, price, sale price). No extra data is exposed.
 - This keeps the "no login to view" requirement without opening the tables themselves to anonymous reads.
-- The schema leaves room for an optional, lightweight anonymous identifier (name + a browser cookie) to be added later for reservation-style features, without changing the sharing model itself.
+- **Gift claims (KAM-77)** use exactly that: an optional name plus an httpOnly browser cookie (`cubby_giver`, a random key, path `/share`). Givers tap **I'm getting this**, and other viewers see "Someone's getting this" (never who). Claims are written and read only through token-gated SECURITY DEFINER functions (DATABASE.md, "Gift Claims"). **Surprise by default:** the owner sees no claims, even when previewing their own share link, unless they turn on **Show claims** on the Lists page; then each list's page shows "Claimed by <name>". This is enforced in `get_shared_claims()`, not just hidden in the UI. Abuse is limited to 25 claims per browser key. A new key is cheap, so this is a speed bump, not a guarantee, which is acceptable for a share link that's already private by obscurity.
 
 ## Link Autofill Flow
 

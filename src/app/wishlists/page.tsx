@@ -7,13 +7,18 @@ import { createClient } from "@/lib/supabase/server";
 import { listWishlistsWithPrices } from "@/lib/db/wishlists";
 import { effectivePrice } from "@/lib/items-view";
 import { formatCurrency } from "@/lib/format";
+import { getShowClaims } from "@/lib/db/claims";
 import { CreateWishlistForm } from "./create-wishlist-form";
+import { ShowClaimsToggle } from "./show-claims-toggle";
 
 export const metadata: Metadata = { title: "Wishlists" };
 
 export default async function WishlistsPage() {
   const supabase = await createClient();
-  const wishlists = await listWishlistsWithPrices(supabase);
+  const [wishlists, showClaims] = await Promise.all([
+    listWishlistsWithPrices(supabase),
+    getShowClaims(supabase),
+  ]);
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
@@ -30,6 +35,7 @@ export default async function WishlistsPage() {
       </Link>
       <h1 className="text-xl font-semibold">Wishlists</h1>
       <CreateWishlistForm />
+      {wishlists.length > 0 && <ShowClaimsToggle show={showClaims} />}
 
       {wishlists.length === 0 ? (
         <p className="text-muted-foreground text-sm">

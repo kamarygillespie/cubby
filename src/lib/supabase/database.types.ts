@@ -84,6 +84,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      item_claims: {
+        Row: {
+          claimer_key: string;
+          claimer_name: string | null;
+          created_at: string;
+          item_id: string;
+          user_id: string;
+          wishlist_id: string | null;
+        };
+        Insert: {
+          claimer_key: string;
+          claimer_name?: string | null;
+          created_at?: string;
+          item_id: string;
+          user_id: string;
+          wishlist_id?: string | null;
+        };
+        Update: {
+          claimer_key?: string;
+          claimer_name?: string | null;
+          created_at?: string;
+          item_id?: string;
+          user_id?: string;
+          wishlist_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "item_claims_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: true;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "item_claims_wishlist_id_fkey";
+            columns: ["wishlist_id"];
+            isOneToOne: false;
+            referencedRelation: "wishlists";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       item_price_checks: {
         Row: {
           checked_at: string;
@@ -374,18 +416,21 @@ export type Database = {
           display_name: string | null;
           id: string;
           onboarding_dismissed_at: string | null;
+          show_claims: boolean;
         };
         Insert: {
           created_at?: string;
           display_name?: string | null;
           id: string;
           onboarding_dismissed_at?: string | null;
+          show_claims?: boolean;
         };
         Update: {
           created_at?: string;
           display_name?: string | null;
           id?: string;
           onboarding_dismissed_at?: string | null;
+          show_claims?: boolean;
         };
         Relationships: [];
       };
@@ -478,6 +523,19 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      claim_shared_item: {
+        Args: {
+          p_claimer_key: string;
+          p_item_id: string;
+          p_name?: string;
+          token: string;
+        };
+        Returns: string;
+      };
+      get_shared_claims: {
+        Args: { p_claimer_key: string; token: string };
+        Returns: Json;
+      };
       get_shared_wishlist: {
         Args: { token: string };
         Returns: {
@@ -505,6 +563,17 @@ export type Database = {
       save_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string };
         Returns: undefined;
+      };
+      shared_item_on_list: {
+        Args: { p_item_id: string; token: string };
+        Returns: {
+          owner_id: string;
+          wishlist_id: string;
+        }[];
+      };
+      unclaim_shared_item: {
+        Args: { p_claimer_key: string; p_item_id: string; token: string };
+        Returns: boolean;
       };
     };
     Enums: {

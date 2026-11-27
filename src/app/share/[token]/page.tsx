@@ -1,5 +1,6 @@
 import { cache } from "react";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ExternalLink, Gift } from "lucide-react";
@@ -7,6 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { getSharedWishlist } from "@/lib/db/wishlists";
+import { getSharedClaims } from "@/lib/db/claims";
+import { ClaimControl } from "./claim-control";
+import { GIVER_COOKIE } from "./giver-cookie";
 import { PriceDisplay } from "../../price-display";
 import { GiftCardIdeas } from "@/components/gift-card-ideas";
 import { giftCardIdeas } from "@/lib/stores";
@@ -36,7 +40,18 @@ export default async function SharedWishlistPage({
   const wishlist = await loadSharedWishlist(token);
   if (!wishlist) notFound();
 
-  const n = wishlist.items.length;
+  // Gift claims (KAM-77). Empty for the list's owner unless they turned on
+  // Show claims, so previewing your own list never spoils a surprise.
+  const giver = (await cookies()).get(GIVER_COOKIE)?.value ?? null;
+  const claims = await getSharedClaims(await createClient(), token, giver);
+  const stateOf = (id: string) => claims.states.get(id) ?? "open";
+  // Items still up for grabs first; same order otherwise.
+  const items = [...wishlist.items].sort(
+    (a, b) =>
+      Number(stateOf(a.id) === "taken") - Number(stateOf(b.id) === "taken"),
+  );
+
+  const n = items.length;
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
@@ -48,6 +63,13 @@ export default async function SharedWishlistPage({
         <p className="text-muted-foreground text-sm">
           {n} item{n === 1 ? "" : "s"}
         </p>
+        {claims.owner && (
+          <p className="bg-muted text-muted-foreground mt-2 rounded-lg p-3 text-sm">
+            This is your list. Givers can tap <b>I&apos;m getting this</b> here
+            so nobody doubles up. Claims stay hidden from you unless you turn on{" "}
+            <b>Show claims</b> on your Lists page.
+          </p>
+        )}
       </header>
 
       {n === 0 ? (
@@ -56,9 +78,13 @@ export default async function SharedWishlistPage({
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {wishlist.items.map((item) => (
+          {items.map((item) => (
             <li key={item.id}>
-              <Card>
+              <Card
+                className={
+                  stateOf(item.id) === "taken" ? "opacity-70" : undefined
+                }
+              >
                 <CardContent className="flex gap-3">
                   {item.image_url && (
                     <Image
@@ -97,6 +123,23 @@ export default async function SharedWishlistPage({
                         <ExternalLink />
                       </a>
                     )}
+                    {claims.owner ? (
+                      stateOf(item.id) === "taken" && (
+                        <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
+                          <Gift className="size-4" aria-hidden />
+                          Claimed by a giver
+                        </p>
+                      )
+                    ) : (
+                      <ClaimControl
+                        // Remount when the server's answer changes.
+                        key={stateOf(item.id)}
+                        token={token}
+                        itemId={item.id}
+                        title={item.title}
+                        initialState={stateOf(item.id)}
+                      />
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -106,7 +149,7 @@ export default async function SharedWishlistPage({
       )}
 
       <GiftCardIdeas
-        ideas={giftCardIdeas(wishlist.items)}
+        ideas={giftCardIdeas(items)}
         description="Not sure which to pick? A gift card to one of these stores covers several things on this list."
         limit={3}
       />

@@ -11,6 +11,7 @@ import {
   renameWishlist,
 } from "@/lib/db/wishlists";
 import { parseWishlistName } from "@/lib/wishlists";
+import { setShowClaims } from "@/lib/db/claims";
 import { getEffectivePrices } from "@/lib/db/items";
 import {
   SPLIT_MAX_LISTS,
@@ -164,4 +165,10 @@ export async function splitIntoWishlists(input: {
     ok: true,
     message: `Split ${itemIds.length} items into ${names.length} lists.`,
   };
+}
+
+// Owner's "Show claims" (KAM-77): off by default so gifts stay a surprise.
+export async function setShowClaimsAction(show: boolean) {
+  await setShowClaims(await createClient(), show);
+  revalidatePath("/wishlists", "layout");
 }
