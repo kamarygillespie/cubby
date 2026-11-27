@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   captureBookmarklet,
+  captureScript,
   captureShortcutScript,
   parseCapture,
 } from "./page-capture";
@@ -74,5 +75,82 @@ describe("capture scripts", () => {
     expect(captureShortcutScript("https://cubby.example")).toContain(
       "completion(target)",
     );
+  });
+});
+
+// Runs the real page script against a minimal stand-in for a store's page,
+// then reads back what it would hand to Add item.
+function capturePage({
+  ldJson,
+  storeData,
+  canonical = "https://shop.example/products/campus-track-pants-blue",
+}: {
+  ldJson: unknown;
+  storeData: string;
+  canonical?: string;
+}) {
+  const ld = JSON.stringify(ldJson);
+  const location = { href: canonical };
+  const document = {
+    title: "",
+    documentElement: { innerHTML: `<script>${ld}</script>${storeData}` },
+    querySelector: (selector: string) =>
+      selector === 'link[rel="canonical"]'
+        ? { getAttribute: () => canonical }
+        : null,
+    querySelectorAll: (selector: string) =>
+      selector.includes("ld+json") ? [{ textContent: ld }] : [],
+  };
+  new Function("document", "location", captureScript("https://cubby.example"))(
+    document,
+    location,
+  );
+  return parseCapture(new URL(location.href).searchParams.get("capture") ?? "");
+}
+
+const trackPants = {
+  "@type": "ProductGroup",
+  name: "Campus Track Pants",
+  url: "https://shop.example/products/campus-track-pants-blue",
+  hasVariant: [
+    { "@type": "Product", offers: { price: 30, priceCurrency: "USD" } },
+  ],
+};
+
+describe("capture script: original price from store data (KAM-74)", () => {
+  it("reads compareAtPrice next to this product's price", () => {
+    expect(
+      capturePage({
+        ldJson: trackPants,
+        storeData: `{"handle":"campus-track-pants-blue","price":30,"compareAtPrice":50}`,
+      }),
+    ).toMatchObject({ price: 50, salePrice: 30 });
+  });
+
+  it("reads Shopify cents, JSON-escaped", () => {
+    expect(
+      capturePage({
+        ldJson: trackPants,
+        storeData: `"{\\"handle\\":\\"campus-track-pants-blue\\",\\"price\\":3000,\\"compare_at_price\\":5000}"`,
+      }),
+    ).toMatchObject({ price: 50, salePrice: 30 });
+  });
+
+  it("ignores a recommended product's sale at the same price", () => {
+    expect(
+      capturePage({
+        ldJson: trackPants,
+        storeData: `{"handle":"campus-track-pants-blue","price":30,"compareAtPrice":null}${" ".repeat(4000)}{"handle":"cosy-joggers-pink","price":30,"compareAtPrice":45}`,
+      }),
+    ).toMatchObject({ price: 30, salePrice: null });
+  });
+
+  it("gives up when original prices disagree", () => {
+    expect(
+      capturePage({
+        ldJson: trackPants,
+        storeData: `{"handle":"campus-track-pants-blue","v":[{"price":30,"compareAtPrice":50},{"price":30,"compareAtPrice":45}]}`,
+      }),
+    ).toMatchObject({ price: 30, salePrice: null });
   });
 });

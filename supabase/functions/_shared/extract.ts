@@ -296,10 +296,109 @@ function usdPriceSignals(
   return foreign ? { current: null, original: null } : { current, original };
 }
 
+// Store data (Shopify and similar) often names the original price outside
+// the standard product tags, e.g. Gymshark's "price":30,"compareAtPrice":50
+// (KAM-74). Keys may be JSON-escaped inside a script string (\"price\").
+const ORIGINAL_PRICE_KEY =
+  /\\?["'](?:compareAtPrice|compare_at_price|originalPrice|original_price|wasPrice|was_price|listPrice|list_price|regularPrice|regular_price|strikethroughPrice|strikethrough_price)\\?["']\s*:\s*\\?["']?(\d+(?:\.\d+)?)/g;
+const CURRENT_PRICE_KEY =
+  /\\?["'](?:price|salePrice|sale_price|currentPrice|current_price|finalPrice|final_price)\\?["']\s*:\s*\\?["']?(\d+(?:\.\d+)?)/g;
+const NEARBY = 120; // chars either side: the same JSON object
+const CONTEXT = 1500; // chars either side: close enough to name the product
+
+const sameMoney = (a: number, b: number) => Math.abs(a - b) < 0.005;
+
+// Where a page names this product: its handle (last path segment of its
+// canonical/product URL) and any product, group or SKU IDs.
+export function productIdentifiers($: cheerio.CheerioAPI): string[] {
+  const ids = new Set<string>();
+  const addHandle = (url: unknown) => {
+    if (typeof url !== "string") return;
+    try {
+      const handle = new URL(url, "https://x.invalid").pathname
+        .split("/")
+        .filter(Boolean)
+        .at(-1);
+      if (handle && handle.length >= 6) ids.add(handle);
+    } catch {
+      // not a URL
+    }
+  };
+  addHandle($('link[rel="canonical"]').attr("href"));
+  addHandle($('meta[property="og:url"]').attr("content"));
+  $('script[type="application/ld+json"]').each((_, script) => {
+    try {
+      for (const product of collectProductNodes(
+        JSON.parse($(script).contents().text()),
+      )) {
+        addHandle(product.url);
+        for (const key of ["productGroupID", "productID", "sku", "mpn"]) {
+          const value = product[key];
+          if (typeof value === "string" && value.length >= 4) ids.add(value);
+        }
+      }
+    } catch {
+      // malformed JSON-LD
+    }
+  });
+  return [...ids];
+}
+
+// The original price for *this* product, from store data in the page. Only
+// trusts a value sitting next to a price equal to the product's current one
+// (also in cents, as Shopify's product JSON uses). Pages also carry data for
+// recommended products, so: when the page names its product, only matches
+// near that handle/ID count, and if what's left disagrees, return null
+// rather than guess.
+export function findOriginalPrice(
+  html: string,
+  current: number,
+  identifiers: string[],
+): number | null {
+  const near: number[] = [];
+  const all: number[] = [];
+  for (const match of html.matchAll(ORIGINAL_PRICE_KEY)) {
+    const value = Number(match[1]);
+    const at = match.index ?? 0;
+    const start = Math.max(0, at - NEARBY);
+    const window = html.slice(start, at + NEARBY);
+    // The price closest to the key is the one in the same object.
+    let seen: number | null = null;
+    let distance = Infinity;
+    for (const price of window.matchAll(CURRENT_PRICE_KEY)) {
+      const d = Math.abs(start + (price.index ?? 0) - at);
+      if (d < distance) [seen, distance] = [Number(price[1]), d];
+    }
+    let original: number | null = null;
+    if (seen !== null && sameMoney(seen, current)) original = value;
+    else if (seen !== null && sameMoney(seen, current * 100)) {
+      original = value / 100;
+    }
+    if (original === null || original <= current) continue;
+    all.push(original);
+    const context = html.slice(Math.max(0, at - CONTEXT), at + CONTEXT);
+    if (identifiers.some((id) => context.includes(id))) near.push(original);
+  }
+  // A page that names its product but has no match near that name: the
+  // matches belong to other products.
+  const pool = identifiers.length ? near : all;
+  if (!pool.length) return null;
+  return pool.every((v) => sameMoney(v, pool[0])) ? pool[0] : null;
+}
+
 export function extractFromHtml(html: string): AutofillResult {
   const $ = cheerio.load(html);
   const schemaOrg = extractSchemaOrg($);
   const openGraph = extractOpenGraph($);
+
+  const signals = usdPriceSignals(html, schemaOrg, openGraph);
+  if (signals.current !== null && signals.original === null) {
+    signals.original = findOriginalPrice(
+      html,
+      signals.current,
+      productIdentifiers($),
+    );
+  }
 
   // schema.org structured data first (more reliable for price), OG fills gaps.
   return {
@@ -308,6 +407,6 @@ export function extractFromHtml(html: string): AutofillResult {
     store: schemaOrg.store ?? openGraph.store ?? null,
     category: schemaOrg.category ?? openGraph.category ?? null,
     blocked: false,
-    ...resolvePrices(usdPriceSignals(html, schemaOrg, openGraph)),
+    ...resolvePrices(signals),
   };
 }

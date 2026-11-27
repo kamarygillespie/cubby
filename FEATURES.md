@@ -34,6 +34,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 
 - Sale price + discount % captured at add-time or on manual refresh: **Check price** in the details of any wishlist item with a link, and **Check all prices** in the Wishlist tab's **…** menu (checks what the tab is showing, one item at a time, with a summary like "2 now on sale, 5 unchanged")
 - Visual "on sale" indicator
+- **Added on sale (KAM-74):** when a store lists only the sale price in its standard product data, Cubby reads the original price from the store's own page data (e.g. Gymshark's `compareAtPrice`), so an item added on sale shows "$30, was $50, 40% off". This applies to autofill, Save to Cubby, Check price and the daily checks. Items already saved at only their sale price correct themselves on their next price check
 
 ### Wishlist sharing
 
