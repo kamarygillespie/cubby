@@ -8,6 +8,7 @@ import {
   deleteItem,
   deleteItems,
   getItem,
+  recordPriceCheck,
   updateItem,
 } from "@/lib/db/items";
 import {
@@ -100,6 +101,23 @@ export async function updateItemAction(
       ...parsed.values,
       image_url: imageUrl,
     });
+
+    // A price typed in by hand counts as a successful check (KAM-90), so
+    // the item stops showing "Check by hand". Recorded after the update,
+    // so the check sees no change and can't send a price alert.
+    const { price, sale_price } = parsed.values;
+    if (
+      existing.link &&
+      !existing.purchased &&
+      !existing.gifted &&
+      price != null &&
+      (price !== existing.price || sale_price !== existing.sale_price)
+    ) {
+      await recordPriceCheck(supabase, itemId, {
+        price,
+        salePrice: sale_price ?? null,
+      });
+    }
 
     // Only after the row points elsewhere, so a failed update never leaves
     // the item referencing a deleted file.

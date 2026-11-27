@@ -25,6 +25,9 @@ export type FilterOptions = {
   hasFavoriteStores?: boolean;
   // Display name for an active ?store= filter (from the Stores page).
   storeName?: string | null;
+  // Items whose latest price check couldn't read the page (KAM-90). The
+  // toggle shows only when there are some, or while it's on.
+  needsCheckCount?: number;
 };
 
 const ALL = "__all__";
@@ -86,6 +89,7 @@ function useItemFilters({
   const itemType = searchParams.get("itemType") ?? ALL;
   const sort = searchParams.get("sort") ?? ALL;
   const onSale = searchParams.get("onSale") === "1";
+  const needsCheck = searchParams.get("check") === "1";
   const favoritesOnly = searchParams.get("fav") === "1";
   const store = searchParams.get("store");
 
@@ -118,6 +122,7 @@ function useItemFilters({
         ]
       : []),
     ...(onSale ? [{ key: "onSale", label: "On sale" }] : []),
+    ...(needsCheck ? [{ key: "check", label: "Needs a manual check" }] : []),
     ...(favoritesOnly ? [{ key: "fav", label: "Favorite stores" }] : []),
     ...(group !== ALL
       ? [{ key: "group", label: labelFor(GROUP_OPTIONS, group) }]
@@ -133,6 +138,7 @@ function useItemFilters({
     itemType,
     sort,
     onSale,
+    needsCheck,
     favoritesOnly,
     active,
     setParam,
@@ -174,7 +180,12 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 // One Filter button that holds every sort, filter and grouping (KAM-61).
 export function FilterSheet(options: FilterOptions) {
-  const { categories, itemTypes, hasFavoriteStores = false } = options;
+  const {
+    categories,
+    itemTypes,
+    hasFavoriteStores = false,
+    needsCheckCount = 0,
+  } = options;
   const [open, setOpen] = useState(false);
   const filters = useItemFilters(options);
   const count = filters.active.length;
@@ -223,6 +234,16 @@ export function FilterSheet(options: FilterOptions) {
             >
               On sale
             </Chip>
+            {(needsCheckCount > 0 || filters.needsCheck) && (
+              <Chip
+                pressed={filters.needsCheck}
+                onClick={() =>
+                  filters.setParam("check", filters.needsCheck ? null : "1")
+                }
+              >
+                Needs a manual check ({needsCheckCount})
+              </Chip>
+            )}
             {hasFavoriteStores && (
               <Chip
                 pressed={filters.favoritesOnly}
