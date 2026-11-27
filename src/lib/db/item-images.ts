@@ -31,6 +31,21 @@ export async function uploadItemImage(
   return publicUrl;
 }
 
+// Removes several items' uploaded photos in one request. Links to images on
+// other sites are skipped. A failure is logged, not thrown: the items are
+// already gone, and a leftover file is harmless.
+export async function deleteItemImages(
+  supabase: DbClient,
+  imageUrls: (string | null)[],
+) {
+  const paths = imageUrls
+    .map(itemImagePathFromUrl)
+    .filter((path): path is string => Boolean(path));
+  if (paths.length === 0) return;
+  const { error } = await supabase.storage.from(BUCKET).remove(paths);
+  if (error) console.error("Failed to delete item images", paths, error);
+}
+
 // Removes a replaced/removed image from the bucket. Only touches files we
 // host (external URLs are ignored), and storage RLS limits it to the
 // caller's own folder. Best-effort: an orphaned file is harmless, so a

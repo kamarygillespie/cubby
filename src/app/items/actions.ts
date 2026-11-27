@@ -3,9 +3,21 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createItem, deleteItem, getItem, updateItem } from "@/lib/db/items";
-import { deleteItemImage, uploadItemImage } from "@/lib/db/item-images";
+import {
+  createItem,
+  deleteItem,
+  deleteItems,
+  getItem,
+  updateItem,
+} from "@/lib/db/items";
+import {
+  deleteItemImage,
+  deleteItemImages,
+  uploadItemImage,
+} from "@/lib/db/item-images";
 import { parseItemForm } from "@/lib/item-form";
+import { deletedItemsMessage } from "@/lib/wishlists";
+import type { BulkResult } from "../types/actions";
 import type { ItemFormState } from "./item-form-state";
 
 function chosenFile(formData: FormData): File | null {
@@ -118,6 +130,27 @@ export async function deleteItemAction(
   }
   revalidateItemViews();
   if (returnTo) redirect(returnTo);
+}
+
+// "Delete" on items picked in Select mode (KAM-76). Stays on the current
+// page, so the tab and filters are kept; the caller shows the message.
+export async function deleteItemsAction(
+  itemIds: string[],
+): Promise<BulkResult> {
+  if (itemIds.length === 0) return { ok: false, error: "Select some items." };
+  try {
+    const supabase = await createClient();
+    // wishlist_items rows cascade with each item.
+    const deleted = await deleteItems(supabase, itemIds);
+    await deleteItemImages(
+      supabase,
+      deleted.map((item) => item.image_url),
+    );
+    revalidateItemViews();
+    return { ok: true, message: deletedItemsMessage(deleted.length) };
+  } catch {
+    return { ok: false, error: "Couldn't delete the items. Try again." };
+  }
 }
 
 // "Add to closet": a piece you already own, never on a wishlist. Stored with

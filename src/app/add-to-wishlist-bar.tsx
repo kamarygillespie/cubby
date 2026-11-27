@@ -18,6 +18,7 @@ import { WISHLIST_NAME_MAX_LENGTH } from "@/lib/wishlists";
 import { addToWishlists } from "./wishlists/actions";
 import { useItemSelection } from "./item-selection";
 import { ChangeTypeButton } from "./change-type-dialog";
+import { DeleteSelectedButton } from "./delete-selected-dialog";
 import { SplitButton, type SplitItemInfo } from "./split-dialog";
 import type { ItemTypeGroup } from "./item-type-select";
 
@@ -96,9 +97,26 @@ export function AddToWishlistBar({
                 setNotice(message);
               }}
             />
-            <Button disabled={count === 0} onClick={() => setOpen(true)}>
+            <DeleteSelectedButton
+              selectedIds={[...selection.selected]}
+              titles={Object.fromEntries(
+                Object.entries(itemInfo).map(([id, info]) => [id, info.title]),
+              )}
+              wishlists={wishlists}
+              onDone={(message) => {
+                selection.stop();
+                setNotice(message);
+              }}
+            />
+            <Button
+              disabled={count === 0}
+              onClick={() => setOpen(true)}
+              aria-label="Add to wishlist"
+            >
               <ListPlus />
-              Add to wishlist
+              {/* Short on phones so all four actions fit on one row. */}
+              <span className="sm:hidden">Add</span>
+              <span className="max-sm:hidden">Add to wishlist</span>
             </Button>
           </div>
         </div>
