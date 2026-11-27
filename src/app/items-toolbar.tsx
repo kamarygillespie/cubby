@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Ellipsis, RefreshCw, SquareCheck } from "lucide-react";
+import { ClipboardCopy, Ellipsis, RefreshCw, SquareCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import type { CopyItem } from "@/lib/wishlist-text";
 import { useCheckAllPrices } from "./check-price";
+import { CopyWishlistDialog } from "./copy-wishlist-dialog";
 import { ActiveFilters, FilterSheet, type FilterOptions } from "./filter-sheet";
 import { useItemSelection } from "./item-selection";
 import { ViewTabs } from "./view-tabs";
@@ -19,17 +21,25 @@ export function ItemsToolbar({
   showActions,
   canSelect,
   priceCheckIds,
+  copyItems = [],
+  filtered = false,
 }: {
   filterOptions: FilterOptions;
   // The "…" menu's actions apply to the Wishlist tab only.
   showActions: boolean;
   canSelect: boolean;
   priceCheckIds: string[];
+  // What "Copy wishlist" copies: the matching items, filters applied.
+  copyItems?: CopyItem[];
+  filtered?: boolean;
 }) {
   const selection = useItemSelection();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
   const priceCheck = useCheckAllPrices(priceCheckIds);
-  const hasActions = showActions && (canSelect || priceCheckIds.length > 0);
+  const hasActions =
+    showActions &&
+    (canSelect || priceCheckIds.length > 0 || copyItems.length > 0);
 
   return (
     <div className="flex flex-col gap-2">
@@ -81,6 +91,20 @@ export function ItemsToolbar({
                     Check all prices
                   </Button>
                 )}
+                {copyItems.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setCopyOpen(true);
+                    }}
+                  >
+                    <ClipboardCopy />
+                    Copy wishlist
+                  </Button>
+                )}
               </PopoverContent>
             </Popover>
           )}
@@ -88,6 +112,14 @@ export function ItemsToolbar({
       </div>
 
       <ActiveFilters {...filterOptions} />
+      {showActions && (
+        <CopyWishlistDialog
+          open={copyOpen}
+          onOpenChange={setCopyOpen}
+          items={copyItems}
+          filtered={filtered}
+        />
+      )}
 
       {priceCheck.progress && (
         <div className="flex items-center justify-between gap-2">

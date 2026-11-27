@@ -348,6 +348,30 @@ export default async function Home({
               priceCheckIds={visibleItems
                 .filter((i) => i.link)
                 .map((i) => i.id)}
+              // Copy wishlist (KAM-91): the Wishlist tab's matching items.
+              copyItems={
+                view === "wishlist"
+                  ? visibleItems.map((i) => ({
+                      title: i.title,
+                      store: i.store_brand,
+                      price: i.price,
+                      salePrice: i.sale_price,
+                      type: i.item_type.name,
+                      category: i.item_type.category.name,
+                      interest: i.interest_level,
+                      link: i.link,
+                      notes: i.notes,
+                    }))
+                  : []
+              }
+              filtered={Boolean(
+                categoryId ||
+                itemTypeId ||
+                onSaleOnly ||
+                needsCheckOnly ||
+                favoritesOnly ||
+                storeFilter,
+              )}
             />
             {view === "wishlist" && (
               <AddToWishlistBar
