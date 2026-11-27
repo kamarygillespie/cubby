@@ -91,10 +91,22 @@ var metaCurrency=(meta('product:price:currency')||meta('og:price:currency')||'')
 var offerCurrency=String(offer.priceCurrency||'').toUpperCase();
 if(usd&&home&&home!=='USD'&&homeSale){var list=num(meta('product:price:amount'));original=list&&list>homeSale?Math.round(list*usd*100/homeSale)/100:null;current=usd}
 else if((metaCurrency&&metaCurrency!=='USD')||(offerCurrency&&offerCurrency!=='USD')){current=null;original=null}
+var canonical=d.querySelector('link[rel="canonical"]');
+var ids=[];var addId=function(v){if(typeof v==='string'&&v.length>=4&&ids.indexOf(v)<0)ids.push(v)};
+var addHandle=function(u){if(typeof u!=='string')return;try{var h=new URL(u,location.href).pathname.split('/').filter(Boolean).pop();if(h&&h.length>=6)addId(h)}catch(e){}};
+addHandle(canonical&&canonical.getAttribute('href'));addHandle(meta('og:url'));
+found.forEach(function(p){addHandle(p.url);['productGroupID','productID','sku','mpn'].forEach(function(k){addId(p[k])})});
+var same=function(a,b){return Math.abs(a-b)<0.005};
+var findOriginal=function(cur){var near=[],all=[],m,re=/\\\\?["'](?:compareAtPrice|compare_at_price|originalPrice|original_price|wasPrice|was_price|listPrice|list_price|regularPrice|regular_price|strikethroughPrice|strikethrough_price)\\\\?["']\\s*:\\s*\\\\?["']?(\\d+(?:\\.\\d+)?)/g;
+while((m=re.exec(html))){var v=parseFloat(m[1]),at=m.index,start=Math.max(0,at-120),win=html.slice(start,at+120),pr=/\\\\?["'](?:price|salePrice|sale_price|currentPrice|current_price|finalPrice|final_price)\\\\?["']\\s*:\\s*\\\\?["']?(\\d+(?:\\.\\d+)?)/g,q,seen=null,dist=Infinity,o=null;
+while((q=pr.exec(win))){var dd=Math.abs(start+q.index-at);if(dd<dist){dist=dd;seen=parseFloat(q[1])}}
+if(seen!==null&&same(seen,cur))o=v;else if(seen!==null&&same(seen,cur*100))o=v/100;
+if(o===null||o<=cur)continue;all.push(o);var ctx=html.slice(Math.max(0,at-1500),at+1500);if(ids.some(function(id){return ctx.indexOf(id)>-1}))near.push(o)}
+var pool=ids.length?near:all;return pool.length&&pool.every(function(x){return same(x,pool[0])})?pool[0]:null};
+if(current&&!original)original=findOriginal(current);
 var image=first(product.image);if(image&&image.url)image=image.url;if(!image&&product.hasVariant){var pv=first(product.hasVariant);image=pv&&first(pv.image)}image=image||meta('og:image');
 var brand=first(product.brand);if(brand&&brand.name)brand=brand.name;
 var h1=d.querySelector('h1');
-var canonical=d.querySelector('link[rel="canonical"]');
 var abs=function(u){try{return new URL(u,location.href).href}catch(e){return null}};
 var data={l:(canonical&&abs(canonical.getAttribute('href')))||location.href,t:product.name||meta('og:title')||(h1&&h1.textContent)||d.title,i:typeof image==='string'?abs(image):null,p:original&&current&&original>current?original:current,s:original&&current&&original>current?current:null,b:(typeof brand==='string'&&brand)||meta('og:site_name')};
 var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');

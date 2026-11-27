@@ -394,3 +394,112 @@ Deno.test("keeps US dollar prices as they are", () => {
   `;
   assertEquals(extractFromHtml(html).price, 28);
 });
+
+// KAM-74: the original price in a store's own page data (Gymshark/Shopify).
+const storePage = (storeData: string) => `
+  <html><head>
+    <link rel="canonical" href="https://shop.example/products/campus-track-pants-blue" />
+    <script type="application/ld+json">
+      {
+        "@type": "ProductGroup",
+        "name": "Campus Track Pants",
+        "url": "https://shop.example/products/campus-track-pants-blue",
+        "productGroupID": "6806718316746",
+        "hasVariant": [{ "@type": "Product", "offers": { "@type": "Offer", "price": 30, "priceCurrency": "USD" } }]
+      }
+    </script>
+  </head><body>
+    <script id="__NEXT_DATA__" type="application/json">${storeData}</script>
+  </body></html>
+`;
+
+Deno.test("reads compareAtPrice next to this product's current price", () => {
+  const result = extractFromHtml(
+    storePage(
+      `{"product":{"handle":"campus-track-pants-blue","price":30,"compareAtPrice":50,"discountPercentage":40}}`,
+    ),
+  );
+  assertEquals(result.price, 50);
+  assertEquals(result.salePrice, 30);
+});
+
+Deno.test("a full-price product isn't marked on sale", () => {
+  const result = extractFromHtml(
+    storePage(
+      `{"product":{"handle":"campus-track-pants-blue","price":30,"compareAtPrice":null}}`,
+    ),
+  );
+  assertEquals(result.price, 30);
+  assertEquals(result.salePrice, null);
+});
+
+Deno.test("an original price equal to the current one isn't a sale", () => {
+  const result = extractFromHtml(
+    storePage(
+      `{"product":{"handle":"campus-track-pants-blue","price":30,"compareAtPrice":30}}`,
+    ),
+  );
+  assertEquals(result.salePrice, null);
+});
+
+Deno.test("ignores a sale on a recommended product at the same price", () => {
+  const filler = " ".repeat(4000);
+  const result = extractFromHtml(
+    storePage(
+      `{"product":{"handle":"campus-track-pants-blue","price":30,"compareAtPrice":null},${filler}"recommended":[{"handle":"cosy-joggers-pink","price":30,"compareAtPrice":45}]}`,
+    ),
+  );
+  assertEquals(result.price, 30);
+  assertEquals(result.salePrice, null);
+});
+
+Deno.test("gives up rather than guess when original prices disagree", () => {
+  const result = extractFromHtml(
+    storePage(
+      `{"handle":"campus-track-pants-blue","variants":[{"price":30,"compareAtPrice":50},{"price":30,"compareAtPrice":45}]}`,
+    ),
+  );
+  assertEquals(result.price, 30);
+  assertEquals(result.salePrice, null);
+});
+
+Deno.test("reads Shopify compare_at_price in cents, even JSON-escaped", () => {
+  const result = extractFromHtml(
+    storePage(
+      `"{\\"id\\":6806718316746,\\"price\\":3000,\\"compare_at_price\\":5000}"`,
+    ),
+  );
+  assertEquals(result.price, 50);
+  assertEquals(result.salePrice, 30);
+});
+
+Deno.test("schema.org's own original price still wins", () => {
+  const html = `
+    <html><head>
+      <script type="application/ld+json">
+        {
+          "@type": "Product",
+          "name": "Tee",
+          "offers": {
+            "@type": "Offer", "price": "20", "priceCurrency": "USD",
+            "priceSpecification": { "priceType": "https://schema.org/ListPrice", "price": "40" }
+          }
+        }
+      </script>
+      <script>{"price":20,"compareAtPrice":35}</script>
+    </head></html>
+  `;
+  const result = extractFromHtml(html);
+  assertEquals(result.price, 40);
+  assertEquals(result.salePrice, 20);
+});
+
+Deno.test(
+  "uses the price closest to the original price, not the first nearby",
+  () => {
+    const html = `<script type="application/ld+json">{"@type":"Product","name":"Tee","url":"https://shop.example/products/plain-tee","offers":{"price":30,"priceCurrency":"USD"}}</script><script>{"handle":"plain-tee","price":3000,"compare_at_price":5000}</script>`;
+    const result = extractFromHtml(html);
+    assertEquals(result.price, 50);
+    assertEquals(result.salePrice, 30);
+  },
+);
