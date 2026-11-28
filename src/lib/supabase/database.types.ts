@@ -284,6 +284,7 @@ export type Database = {
       };
       notification_settings: {
         Row: {
+          budget_alerts: boolean;
           min_drop_percent: number;
           price_drops: boolean;
           store_sales: boolean;
@@ -291,6 +292,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          budget_alerts?: boolean;
           min_drop_percent?: number;
           price_drops?: boolean;
           store_sales?: boolean;
@@ -298,6 +300,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          budget_alerts?: boolean;
           min_drop_percent?: number;
           price_drops?: boolean;
           store_sales?: boolean;
@@ -434,6 +437,7 @@ export type Database = {
           created_at: string;
           display_name: string | null;
           id: string;
+          monthly_budget: number | null;
           onboarding_dismissed_at: string | null;
           show_claims: boolean;
           sizes: Json;
@@ -442,6 +446,7 @@ export type Database = {
           created_at?: string;
           display_name?: string | null;
           id: string;
+          monthly_budget?: number | null;
           onboarding_dismissed_at?: string | null;
           show_claims?: boolean;
           sizes?: Json;
@@ -450,6 +455,7 @@ export type Database = {
           created_at?: string;
           display_name?: string | null;
           id?: string;
+          monthly_budget?: number | null;
           onboarding_dismissed_at?: string | null;
           show_claims?: boolean;
           sizes?: Json;

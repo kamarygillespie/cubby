@@ -525,6 +525,16 @@ alter table public.items add column return_by date, add column return_reminded_f
 - `sync_purchased_date()` now also clears `return_by` and `return_reminded_for` when an item is un-purchased. **Mark returned** is just `purchased = false`: the item goes back to the wishlist, `purchased_date` clears, and it leaves spending totals.
 - `create_return_reminders(p_today)` (SECURITY DEFINER, not executable by app roles) creates one `return_by` alert ("Last chance to return Sneakers", "The return window closes in 3 days.") per return date, once it's 3 days away or closer. It runs daily via pg_cron at 16:00 UTC, before the 17:00 digest.
 
+## SQL — Monthly Budget (migration `20261128040000`, KAM-84)
+
+```sql
+alter table public.profiles add column monthly_budget numeric(10,2) check (monthly_budget > 0);
+alter table public.notification_settings add column budget_alerts boolean not null default true;
+-- notifications.kind now also allows 'budget'.
+```
+
+Trigger `items_notify_budget` (after `update of purchased`, when an item becomes purchased) runs `notify_budget()`: it sums this **UTC** month's spending (purchased wishlist items at the price paid, as Totals does). If this purchase crossed 100% or 80% of the budget, it creates one `budget` alert for the highest threshold crossed, at most once per threshold per month (`price` stores 80 or 100 for that check). It's skipped when there's no budget or `budget_alerts` is off.
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

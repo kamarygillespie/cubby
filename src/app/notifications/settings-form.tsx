@@ -44,6 +44,16 @@ export function SettingsForm({ settings }: { settings: NotificationSettings }) {
         />
         <Label htmlFor="store_sales">Sales at my favorite stores</Label>
       </div>
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="budget_alerts"
+          name="budget_alerts"
+          defaultChecked={settings.budget_alerts}
+        />
+        <Label htmlFor="budget_alerts">
+          At 80% and 100% of my monthly budget
+        </Label>
+      </div>
       <div className="flex items-center gap-3">
         <Button type="submit" size="sm" disabled={pending}>
           Save

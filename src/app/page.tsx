@@ -16,7 +16,7 @@ import { AccountMenu } from "@/components/account-menu";
 import { InstallPrompt } from "@/components/install-prompt";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { OnboardingCard } from "@/components/onboarding-card";
-import { getOnboardingState } from "@/lib/db/profile";
+import { getMonthlyBudget, getOnboardingState } from "@/lib/db/profile";
 import { onboardingSteps, showOnboarding } from "@/lib/onboarding";
 import { countUnreadNotifications } from "@/lib/db/notifications";
 import {
@@ -324,6 +324,7 @@ export default async function Home({
               <TotalsDashboard
                 items={items}
                 recentHighs={await listRecentPriceHighs(supabase)}
+                budget={await getMonthlyBudget(supabase)}
               />
             </ItemsPendingContent>
           </div>

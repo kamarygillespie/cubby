@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/format";
 import { giftCardIdeas } from "@/lib/stores";
 import { GiftCardIdeas } from "@/components/gift-card-ideas";
 import { SpendingChart } from "./spending-chart";
+import { BudgetCard } from "./budget-card";
 import { effectivePrice } from "@/lib/items-view";
 import { BuyNextCard, TasteCard } from "./recommendations-cards";
 import { buyNext, tasteProfile, toRecItem } from "@/lib/recommendations";
@@ -61,8 +62,11 @@ function BreakdownList({
 export function TotalsDashboard({
   items,
   recentHighs,
+  budget,
 }: {
   items: Item[];
+  // Monthly budget (KAM-84), null when none is set.
+  budget: number | null;
   // Highest recent price per item, for "price dropped" picks (KAM-52).
   recentHighs: ReadonlyMap<string, number>;
 }) {
@@ -87,6 +91,15 @@ export function TotalsDashboard({
           value={formatCurrency(totalWishlistValue(items))}
         />
       </div>
+      <BudgetCard
+        budget={budget}
+        purchases={items
+          .filter((item) => item.purchased)
+          .map((item) => ({
+            date: item.purchased_date,
+            amount: effectivePrice(item),
+          }))}
+      />
       <SpendingChart
         purchases={items
           .filter((item) => item.purchased)

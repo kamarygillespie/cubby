@@ -29,3 +29,27 @@ export async function dismissOnboarding(supabase: DbClient) {
     .eq("id", userId);
   if (error) throw error;
 }
+
+// Monthly spending budget (KAM-84). Null = no budget.
+export async function getMonthlyBudget(
+  supabase: DbClient,
+): Promise<number | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("monthly_budget")
+    .maybeSingle();
+  if (error) throw error;
+  return data?.monthly_budget ?? null;
+}
+
+export async function setMonthlyBudget(
+  supabase: DbClient,
+  budget: number | null,
+) {
+  const userId = await requireUserId(supabase);
+  const { error } = await supabase
+    .from("profiles")
+    .update({ monthly_budget: budget })
+    .eq("id", userId);
+  if (error) throw error;
+}

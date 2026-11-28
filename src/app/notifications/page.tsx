@@ -7,6 +7,8 @@ import {
   CalendarHeart,
   Store,
   TrendingDown,
+  Wallet,
+  PackageOpen,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
@@ -73,7 +75,11 @@ export default async function NotificationsPage() {
                   ? BellRing
                   : alert.kind === "occasion"
                     ? CalendarHeart
-                    : TrendingDown;
+                    : alert.kind === "return_by"
+                      ? PackageOpen
+                      : alert.kind === "budget"
+                        ? Wallet
+                        : TrendingDown;
             return (
               <li key={alert.id}>
                 {/* A plain <a>: the route marks it read, then redirects. */}

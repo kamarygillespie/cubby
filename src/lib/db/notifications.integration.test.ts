@@ -9,6 +9,7 @@ import {
 import { listItemTypes } from "./item-types";
 import { setFavoriteStore } from "./stores";
 import { createWishlist, setOccasionDate } from "./wishlists";
+import { setMonthlyBudget } from "./profile";
 import {
   countUnreadNotifications,
   deletePushSubscription,
@@ -153,6 +154,62 @@ describe("notifications (integration)", () => {
     expect(data).toEqual({ return_by: null, purchased_date: null });
   });
 
+  it("budget alerts at 80% and 100%, once each per month (KAM-84)", async () => {
+    const { client } = await createTestUser();
+    await setMonthlyBudget(client, 300);
+    const buy = async (price: number) => {
+      const item = await createItem(client, {
+        title: `Buy ${price}`,
+        item_type_id: itemTypeId,
+        price,
+      });
+      await updateItem(client, item.id, { purchased: true });
+      return item;
+    };
+
+    await buy(200); // 67%
+    expect(await listNotifications(client)).toEqual([]);
+    const second = await buy(50); // 83%
+    let alerts = await listNotifications(client);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0].kind).toBe("budget");
+    expect(alerts[0].title).toMatch(/^80% of your \w+ budget$/);
+    expect(alerts[0].body).toBe("$250.00 of $300.00 spent this month.");
+
+    // Un-buy and re-buy: already alerted at 80% this month.
+    await updateItem(client, second.id, { purchased: false });
+    await updateItem(client, second.id, { purchased: true });
+    expect(await listNotifications(client)).toHaveLength(1);
+
+    await buy(100); // 117%
+    alerts = await listNotifications(client);
+    expect(alerts).toHaveLength(2);
+    expect(alerts[0].title).toMatch(/^You've reached your \w+ budget$/);
+
+    // Turned off: no more.
+    await saveNotificationSettings(client, {
+      price_drops: true,
+      store_sales: true,
+      min_drop_percent: 10,
+      budget_alerts: false,
+    });
+    const fresh = await createTestUser();
+    await setMonthlyBudget(fresh.client, 10);
+    await saveNotificationSettings(fresh.client, {
+      price_drops: true,
+      store_sales: true,
+      min_drop_percent: 10,
+      budget_alerts: false,
+    });
+    const item = await createItem(fresh.client, {
+      title: "Quiet",
+      item_type_id: itemTypeId,
+      price: 50,
+    });
+    await updateItem(fresh.client, item.id, { purchased: true });
+    expect(await listNotifications(fresh.client)).toEqual([]);
+  });
+
   it("a price check that drops the price past the threshold creates one alert", async () => {
     const { client } = await createTestUser();
     const item = await newItem(client);
@@ -183,11 +240,13 @@ describe("notifications (integration)", () => {
       price_drops: true,
       store_sales: true,
       min_drop_percent: 10,
+      budget_alerts: true,
     });
     await saveNotificationSettings(client, {
       price_drops: true,
       store_sales: true,
       min_drop_percent: 30,
+      budget_alerts: true,
     });
     const item = await newItem(client);
 
@@ -199,6 +258,7 @@ describe("notifications (integration)", () => {
       price_drops: false,
       store_sales: true,
       min_drop_percent: 10,
+      budget_alerts: true,
     });
     await recordPriceCheck(client, item.id, { price: 5, salePrice: null });
     expect(await listNotifications(client)).toEqual([]);
