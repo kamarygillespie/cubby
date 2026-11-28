@@ -3,14 +3,7 @@
 import { useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { listsHoldingAny } from "@/lib/wishlists";
 import { deleteItemsAction } from "./items/actions";
 
@@ -49,57 +42,38 @@ export function DeleteSelectedButton({
         <Trash2 />
         <span className="max-sm:sr-only">Delete</span>
       </Button>
-      <Dialog
+      <ConfirmDialog
         open={open}
         onOpenChange={(next) => (next ? setOpen(true) : close())}
+        title={n === 1 ? "Delete this item?" : `Delete ${n} items?`}
+        confirmLabel={n === 1 ? "Delete item" : `Delete ${n} items`}
+        pending={pending}
+        error={error}
+        onConfirm={() =>
+          startTransition(async () => {
+            const result = await deleteItemsAction(selectedIds);
+            if (result.ok) {
+              close();
+              onDone(result.message);
+            } else {
+              setError(result.error);
+            }
+          })
+        }
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {n === 1
-                ? `Delete “${titles[selectedIds[0]] ?? "this item"}”?`
-                : `Delete ${n} items?`}
-            </DialogTitle>
-            <DialogDescription>
-              {lists.length > 0
-                ? `${n === 1 ? "It" : "They"} will also be removed from ${lists.join(", ")}. `
-                : ""}
-              This can&apos;t be undone.
-            </DialogDescription>
-          </DialogHeader>
-          {error && (
-            <p role="alert" className="text-destructive text-sm">
-              {error}
-            </p>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={close}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={pending}
-              onClick={() =>
-                startTransition(async () => {
-                  const result = await deleteItemsAction(selectedIds);
-                  if (result.ok) {
-                    close();
-                    onDone(result.message);
-                  } else {
-                    setError(result.error);
-                  }
-                })
-              }
-            >
-              {pending
-                ? "Deleting…"
-                : n === 1
-                  ? "Delete item"
-                  : `Delete ${n} items`}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {n === 1 && (
+          <span className="text-foreground font-medium">
+            {titles[selectedIds[0]] ?? "This item"}
+          </span>
+        )}
+        {lists.length > 0 && (
+          <span>
+            {n === 1 ? "It" : "They"} will also be removed from{" "}
+            {lists.join(", ")}.
+          </span>
+        )}
+        <span>This can&apos;t be undone.</span>
+      </ConfirmDialog>
     </>
   );
 }

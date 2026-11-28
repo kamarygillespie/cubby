@@ -35,6 +35,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -72,6 +73,8 @@
   --accent: oklch(0.93 0.018 70);
   --accent-foreground: oklch(0.29 0.03 45);
   --destructive: oklch(0.577 0.245 27.325);
+  /* Text on a solid destructive fill (KAM-100): white is 4.76:1 here. */
+  --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.895 0.016 70);
   --input: oklch(0.895 0.016 70);
   --ring: oklch(0.62 0.1 40);
@@ -109,6 +112,8 @@
   --accent: oklch(0.285 0.014 50);
   --accent-foreground: oklch(0.95 0.01 75);
   --destructive: oklch(0.704 0.191 22.216);
+  /* The lighter dark-mode red needs dark text (white is only 2.89:1). */
+  --destructive-foreground: oklch(0.18 0.01 50);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.62 0.09 45);

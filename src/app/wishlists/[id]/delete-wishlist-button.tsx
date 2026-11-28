@@ -3,14 +3,7 @@
 import { useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deleteWishlistAction } from "../actions";
 
 export function DeleteWishlistButton({
@@ -29,31 +22,21 @@ export function DeleteWishlistButton({
         <Trash2 />
         Delete list
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete “{name}”?</DialogTitle>
-            <DialogDescription>
-              The list and its share link go away. The items stay in your
-              wishlist.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={pending}
-              onClick={() =>
-                startTransition(() => deleteWishlistAction(wishlistId))
-              }
-            >
-              {pending ? "Deleting…" : "Delete list"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Delete this list?"
+        confirmLabel="Delete list"
+        pending={pending}
+        onConfirm={() =>
+          startTransition(() => deleteWishlistAction(wishlistId))
+        }
+      >
+        <span className="text-foreground font-medium">{name}</span>
+        <span>
+          The list and its share link go away. The items stay in your wishlist.
+        </span>
+      </ConfirmDialog>
     </>
   );
 }

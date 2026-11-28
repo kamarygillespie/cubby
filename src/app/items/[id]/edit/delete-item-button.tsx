@@ -3,14 +3,7 @@
 import { useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deleteItemAction } from "../../actions";
 
 export function DeleteItemButton({
@@ -34,33 +27,22 @@ export function DeleteItemButton({
         <Trash2 />
         Delete item
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete “{title}”?</DialogTitle>
-            <DialogDescription>
-              {onLists.length > 0
-                ? `It will also be removed from ${onLists.join(", ")}. `
-                : ""}
-              This can&apos;t be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={pending}
-              onClick={() =>
-                startTransition(() => deleteItemAction(itemId, returnTo))
-              }
-            >
-              {pending ? "Deleting…" : "Delete item"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Delete this item?"
+        confirmLabel="Delete item"
+        pending={pending}
+        onConfirm={() =>
+          startTransition(() => deleteItemAction(itemId, returnTo))
+        }
+      >
+        <span className="text-foreground font-medium">{title}</span>
+        {onLists.length > 0 && (
+          <span>It will also be removed from {onLists.join(", ")}.</span>
+        )}
+        <span>This can&apos;t be undone.</span>
+      </ConfirmDialog>
     </>
   );
 }

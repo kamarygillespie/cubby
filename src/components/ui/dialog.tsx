@@ -43,13 +43,20 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  overlayClassName,
+  forceOverlay = false,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
+  // e.g. a stronger dim and blur for a confirmation over a sheet (KAM-100).
+  overlayClassName?: string;
+  // Base UI skips the backdrop of a dialog opened inside another one (the
+  // details sheet is a dialog too); this draws it anyway.
+  forceOverlay?: boolean;
 }) {
   return (
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay className={overlayClassName} forceRender={forceOverlay} />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
