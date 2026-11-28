@@ -38,33 +38,13 @@ export function hasSizes(sizes: Sizes | null | undefined): boolean {
   return Boolean(sizes && Object.keys(sizes).length > 0);
 }
 
-// Which sizes matter for an item, from its type and category names. Works
-// for the built-in types and most custom ones ("Wide Leg Jeans" → bottoms).
-export function sizeKindsFor(itemType: string, category: string): SizeKind[] {
-  const text = `${itemType} ${category}`.toLowerCase();
-  if (
-    /\bshoes?\b|sneaker|\bboots?\b|\bflats\b|loafer|clog|\bheels?\b|sandal|slipper/.test(
-      text,
-    )
-  ) {
-    return ["shoes"];
-  }
-  if (/\bbras?\b/.test(text)) return ["bras"];
-  if (/\brings?\b/.test(text)) return ["rings"];
-  if (/\bdress/.test(text)) return ["dresses"];
-  const tops =
-    /\btops?\b|blouse|sweater|shirt|\btee\b|hoodie|jacket|coat|cardigan/.test(
-      text,
-    );
-  const bottoms =
-    /\bbottoms?\b|pant|jean|legging|jogger|skirt|\bshorts\b|trouser|underwear/.test(
-      text,
-    );
-  return [
-    ...(tops ? ["tops" as const] : []),
-    ...(bottoms ? ["bottoms" as const] : []),
-  ];
-}
+// Which sizes matter for an item: shared with the Edge Functions' stock
+// checks, so both use the same matching.
+import {
+  savedSizeFor,
+  sizeKindsFor,
+} from "../../supabase/functions/_shared/size-kinds";
+export { savedSizeFor, sizeKindsFor };
 
 // "Size M" or "Tops M · Bottoms 6" for one item; null when nothing matches.
 export function sizeHint(

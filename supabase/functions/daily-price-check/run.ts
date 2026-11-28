@@ -1,7 +1,13 @@
 // The scheduled price-check loop, with its I/O injected so it can be tested
 // without a network or database (run.test.ts).
 
-export type DueItem = { id: string; link: string; notes?: string | null };
+export type DueItem = {
+  id: string;
+  link: string;
+  notes?: string | null;
+  // The owner's saved size for this item's type (KAM-97).
+  savedSize?: string | null;
+};
 export type Prices = {
   price: number | null;
   salePrice: number | null;

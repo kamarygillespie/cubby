@@ -10,6 +10,8 @@ import {
   setTargetPrice,
 } from "@/lib/db/items";
 import { pricePoints } from "@/lib/price-history";
+import { getSizes } from "@/lib/db/sizes";
+import { savedSizeFor } from "@/lib/sizes";
 import { parseTargetPrice } from "@/lib/item-form";
 import {
   applyPriceCheck,
@@ -43,7 +45,17 @@ export async function checkItemPriceAction(
       stock?: { inStock: boolean | null; size: string | null };
     }
   >("link-autofill", {
-    body: { url: item.link, pricesOnly: true, notes: item.notes },
+    body: {
+      url: item.link,
+      pricesOnly: true,
+      notes: item.notes,
+      // The saved size for its type, when the notes don't say (KAM-97).
+      size: savedSizeFor(
+        await getSizes(supabase),
+        item.item_type.name,
+        item.item_type.category.name,
+      ),
+    },
   });
   if (error || !data) {
     return { outcome: "unreadable", message: "Couldn't reach this page." };

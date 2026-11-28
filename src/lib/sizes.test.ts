@@ -3,6 +3,7 @@ import {
   hasSizes,
   parseListExtras,
   parseSizes,
+  savedSizeFor,
   sizeHint,
   sizeKindsFor,
 } from "./sizes";
@@ -121,5 +122,21 @@ describe("parseListExtras", () => {
     expect(parseListExtras({ sizes: null, items: [] }).sizes).toBeNull();
     expect(parseListExtras({ sizes: {}, items: [] }).sizes).toBeNull();
     expect(parseListExtras(null).items.size).toBe(0);
+  });
+});
+
+describe("savedSizeFor (KAM-97)", () => {
+  const sizes = { tops: "M", shoes: "8.5", bottoms: "6" };
+
+  it("picks the saved size that fits the item's type", () => {
+    expect(savedSizeFor(sizes, "Long Sleeve Sweaters", "Clothing")).toBe("M");
+    expect(savedSizeFor(sizes, "Sneakers", "Shoes")).toBe("8.5");
+    expect(savedSizeFor(sizes, "Pajama Tops & Bottoms", "Clothing")).toBe("M");
+  });
+
+  it("is null when nothing fits or nothing's saved", () => {
+    expect(savedSizeFor(sizes, "Makeup", "Beauty")).toBeNull();
+    expect(savedSizeFor({}, "Sneakers", "Shoes")).toBeNull();
+    expect(savedSizeFor(null, "Sneakers", "Shoes")).toBeNull();
   });
 });

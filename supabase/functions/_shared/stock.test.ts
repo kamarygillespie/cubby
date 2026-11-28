@@ -81,3 +81,27 @@ Deno.test("a single Product's own availability, and OG as a fallback", () => {
   assertEquals(og.inStock, true);
   assertEquals(extractFromHtml(`<title>x</title>`).inStock, null);
 });
+
+Deno.test(
+  "falls back to the saved size when the notes don't say (KAM-97)",
+  () => {
+    const page = extractFromHtml(groupPage);
+    assertEquals(stockForNotes(page, "love it", "M"), {
+      inStock: false,
+      size: "m",
+    });
+    assertEquals(stockForNotes(page, null, "Medium"), {
+      inStock: false,
+      size: "m",
+    });
+    // The notes win.
+    assertEquals(stockForNotes(page, "size XL", "M"), {
+      inStock: true,
+      size: "xl",
+    });
+    assertEquals(stockForNotes(page, null, null), {
+      inStock: true,
+      size: null,
+    });
+  },
+);

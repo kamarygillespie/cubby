@@ -67,6 +67,8 @@ const handler = {
       imageUrl?: unknown;
       // The item's notes, to find the wanted size for stock (KAM-75).
       notes?: unknown;
+      // The saved size for its type when the notes don't say (KAM-97).
+      size?: unknown;
     };
     try {
       body = await req.json();
@@ -113,7 +115,11 @@ const handler = {
       return Response.json({
         ...result,
         image: null,
-        stock: stockForNotes(result, notes),
+        stock: stockForNotes(
+          result,
+          notes,
+          typeof body.size === "string" ? body.size.slice(0, 20) : null,
+        ),
       });
     }
 

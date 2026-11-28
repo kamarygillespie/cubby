@@ -37,14 +37,18 @@ export type Stock = {
 };
 
 // The wanted size's stock when the page lists it; otherwise the item's.
+// The size comes from the notes, else from the saved size for the item's
+// type (KAM-97, "Your sizes").
 export function stockForNotes(
   page: {
     inStock: boolean | null;
     sizes: { size: string; inStock: boolean }[];
   },
   notes: string | null | undefined,
+  savedSize?: string | null,
 ): Stock {
-  const want = wantedSize(notes);
+  const want =
+    wantedSize(notes) ?? (savedSize ? normalizeSize(savedSize) : null);
   if (want) {
     const match = page.sizes.find((s) => normalizeSize(s.size) === want);
     if (match) return { inStock: match.inStock, size: want };
