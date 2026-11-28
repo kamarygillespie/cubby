@@ -484,6 +484,17 @@ alter table public.profiles add column show_claims boolean not null default fals
   - `get_shared_claims(token, claimer_key)` → `{owner, claims: [{item_id, mine}]}`, never names or keys. For the signed-in owner with `show_claims` off it returns no claims, so previewing your own list can't spoil a surprise.
 - A claim goes away with its item (cascade). Purchased or gifted items drop off the share page, and their claim stays for the owner's record.
 
+## SQL — Share Page Sizes and Most Wanted (migration `20261128000000`, KAM-78, KAM-80)
+
+```sql
+alter table public.profiles add column sizes jsonb not null default '{}'
+  check (jsonb_typeof(sizes) = 'object' and pg_column_size(sizes) < 2000);
+alter table public.wishlists add column show_sizes boolean not null default true;
+```
+
+- `sizes` keys: `tops, bottoms, dresses, shoes, rings, bras, other`, validated in `src/lib/sizes.ts` (20 chars each, 80 for `other`). Own row only, via profiles' existing RLS.
+- `get_shared_list_extras(token)` (SECURITY DEFINER, token-gated like `get_shared_wishlist`) → `{sizes | null, items: [{item_id, item_type, category, most_wanted}]}` for the list's visible items. `sizes` is null when the list has `show_sizes` off. Only `most_wanted` (interest = 5) is shared; other interest levels stay private.
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

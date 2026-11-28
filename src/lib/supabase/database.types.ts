@@ -417,6 +417,7 @@ export type Database = {
           id: string;
           onboarding_dismissed_at: string | null;
           show_claims: boolean;
+          sizes: Json;
         };
         Insert: {
           created_at?: string;
@@ -424,6 +425,7 @@ export type Database = {
           id: string;
           onboarding_dismissed_at?: string | null;
           show_claims?: boolean;
+          sizes?: Json;
         };
         Update: {
           created_at?: string;
@@ -431,6 +433,7 @@ export type Database = {
           id?: string;
           onboarding_dismissed_at?: string | null;
           show_claims?: boolean;
+          sizes?: Json;
         };
         Relationships: [];
       };
@@ -500,6 +503,7 @@ export type Database = {
           id: string;
           name: string;
           share_token: string;
+          show_sizes: boolean;
           user_id: string;
         };
         Insert: {
@@ -507,6 +511,7 @@ export type Database = {
           id?: string;
           name: string;
           share_token?: string;
+          show_sizes?: boolean;
           user_id: string;
         };
         Update: {
@@ -514,6 +519,7 @@ export type Database = {
           id?: string;
           name?: string;
           share_token?: string;
+          show_sizes?: boolean;
           user_id?: string;
         };
         Relationships: [];
@@ -536,6 +542,7 @@ export type Database = {
         Args: { p_claimer_key: string; token: string };
         Returns: Json;
       };
+      get_shared_list_extras: { Args: { token: string }; Returns: Json };
       get_shared_wishlist: {
         Args: { token: string };
         Returns: {

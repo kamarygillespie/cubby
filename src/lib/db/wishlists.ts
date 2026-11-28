@@ -58,7 +58,7 @@ export async function getWishlist(supabase: DbClient, id: string) {
   const { data, error } = await supabase
     .from("wishlists")
     .select(
-      `id, name, share_token, created_at, wishlist_items(added_at, item:items(${ITEM_SELECT}))`,
+      `id, name, share_token, show_sizes, created_at, wishlist_items(added_at, item:items(${ITEM_SELECT}))`,
     )
     .eq("id", id)
     .order("added_at", { referencedTable: "wishlist_items", ascending: false })

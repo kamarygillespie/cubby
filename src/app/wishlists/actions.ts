@@ -12,6 +12,8 @@ import {
 } from "@/lib/db/wishlists";
 import { parseWishlistName } from "@/lib/wishlists";
 import { setShowClaims } from "@/lib/db/claims";
+import { saveSizes, setWishlistShowSizes } from "@/lib/db/sizes";
+import { parseSizes } from "@/lib/sizes";
 import { getEffectivePrices } from "@/lib/db/items";
 import {
   SPLIT_MAX_LISTS,
@@ -171,4 +173,26 @@ export async function splitIntoWishlists(input: {
 export async function setShowClaimsAction(show: boolean) {
   await setShowClaims(await createClient(), show);
   revalidatePath("/wishlists", "layout");
+}
+
+// "Your sizes" (KAM-78), shown on share links whose list allows it.
+export async function saveSizesAction(
+  _prev: { message: string } | null,
+  formData: FormData,
+): Promise<{ message: string }> {
+  try {
+    await saveSizes(
+      await createClient(),
+      parseSizes(Object.fromEntries(formData)),
+    );
+    revalidatePath("/wishlists", "layout");
+    return { message: "Sizes saved." };
+  } catch {
+    return { message: "Couldn't save your sizes. Try again." };
+  }
+}
+
+export async function setShowSizesAction(wishlistId: string, show: boolean) {
+  await setWishlistShowSizes(await createClient(), wishlistId, show);
+  revalidatePath(`/wishlists/${wishlistId}`);
 }

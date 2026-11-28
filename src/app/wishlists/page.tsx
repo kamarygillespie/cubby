@@ -8,6 +8,8 @@ import { listWishlistsWithPrices } from "@/lib/db/wishlists";
 import { effectivePrice } from "@/lib/items-view";
 import { formatCurrency } from "@/lib/format";
 import { getShowClaims } from "@/lib/db/claims";
+import { getSizes } from "@/lib/db/sizes";
+import { SizesForm } from "./sizes-form";
 import { CreateWishlistForm } from "./create-wishlist-form";
 import { ShowClaimsToggle } from "./show-claims-toggle";
 
@@ -15,9 +17,10 @@ export const metadata: Metadata = { title: "Wishlists" };
 
 export default async function WishlistsPage() {
   const supabase = await createClient();
-  const [wishlists, showClaims] = await Promise.all([
+  const [wishlists, showClaims, sizes] = await Promise.all([
     listWishlistsWithPrices(supabase),
     getShowClaims(supabase),
+    getSizes(supabase),
   ]);
 
   return (
@@ -35,6 +38,7 @@ export default async function WishlistsPage() {
       </Link>
       <h1 className="text-xl font-semibold">Wishlists</h1>
       <CreateWishlistForm />
+      <SizesForm sizes={sizes} />
       {wishlists.length > 0 && <ShowClaimsToggle show={showClaims} />}
 
       {wishlists.length === 0 ? (
