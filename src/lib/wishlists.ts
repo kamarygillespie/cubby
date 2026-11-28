@@ -76,3 +76,20 @@ export function toSharedWishlist(
   );
   return { name: rows[0].wishlist_name, items };
 }
+
+// Names of the lists that hold any of these items, in list order: what a
+// bulk delete would take items off (KAM-76).
+export function listsHoldingAny(
+  itemIds: string[],
+  wishlists: { name: string; itemIds: string[] }[],
+): string[] {
+  const chosen = new Set(itemIds);
+  return wishlists
+    .filter((w) => w.itemIds.some((id) => chosen.has(id)))
+    .map((w) => w.name);
+}
+
+// "Deleted 3 items." / "Deleted 1 item."
+export function deletedItemsMessage(count: number): string {
+  return `Deleted ${count} item${count === 1 ? "" : "s"}.`;
+}

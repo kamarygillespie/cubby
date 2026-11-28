@@ -6,6 +6,9 @@ export type ItemFilters = {
   categoryId?: string | null;
   itemTypeId?: string | null;
   onSaleOnly?: boolean;
+  // KAM-90: only items whose latest price check couldn't read the page.
+  needsCheckOnly?: boolean;
+  needsCheck?: ReadonlySet<string>;
 };
 
 type Prices = Pick<Item, "price" | "sale_price">;
@@ -48,6 +51,9 @@ export function filterItems(items: Item[], filters: ItemFilters): Item[] {
       return false;
     }
     if (filters.onSaleOnly && !isOnSale(item)) {
+      return false;
+    }
+    if (filters.needsCheckOnly && !filters.needsCheck?.has(item.id)) {
       return false;
     }
     return true;

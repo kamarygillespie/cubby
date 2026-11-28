@@ -3,9 +3,22 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createItem, deleteItem, getItem, updateItem } from "@/lib/db/items";
-import { deleteItemImage, uploadItemImage } from "@/lib/db/item-images";
+import {
+  createItem,
+  deleteItem,
+  deleteItems,
+  getItem,
+  recordPriceCheck,
+  updateItem,
+} from "@/lib/db/items";
+import {
+  deleteItemImage,
+  deleteItemImages,
+  uploadItemImage,
+} from "@/lib/db/item-images";
 import { parseItemForm } from "@/lib/item-form";
+import { deletedItemsMessage } from "@/lib/wishlists";
+import type { BulkResult } from "../types/actions";
 import type { ItemFormState } from "./item-form-state";
 
 function chosenFile(formData: FormData): File | null {
@@ -89,6 +102,23 @@ export async function updateItemAction(
       image_url: imageUrl,
     });
 
+    // A price typed in by hand counts as a successful check (KAM-90), so
+    // the item stops showing "Check by hand". Recorded after the update,
+    // so the check sees no change and can't send a price alert.
+    const { price, sale_price } = parsed.values;
+    if (
+      existing.link &&
+      !existing.purchased &&
+      !existing.gifted &&
+      price != null &&
+      (price !== existing.price || sale_price !== existing.sale_price)
+    ) {
+      await recordPriceCheck(supabase, itemId, {
+        price,
+        salePrice: sale_price ?? null,
+      });
+    }
+
     // Only after the row points elsewhere, so a failed update never leaves
     // the item referencing a deleted file.
     if (imageUrl !== existing.image_url) {
@@ -118,6 +148,27 @@ export async function deleteItemAction(
   }
   revalidateItemViews();
   if (returnTo) redirect(returnTo);
+}
+
+// "Delete" on items picked in Select mode (KAM-76). Stays on the current
+// page, so the tab and filters are kept; the caller shows the message.
+export async function deleteItemsAction(
+  itemIds: string[],
+): Promise<BulkResult> {
+  if (itemIds.length === 0) return { ok: false, error: "Select some items." };
+  try {
+    const supabase = await createClient();
+    // wishlist_items rows cascade with each item.
+    const deleted = await deleteItems(supabase, itemIds);
+    await deleteItemImages(
+      supabase,
+      deleted.map((item) => item.image_url),
+    );
+    revalidateItemViews();
+    return { ok: true, message: deletedItemsMessage(deleted.length) };
+  } catch {
+    return { ok: false, error: "Couldn't delete the items. Try again." };
+  }
 }
 
 // "Add to closet": a piece you already own, never on a wishlist. Stored with

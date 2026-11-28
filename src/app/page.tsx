@@ -150,6 +150,7 @@ export default async function Home({
   const categoryId = firstParam(params.category) ?? null;
   const itemTypeId = firstParam(params.itemType) ?? null;
   const onSaleOnly = firstParam(params.onSale) === "1";
+  const needsCheckOnly = firstParam(params.check) === "1";
   const sort = (firstParam(params.sort) as SortOption | undefined) ?? null;
   const group = firstParam(params.group);
   const show = parseShowCount(firstParam(params.show));
@@ -190,7 +191,12 @@ export default async function Home({
       hasAnyItems={items.length > 0}
       view={view}
       filtered={Boolean(
-        categoryId || itemTypeId || onSaleOnly || favoritesOnly || storeFilter,
+        categoryId ||
+        itemTypeId ||
+        onSaleOnly ||
+        needsCheckOnly ||
+        favoritesOnly ||
+        storeFilter,
       )}
     />
   );
@@ -213,6 +219,8 @@ export default async function Home({
       categoryId,
       itemTypeId,
       onSaleOnly,
+      needsCheckOnly,
+      needsCheck: failedPriceChecks,
     }).filter((item) => {
       // Store filters (KAM-49): ?store=<key> from the Stores page, and the
       // "Favorite stores" toggle.
@@ -326,6 +334,10 @@ export default async function Home({
                 categories,
                 itemTypes,
                 hasFavoriteStores: favoriteStores.length > 0,
+                // Wishlist items Cubby couldn't price-check (KAM-90).
+                needsCheckCount: filterByView(items, view).filter((i) =>
+                  failedPriceChecks.has(i.id),
+                ).length,
                 storeName: storeFilter
                   ? (items.find((i) => storeKey(i.store_brand) === storeFilter)
                       ?.store_brand ?? storeFilter)
@@ -336,6 +348,30 @@ export default async function Home({
               priceCheckIds={visibleItems
                 .filter((i) => i.link)
                 .map((i) => i.id)}
+              // Copy wishlist (KAM-91): the Wishlist tab's matching items.
+              copyItems={
+                view === "wishlist"
+                  ? visibleItems.map((i) => ({
+                      title: i.title,
+                      store: i.store_brand,
+                      price: i.price,
+                      salePrice: i.sale_price,
+                      type: i.item_type.name,
+                      category: i.item_type.category.name,
+                      interest: i.interest_level,
+                      link: i.link,
+                      notes: i.notes,
+                    }))
+                  : []
+              }
+              filtered={Boolean(
+                categoryId ||
+                itemTypeId ||
+                onSaleOnly ||
+                needsCheckOnly ||
+                favoritesOnly ||
+                storeFilter,
+              )}
             />
             {view === "wishlist" && (
               <AddToWishlistBar

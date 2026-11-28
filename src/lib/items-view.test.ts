@@ -95,6 +95,19 @@ describe("filterItems", () => {
     expect(result).toEqual([techItem]);
   });
 
+  test("filters to items that need a manual price check (KAM-90)", () => {
+    const a = makeItem({ id: "a" });
+    const b = makeItem({ id: "b" });
+    const needsCheck = new Set(["b"]);
+    expect(filterItems([a, b], { needsCheckOnly: true, needsCheck })).toEqual([
+      b,
+    ]);
+    // Off: the set alone filters nothing.
+    expect(filterItems([a, b], { needsCheck })).toEqual([a, b]);
+    // On with nothing failing: nothing to show.
+    expect(filterItems([a, b], { needsCheckOnly: true })).toEqual([]);
+  });
+
   test("filters to on-sale items only", () => {
     const result = filterItems([clothingItem, saleItem], { onSaleOnly: true });
     expect(result).toEqual([saleItem]);

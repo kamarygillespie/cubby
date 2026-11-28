@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, test } from "vitest";
 import {
   createItem,
   deleteItem,
+  deleteItems,
   getItem,
   listItems,
   updateItem,
@@ -117,5 +118,33 @@ describe("lib/db/items (integration)", () => {
 
     expect(await getItem(client, item.id)).toBeNull();
     expect(await getItem(client, "not-a-uuid")).toBeNull();
+  });
+
+  test("deleteItems deletes only the caller's own items and reports them", async () => {
+    const owner = await createTestUser();
+    const other = await createTestUser();
+    const mine = await Promise.all(
+      ["One", "Two", "Keep"].map((title) =>
+        createItem(owner.client, { title, item_type_id: itemTypeId }),
+      ),
+    );
+    const theirs = await createItem(other.client, {
+      title: "Not yours",
+      item_type_id: itemTypeId,
+    });
+
+    const deleted = await deleteItems(owner.client, [
+      mine[0].id,
+      mine[1].id,
+      theirs.id,
+    ]);
+
+    expect(deleted.map((d) => d.id).sort()).toEqual(
+      [mine[0].id, mine[1].id].sort(),
+    );
+    expect(await getItem(owner.client, mine[0].id)).toBeNull();
+    expect(await getItem(owner.client, mine[2].id)).not.toBeNull();
+    expect(await getItem(other.client, theirs.id)).not.toBeNull();
+    expect(await deleteItems(owner.client, [])).toEqual([]);
   });
 });

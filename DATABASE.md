@@ -14,6 +14,7 @@ wishlists (user-owned)
   └── wishlist_items (join table: wishlists <-> items)
 notifications (user-owned; created by a trigger on items price checks)
 notification_settings (1:1 with user) · push_subscriptions (per device)
+item_claims (0..1 per item; a gift-giver's claim from a share page, KAM-77)
 ```
 
 ## SQL — Schema Setup
@@ -459,6 +460,29 @@ alter table public.profiles add column onboarding_dismissed_at timestamptz;
 ## SQL — Share Page Hides Notes (migration `20261109080000`, KAM-38)
 
 `get_shared_wishlist()` keeps its signature but always returns `notes` as null: the owner's notes are private (decided Nov 9, 2026).
+
+## SQL — Gift Claims (migration `20261127000000`, KAM-77)
+
+Givers on a public share page can claim an item ("I'm getting this") so nobody doubles up. Givers have no account: a random `claimer_key` kept in an httpOnly `cubby_giver` cookie (path `/share`) identifies "this browser", so it can undo its own claims.
+
+```sql
+create table public.item_claims (
+  item_id uuid primary key references public.items(id) on delete cascade, -- one claim per item
+  user_id uuid not null references auth.users(id) on delete cascade,     -- the item's owner (RLS)
+  wishlist_id uuid references public.wishlists(id) on delete set null,   -- list it was claimed from
+  claimer_name text check (char_length(claimer_name) between 1 and 40),
+  claimer_key uuid not null,
+  created_at timestamptz not null default now()
+);
+alter table public.profiles add column show_claims boolean not null default false;
+```
+
+- **RLS:** owners may `select` claims on their own items, but only `item_id, user_id, wishlist_id, claimer_name, created_at` (column grant; `claimer_key` is never readable). No insert/update/delete policies, and `anon` has no table access.
+- **Writes only through SECURITY DEFINER functions** that require the list's `share_token` (same sanctioned bypass as `get_shared_wishlist`):
+  - `claim_shared_item(token, item_id, claimer_key, name)` → `claimed | mine | taken | limit | owner | not_found`. The item must be visible on that list (not purchased or gifted). The primary key settles races (`on conflict do nothing` → `taken`). A browser can hold at most 25 claims. The signed-in owner gets `owner` and can't claim.
+  - `unclaim_shared_item(token, item_id, claimer_key)`: only the claiming browser can undo.
+  - `get_shared_claims(token, claimer_key)` → `{owner, claims: [{item_id, mine}]}`, never names or keys. For the signed-in owner with `show_claims` off it returns no claims, so previewing your own list can't spoil a surprise.
+- A claim goes away with its item (cascade). Purchased or gifted items drop off the share page, and their claim stays for the owner's record.
 
 ## SQL — Seed Data (Default Taxonomy)
 

@@ -134,6 +134,20 @@ export async function deleteItem(supabase: DbClient, id: string) {
   if (error) throw error;
 }
 
+// Deletes several items in one statement (KAM-76). RLS limits it to the
+// caller's own items; returns what was actually deleted, so the caller can
+// remove those items' photos and report a true count.
+export async function deleteItems(supabase: DbClient, ids: string[]) {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from("items")
+    .delete()
+    .in("id", ids)
+    .select("id, image_url");
+  if (error) throw error;
+  return data;
+}
+
 // Records a price check (manual or scheduled) through the database's single
 // write path, record_price_check(): logs history, stamps price_checked_at,
 // and only changes prices when a price was actually read. See the migration

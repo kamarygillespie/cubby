@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Check,
+  CircleAlert,
   ExternalLink,
   Gift,
   ListChecks,
@@ -55,6 +56,8 @@ export function ItemCard({
 
   const discount = displayDiscountPercent(item.price, item.sale_price);
   const onSale = discount !== null && item.sale_price !== null;
+  // KAM-90: the latest automatic check couldn't read this active item's page.
+  const needsManualCheck = priceCheckFailed && !item.purchased && !item.gifted;
 
   return (
     <div className="relative">
@@ -125,13 +128,43 @@ export function ItemCard({
               )}
             </span>
           )}
+          {/* Under the price, not on the photo, so it never collides with
+              the sale badge on a narrow card. */}
+          {needsManualCheck && (
+            <span className="text-muted-foreground flex items-center gap-1 text-xs">
+              <CircleAlert
+                className="text-destructive size-3.5 shrink-0"
+                aria-hidden
+              />
+              Check by hand
+            </span>
+          )}
           {/* Kept for screen readers; the sheet shows these visually. */}
           <span className="sr-only">
             {itemMetaParts(item).join(" · ")}
             {item.interest_level ? `, ${item.interest_level} of 5 stars` : ""}
+            {needsManualCheck
+              ? ", Cubby couldn't check this price, check it by hand"
+              : ""}
           </span>
         </span>
       </button>
+
+      {/* One tap to the store (KAM-89). A sibling of the card button, not
+          inside it, so it doesn't open the details. 44px tap area. */}
+      {item.link && !selecting && (
+        <a
+          href={item.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Open ${item.title} at the store`}
+          className="group/link absolute top-0 right-0 z-10 flex size-11 items-center justify-center outline-none"
+        >
+          <span className="bg-background/90 text-foreground group-hover/link:bg-background group-focus-visible/link:ring-ring/50 flex size-8 items-center justify-center rounded-full shadow-sm backdrop-blur transition-colors group-focus-visible/link:ring-3">
+            <ExternalLink className="size-4" aria-hidden />
+          </span>
+        </a>
+      )}
 
       {everOpened && (
         <ItemSheet

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   WISHLIST_NAME_MAX_LENGTH,
+  deletedItemsMessage,
+  listsHoldingAny,
   parseWishlistName,
   toSharedWishlist,
   wishlistItemPairs,
@@ -82,5 +84,29 @@ describe("toSharedWishlist", () => {
     expect(
       toSharedWishlist([row({ item_id: null, title: null, price: null })]),
     ).toEqual({ name: "Birthday", items: [] });
+  });
+});
+
+describe("listsHoldingAny", () => {
+  const lists = [
+    { name: "Mom", itemIds: ["a", "b"] },
+    { name: "Partner", itemIds: ["c"] },
+    { name: "Empty", itemIds: [] },
+  ];
+
+  it("names each list holding any selected item, once, in order", () => {
+    expect(listsHoldingAny(["b", "c", "a"], lists)).toEqual(["Mom", "Partner"]);
+  });
+
+  it("is empty when none of the items are on a list", () => {
+    expect(listsHoldingAny(["z"], lists)).toEqual([]);
+    expect(listsHoldingAny([], lists)).toEqual([]);
+  });
+});
+
+describe("deletedItemsMessage", () => {
+  it("counts items", () => {
+    expect(deletedItemsMessage(1)).toBe("Deleted 1 item.");
+    expect(deletedItemsMessage(3)).toBe("Deleted 3 items.");
   });
 });
