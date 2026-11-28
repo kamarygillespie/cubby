@@ -308,3 +308,30 @@ export async function listArchivedItems(supabase: DbClient) {
   if (error) throw error;
   return data;
 }
+
+// Every item the user has, for the CSV export (KAM-87): wishlist (incl.
+// archived), bought, gifts and closet pieces. RLS limits it to their own.
+export async function listAllItemsForExport(supabase: DbClient) {
+  const { data, error } = await supabase
+    .from("items")
+    .select(ITEM_SELECT)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+// Many new items in one insert (CSV import, KAM-87). Never updates
+// existing rows. RLS checks each row's user and item type. Give every row
+// the same keys: PostgREST sends an explicit NULL (not the column default)
+// for a key missing from some rows of a batch.
+export async function createItems(
+  supabase: DbClient,
+  rows: Database["public"]["Tables"]["items"]["Insert"][],
+) {
+  if (rows.length === 0) return 0;
+  const { error, count } = await supabase
+    .from("items")
+    .insert(rows, { count: "exact" });
+  if (error) throw error;
+  return count ?? rows.length;
+}

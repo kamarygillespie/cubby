@@ -4,6 +4,8 @@ import {
   deleteItem,
   deleteItems,
   archiveItem,
+  createItems,
+  listAllItemsForExport,
   listArchivedItems,
   restoreItem,
   getItem,
@@ -190,5 +192,46 @@ describe("lib/db/items (integration)", () => {
     await updateItem(client, item.id, { purchased: true });
     await archiveItem(client, item.id);
     expect(await listArchivedItems(client)).toEqual([]);
+  });
+
+  test("createItems adds new rows only for the caller; export lists them all (KAM-87)", async () => {
+    const owner = await createTestUser();
+    const stranger = await createTestUser();
+    const existing = await createItem(owner.client, {
+      title: "Already Here",
+      item_type_id: itemTypeId,
+    });
+
+    expect(
+      await createItems(owner.client, [
+        {
+          user_id: owner.userId,
+          title: "Imported A",
+          item_type_id: itemTypeId,
+          source: "wishlist",
+        },
+        {
+          user_id: owner.userId,
+          title: "Imported Closet",
+          item_type_id: itemTypeId,
+          source: "closet",
+        },
+      ]),
+    ).toBe(2);
+    const titles = (await listAllItemsForExport(owner.client)).map(
+      (i) => i.title,
+    );
+    expect(titles).toEqual(["Already Here", "Imported A", "Imported Closet"]);
+    expect((await getItem(owner.client, existing.id))?.title).toBe(
+      "Already Here",
+    );
+
+    // Can't add items to someone else's account.
+    await expect(
+      createItems(stranger.client, [
+        { user_id: owner.userId, title: "Sneaky", item_type_id: itemTypeId },
+      ]),
+    ).rejects.toThrow();
+    expect(await listAllItemsForExport(stranger.client)).toEqual([]);
   });
 });

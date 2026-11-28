@@ -142,3 +142,8 @@ Product data comes from three sources, tried in this order:
 3. **Save to Cubby** (`lib/page-capture.ts`), which reads the page in the user's own browser. Its data arrives in a URL, so it's validated in `parseCapture` and always reviewed by the user before saving.
 
 Cubby shows prices in US dollars. A page's price in another currency is left blank for the user to enter, unless the page states a US price (`sale_price_usd`), which then wins even over data labeled USD.
+
+## Backup & Import (KAM-87)
+
+- **Export** is a route handler (`GET /api/export`) returning CSV for the signed-in user (RLS-scoped `listAllItemsForExport`). CSV building and parsing are pure (`src/lib/csv.ts`, `src/lib/item-transfer.ts`), with a formula-injection guard (cells starting `= + - @` get a leading apostrophe on export, stripped on import).
+- **Import** parses the file in the browser for the column mapping and preview, but the server action (`importItemsAction`) re-parses the raw rows itself and inserts in one batch (`createItems`, RLS-checked). Photos go through `link-autofill`'s image copy first. The action only accepts image URLs inside the caller's own storage folder, so `next/image`'s allowlist stays limited to Cubby's bucket. Imports never update existing rows, and insert triggers don't fire purchase or budget alerts (those run on update).

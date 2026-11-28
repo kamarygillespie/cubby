@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookmarkPlus, CircleUser } from "lucide-react";
+import { BookmarkPlus, DatabaseBackup, CircleUser } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -40,6 +40,16 @@ export function AccountMenu({ email }: { email: string | undefined }) {
         >
           <BookmarkPlus />
           Save to Cubby button
+        </Link>
+        <Link
+          href="/data"
+          className={buttonVariants({
+            variant: "ghost",
+            className: "justify-start",
+          })}
+        >
+          <DatabaseBackup />
+          Backup &amp; import
         </Link>
         <div className="flex items-center justify-between gap-2">
           <span>Theme</span>

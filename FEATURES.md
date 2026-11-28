@@ -62,6 +62,12 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 - Performance pass on large wishlists (100+ items): **done (KAM-45)**. Lists render 50 cards at a time with "Show more" (counts, group totals, filters and Check all prices still cover every item); off-screen cards skip layout; /wishlists loads only prices
 - Public launch readiness (onboarding flow, empty states, error states). **Built (KAM-46):** new accounts get a **Welcome to Cubby** checklist on the home page: add your first item, make a wishlist to share, star favorite stores, turn on price alerts. Each step ticks off from what the account actually has. Hiding it is saved on the profile, so it stays hidden on every device, and it disappears once all four are done. On phones, the install card sits below it. Empty states were re-checked on every page; Stores and Totals gained guidance
 
+- **Backup & import (KAM-87):** `/data` (from More and the account menu). **Download CSV** saves every item (wishlist, bought, gifts, closet and archived) with its status, type, store, prices, interest, link, photo link, notes and dates. Cells a spreadsheet could run as formulas are escaped. **Import items** reads a Cubby backup or any CSV:
+  - Columns are guessed from common names ("Product", "Cost", "Brand", "URL"…) and can be changed. A preview shows how many rows are ready and which have problems.
+  - Unknown item types go to a chosen type, and statuses map back to wishlist, purchased, gifts, closet or archived.
+  - Photos are copied into Cubby's storage through the same Edge Function as Save to Cubby. The server only accepts copies in the user's own folder, and re-parses every row itself.
+  - Imports only add items, up to 1,000 at a time.
+
 ## V2 — Expansion
 
 - **Closet view:** purchased items automatically appear in a closet gallery; ability to add standalone closet photos and replace item images from here. **Built (KAM-47)** at `/closet`. **Rule:** the closet = pieces added straight to it + things you bought for yourself (purchased, not gifted) + gifts you received (gifted, not purchased). Purchased _and_ gifted means you bought it for someone else, so it's not in your closet. Pieces added straight to the closet never count toward wishlist, spending or totals. Tap a piece to edit it or change its photo
