@@ -13,7 +13,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { wishlistAsText, type CopyItem } from "@/lib/wishlist-text";
+import { cn } from "cn";
+import {
+  PRICE_RANGES,
+  wishlistAsText,
+  type CopyItem,
+  type PriceRangeKey,
+} from "@/lib/wishlist-text";
 
 // "Copy wishlist" (KAM-91): the list as text for an AI chat, a note or a
 // message. The preview doubles as the fallback when the clipboard is blocked.
@@ -30,10 +36,18 @@ export function CopyWishlistDialog({
 }) {
   const [includeNotes, setIncludeNotes] = useState(false);
   const [withPrompt, setWithPrompt] = useState(true);
+  // Price ranges for the ideas (KAM-93); none = any price.
+  const [ranges, setRanges] = useState<PriceRangeKey[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const text = useMemo(
-    () => wishlistAsText(items, { includeNotes, withPrompt, filtered }),
-    [items, includeNotes, withPrompt, filtered],
+    () =>
+      wishlistAsText(items, {
+        includeNotes,
+        withPrompt,
+        filtered,
+        priceRanges: ranges,
+      }),
+    [items, includeNotes, withPrompt, filtered, ranges],
   );
   const n = items.length;
 
@@ -78,6 +92,43 @@ export function CopyWishlistDialog({
             />
             Ask for ideas of things I&apos;d like
           </label>
+          {withPrompt && (
+            <div
+              role="group"
+              aria-label="Price range for ideas"
+              className="flex flex-wrap items-center gap-1.5 pl-6"
+            >
+              {PRICE_RANGES.map((range) => {
+                const on = ranges.includes(range.key);
+                return (
+                  <button
+                    key={range.key}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => {
+                      setRanges((current) =>
+                        on
+                          ? current.filter((k) => k !== range.key)
+                          : [...current, range.key],
+                      );
+                      setStatus(null);
+                    }}
+                    className={cn(
+                      "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                      on
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "hover:bg-accent",
+                    )}
+                  >
+                    {range.label}
+                  </button>
+                );
+              })}
+              <span className="text-muted-foreground text-xs">
+                {ranges.length === 0 ? "Any price" : ""}
+              </span>
+            </div>
+          )}
           <label className="flex items-center gap-2">
             <Checkbox
               checked={includeNotes}

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { IDEAS_PROMPT, wishlistAsText, type CopyItem } from "./wishlist-text";
+import {
+  IDEAS_PROMPT,
+  ideasPrompt,
+  priceRangePhrase,
+  wishlistAsText,
+  type CopyItem,
+} from "./wishlist-text";
 
 const item = (overrides: Partial<CopyItem>): CopyItem => ({
   title: "Item",
@@ -95,5 +101,40 @@ describe("wishlistAsText", () => {
         withPrompt: false,
       }),
     ).toMatch(/## Clothing\n- Gift$/);
+  });
+});
+
+describe("price ranges for ideas (KAM-93)", () => {
+  it("describes one range", () => {
+    expect(priceRangePhrase(["under30"])).toBe("under $30");
+    expect(priceRangePhrase(["30to100"])).toBe("between $30 and $100");
+    expect(priceRangePhrase(["over100"])).toBe("$100 and up");
+  });
+
+  it("merges adjacent ranges and joins separate ones", () => {
+    expect(priceRangePhrase(["under30", "30to100"])).toBe("under $100");
+    expect(priceRangePhrase(["over100", "30to100"])).toBe("$30 and up");
+    expect(priceRangePhrase(["under30", "over100"])).toBe(
+      "under $30 or $100 and up",
+    );
+  });
+
+  it("means any price with none or all selected", () => {
+    expect(priceRangePhrase([])).toBeNull();
+    expect(priceRangePhrase(["under30", "30to100", "over100"])).toBeNull();
+    expect(ideasPrompt([])).toBe(IDEAS_PROMPT);
+  });
+
+  it("puts the range into the prompt", () => {
+    expect(ideasPrompt(["30to100"])).toContain(
+      "that aren't on it, priced between $30 and $100.",
+    );
+    expect(
+      wishlistAsText([], {
+        includeNotes: false,
+        withPrompt: true,
+        priceRanges: ["under30"],
+      }),
+    ).toContain("aren't on it, priced under $30.");
   });
 });
