@@ -314,6 +314,7 @@ export type Database = {
           title: string;
           url: string;
           user_id: string;
+          wishlist_id: string | null;
         };
         Insert: {
           body: string;
@@ -328,6 +329,7 @@ export type Database = {
           title: string;
           url: string;
           user_id: string;
+          wishlist_id?: string | null;
         };
         Update: {
           body?: string;
@@ -342,6 +344,7 @@ export type Database = {
           title?: string;
           url?: string;
           user_id?: string;
+          wishlist_id?: string | null;
         };
         Relationships: [
           {
@@ -349,6 +352,13 @@ export type Database = {
             columns: ["item_id"];
             isOneToOne: false;
             referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_wishlist_id_fkey";
+            columns: ["wishlist_id"];
+            isOneToOne: false;
+            referencedRelation: "wishlists";
             referencedColumns: ["id"];
           },
         ];
@@ -505,6 +515,8 @@ export type Database = {
           created_at: string;
           id: string;
           name: string;
+          occasion_date: string | null;
+          reminded_for: string | null;
           share_token: string;
           show_sizes: boolean;
           user_id: string;
@@ -513,6 +525,8 @@ export type Database = {
           created_at?: string;
           id?: string;
           name: string;
+          occasion_date?: string | null;
+          reminded_for?: string | null;
           share_token?: string;
           show_sizes?: boolean;
           user_id: string;
@@ -521,6 +535,8 @@ export type Database = {
           created_at?: string;
           id?: string;
           name?: string;
+          occasion_date?: string | null;
+          reminded_for?: string | null;
           share_token?: string;
           show_sizes?: boolean;
           user_id?: string;
@@ -540,6 +556,10 @@ export type Database = {
           token: string;
         };
         Returns: string;
+      };
+      create_occasion_reminders: {
+        Args: { p_today?: string };
+        Returns: number;
       };
       get_shared_claims: {
         Args: { p_claimer_key: string; token: string };

@@ -7,6 +7,7 @@ import {
 } from "./items";
 import { listItemTypes } from "./item-types";
 import { setFavoriteStore } from "./stores";
+import { createWishlist, setOccasionDate } from "./wishlists";
 import {
   countUnreadNotifications,
   deletePushSubscription,
@@ -74,6 +75,47 @@ describe("notifications (integration)", () => {
         (a) => a.kind === "target_price",
       ),
     ).toHaveLength(2);
+  });
+
+  it("occasion reminders: once per date, 21 days ahead or closer (KAM-79)", async () => {
+    const { client } = await createTestUser();
+    const soon = await createWishlist(client, "E2E Birthday");
+    const later = await createWishlist(client, "E2E Far Off");
+    const past = await createWishlist(client, "E2E Last Year");
+    await setOccasionDate(client, soon.id, "2026-12-18");
+    await setOccasionDate(client, later.id, "2027-03-01");
+    await setOccasionDate(client, past.id, "2026-01-01");
+
+    const run = async (today: string) => {
+      const { error } = await admin.rpc("create_occasion_reminders", {
+        p_today: today,
+      });
+      if (error) throw error;
+    };
+    await run("2026-11-27"); // 21 days before the 18th
+    let alerts = await listNotifications(client);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({
+      kind: "occasion",
+      title: "E2E Birthday is in 21 days",
+      url: `/wishlists/${soon.id}`,
+    });
+
+    // Not again for the same date...
+    await run("2026-11-28");
+    expect(await listNotifications(client)).toHaveLength(1);
+    // ...but a new date gets its own reminder.
+    await setOccasionDate(client, soon.id, "2026-11-29");
+    await run("2026-11-28");
+    alerts = await listNotifications(client);
+    expect(alerts.map((a) => a.title)).toContain("E2E Birthday is tomorrow");
+    expect(alerts).toHaveLength(2);
+
+    // App users can't run the job themselves.
+    const { error } = await client.rpc("create_occasion_reminders", {
+      p_today: "2026-11-28",
+    });
+    expect(error).not.toBeNull();
   });
 
   it("a price check that drops the price past the threshold creates one alert", async () => {

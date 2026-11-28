@@ -9,6 +9,7 @@ import { getSharedClaims } from "@/lib/db/claims";
 import { getSharedListExtras } from "@/lib/db/sizes";
 import { SIZE_KINDS, sizeHint } from "@/lib/sizes";
 import { SharedItems, type SharedItemView } from "./shared-items";
+import { OccasionCountdown } from "@/components/occasion-countdown";
 import { GIVER_COOKIE } from "./giver-cookie";
 import { GiftCardIdeas } from "@/components/gift-card-ideas";
 import { giftCardIdeas } from "@/lib/stores";
@@ -77,6 +78,9 @@ export default async function SharedWishlistPage({
           <Gift className="size-4" aria-hidden />A wishlist shared with you
         </p>
         <h1 className="text-2xl font-semibold">{wishlist.name}</h1>
+        {extras.occasionDate && (
+          <OccasionCountdown date={extras.occasionDate} />
+        )}
         <p className="text-muted-foreground text-sm">
           {n} item{n === 1 ? "" : "s"}
         </p>

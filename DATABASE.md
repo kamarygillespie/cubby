@@ -504,6 +504,17 @@ alter table public.items add column target_price numeric(10,2) check (target_pri
 
 `notify_price_change()` gains one rule, checked first: when the effective price **crosses** `target_price` (above it or unknown before the check, at or below it after), it creates a `target_price` alert ("Sneakers hit your target price", "Now $65.00 (your target: $70.00)."). It fires once per crossing, and again only after the price goes back above and drops again. When it fires, the `price_drop` rule is skipped for that check, so one change never makes two alerts. It isn't tied to the price-drop setting, since setting a target is the opt-in. Store-sale alerts are unchanged.
 
+## SQL — Occasion Dates (migration `20261128020000`, KAM-79)
+
+```sql
+alter table public.wishlists add column occasion_date date, add column reminded_for date;
+alter table public.notifications add column wishlist_id uuid references public.wishlists(id) on delete cascade;
+-- notifications.kind now also allows 'occasion'.
+```
+
+- `create_occasion_reminders(p_today date default current_date)` (SECURITY DEFINER, not executable by app roles) creates one `occasion` alert ("Birthday is in 21 days", linking to the list) for each list whose `occasion_date` is between today and 21 days out and whose `reminded_for` differs, then sets `reminded_for`. A changed date gets a new reminder. pg_cron runs it daily at **16:00 UTC**, an hour before the 17:00 push digest.
+- `get_shared_list_extras()` also returns `occasion_date` for the share page's countdown.
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

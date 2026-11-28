@@ -91,12 +91,22 @@ describe("parseListExtras", () => {
       ],
     });
     expect(extras.sizes).toEqual({ shoes: "8" });
+    expect(extras.occasionDate).toBeNull();
     expect(extras.items.get("a")).toEqual({
       itemType: "Boots",
       category: "Shoes",
       mostWanted: true,
     });
     expect(extras.items.size).toBe(2);
+  });
+
+  it("reads a valid occasion date only", () => {
+    expect(
+      parseListExtras({ occasion_date: "2026-12-25", items: [] }).occasionDate,
+    ).toBe("2026-12-25");
+    expect(
+      parseListExtras({ occasion_date: "soon", items: [] }).occasionDate,
+    ).toBeNull();
   });
 
   it("treats hidden or empty sizes as none, and bad data as no extras", () => {

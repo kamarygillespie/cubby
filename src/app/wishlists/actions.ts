@@ -9,7 +9,9 @@ import {
   deleteWishlist,
   removeItemFromWishlist,
   renameWishlist,
+  setOccasionDate,
 } from "@/lib/db/wishlists";
+import { parseOccasionDate } from "@/lib/occasion";
 import { parseWishlistName } from "@/lib/wishlists";
 import { setShowClaims } from "@/lib/db/claims";
 import { saveSizes, setWishlistShowSizes } from "@/lib/db/sizes";
@@ -195,4 +197,20 @@ export async function saveSizesAction(
 export async function setShowSizesAction(wishlistId: string, show: boolean) {
   await setWishlistShowSizes(await createClient(), wishlistId, show);
   revalidatePath(`/wishlists/${wishlistId}`);
+}
+
+// A list's occasion date (KAM-79). Blank clears it.
+export async function setOccasionDateAction(
+  wishlistId: string,
+  raw: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = parseOccasionDate(raw);
+  if (!parsed.ok) return parsed;
+  try {
+    await setOccasionDate(await createClient(), wishlistId, parsed.value);
+  } catch {
+    return { ok: false, error: "Couldn't save the date. Try again." };
+  }
+  revalidatePath("/wishlists", "layout");
+  return { ok: true };
 }

@@ -12,6 +12,7 @@ import { getSizes } from "@/lib/db/sizes";
 import { SizesForm } from "./sizes-form";
 import { CreateWishlistForm } from "./create-wishlist-form";
 import { ShowClaimsToggle } from "./show-claims-toggle";
+import { OccasionCountdown } from "@/components/occasion-countdown";
 
 export const metadata: Metadata = { title: "Wishlists" };
 
@@ -67,6 +68,12 @@ export default async function WishlistsPage() {
                         <span className="text-muted-foreground text-sm">
                           {n} item{n === 1 ? "" : "s"} · {formatCurrency(total)}
                         </span>
+                        {list.occasion_date && (
+                          <OccasionCountdown
+                            date={list.occasion_date}
+                            variant="label"
+                          />
+                        )}
                       </div>
                       <ChevronRight className="text-muted-foreground size-4" />
                     </CardContent>

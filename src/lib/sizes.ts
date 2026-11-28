@@ -82,6 +82,8 @@ export function sizeHint(
 
 export type ListExtras = {
   sizes: Sizes | null;
+  // The list's occasion (KAM-79), "YYYY-MM-DD".
+  occasionDate: string | null;
   items: Map<
     string,
     { itemType: string; category: string; mostWanted: boolean }
@@ -91,9 +93,23 @@ export type ListExtras = {
 // get_shared_list_extras() JSON. Malformed data means "no extras", never an
 // error on the public page.
 export function parseListExtras(raw: unknown): ListExtras {
-  const extras: ListExtras = { sizes: null, items: new Map() };
+  const extras: ListExtras = {
+    sizes: null,
+    occasionDate: null,
+    items: new Map(),
+  };
   if (!raw || typeof raw !== "object") return extras;
-  const data = raw as { sizes?: unknown; items?: unknown };
+  const data = raw as {
+    sizes?: unknown;
+    occasion_date?: unknown;
+    items?: unknown;
+  };
+  if (
+    typeof data.occasion_date === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(data.occasion_date)
+  ) {
+    extras.occasionDate = data.occasion_date;
+  }
   const sizes = parseSizes(data.sizes);
   extras.sizes = hasSizes(sizes) ? sizes : null;
   if (Array.isArray(data.items)) {
