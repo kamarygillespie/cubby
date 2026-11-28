@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { CopyItem } from "@/lib/wishlist-text";
-import { useCheckAllPrices } from "./check-price";
+import { usePriceCheck } from "./check-price";
 import { CopyWishlistDialog } from "./copy-wishlist-dialog";
 import { ActiveFilters, FilterSheet, type FilterOptions } from "./filter-sheet";
 import { useItemSelection } from "./item-selection";
@@ -20,7 +20,7 @@ export function ItemsToolbar({
   filterOptions,
   showActions,
   canSelect,
-  priceCheckIds,
+  priceChecks,
   copyItems = [],
   filtered = false,
 }: {
@@ -28,7 +28,7 @@ export function ItemsToolbar({
   // The "…" menu's actions apply to the Wishlist tab only.
   showActions: boolean;
   canSelect: boolean;
-  priceCheckIds: string[];
+  priceChecks: { id: string; store: string }[];
   // What "Copy wishlist" copies: the matching items, filters applied.
   copyItems?: CopyItem[];
   filtered?: boolean;
@@ -36,10 +36,17 @@ export function ItemsToolbar({
   const selection = useItemSelection();
   const [menuOpen, setMenuOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
-  const priceCheck = useCheckAllPrices(priceCheckIds);
+  // Shared with the Select bar's Check price (KAM-94).
+  const shared = usePriceCheck();
+  const priceCheck = shared ?? {
+    progress: null,
+    summary: null,
+    run: async () => {},
+    stop: () => {},
+  };
   const hasActions =
     showActions &&
-    (canSelect || priceCheckIds.length > 0 || copyItems.length > 0);
+    (canSelect || priceChecks.length > 0 || copyItems.length > 0);
 
   return (
     <div className="flex flex-col gap-2">
@@ -76,7 +83,7 @@ export function ItemsToolbar({
                     Select
                   </Button>
                 )}
-                {priceCheckIds.length > 0 && (
+                {priceChecks.length > 0 && (
                   <Button
                     type="button"
                     variant="ghost"
@@ -124,8 +131,7 @@ export function ItemsToolbar({
       {priceCheck.progress && (
         <div className="flex items-center justify-between gap-2">
           <p aria-live="polite" className="text-muted-foreground text-sm">
-            Checking {priceCheck.progress.done + 1} of{" "}
-            {priceCheck.progress.total}…
+            Checked {priceCheck.progress.done} of {priceCheck.progress.total}…
           </p>
           <Button size="sm" variant="ghost" onClick={priceCheck.stop}>
             Stop

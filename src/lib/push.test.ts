@@ -13,7 +13,16 @@ describe("parseNotificationSettings", () => {
       parseNotificationSettings(
         form({ price_drops: "on", min_drop_percent: "25" }),
       ),
-    ).toEqual({ price_drops: true, store_sales: false, min_drop_percent: 25 });
+    ).toEqual({
+      price_drops: true,
+      store_sales: false,
+      min_drop_percent: 25,
+      budget_alerts: false,
+      cooling_off: false,
+    });
+    expect(
+      parseNotificationSettings(form({ budget_alerts: "on" })).budget_alerts,
+    ).toBe(true);
   });
 
   it("clamps or defaults a bad threshold", () => {

@@ -3,6 +3,7 @@ import {
   itemImagePathFromUrl,
   normalizeProductLink,
   parseItemForm,
+  parseTargetPrice,
   removeTrackingParams,
   sharedLinkFromParams,
 } from "./item-form";
@@ -169,5 +170,22 @@ describe("sharedLinkFromParams", () => {
     expect(sharedLinkFromParams({ url: "javascript:alert(1)" })).toBeNull();
     expect(sharedLinkFromParams({ text: "no link here" })).toBeNull();
     expect(sharedLinkFromParams({})).toBeNull();
+  });
+});
+
+describe("parseTargetPrice", () => {
+  it("reads dollars, rounding to cents", () => {
+    expect(parseTargetPrice("40")).toEqual({ ok: true, value: 40 });
+    expect(parseTargetPrice(" $1,299.999 ")).toEqual({ ok: true, value: 1300 });
+  });
+
+  it("treats blank as clearing the target", () => {
+    expect(parseTargetPrice("  ")).toEqual({ ok: true, value: null });
+  });
+
+  it("rejects zero, negatives and junk", () => {
+    expect(parseTargetPrice("0").ok).toBe(false);
+    expect(parseTargetPrice("-5").ok).toBe(false);
+    expect(parseTargetPrice("cheap").ok).toBe(false);
   });
 });

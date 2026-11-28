@@ -484,6 +484,85 @@ alter table public.profiles add column show_claims boolean not null default fals
   - `get_shared_claims(token, claimer_key)` → `{owner, claims: [{item_id, mine}]}`, never names or keys. For the signed-in owner with `show_claims` off it returns no claims, so previewing your own list can't spoil a surprise.
 - A claim goes away with its item (cascade). Purchased or gifted items drop off the share page, and their claim stays for the owner's record.
 
+## SQL — Share Page Sizes and Most Wanted (migration `20261128000000`, KAM-78, KAM-80)
+
+```sql
+alter table public.profiles add column sizes jsonb not null default '{}'
+  check (jsonb_typeof(sizes) = 'object' and pg_column_size(sizes) < 2000);
+alter table public.wishlists add column show_sizes boolean not null default true;
+```
+
+- `sizes` keys: `tops, bottoms, dresses, shoes, rings, bras, other`, validated in `src/lib/sizes.ts` (20 chars each, 80 for `other`). Own row only, via profiles' existing RLS.
+- `get_shared_list_extras(token)` (SECURITY DEFINER, token-gated like `get_shared_wishlist`) → `{sizes | null, items: [{item_id, item_type, category, most_wanted}]}` for the list's visible items. `sizes` is null when the list has `show_sizes` off. Only `most_wanted` (interest = 5) is shared; other interest levels stay private.
+
+## SQL — Target Price Alerts (migration `20261128010000`, KAM-81)
+
+```sql
+alter table public.items add column target_price numeric(10,2) check (target_price > 0);
+-- notifications.kind now allows 'target_price' too.
+```
+
+`notify_price_change()` gains one rule, checked first: when the effective price **crosses** `target_price` (above it or unknown before the check, at or below it after), it creates a `target_price` alert ("Sneakers hit your target price", "Now $65.00 (your target: $70.00)."). It fires once per crossing, and again only after the price goes back above and drops again. When it fires, the `price_drop` rule is skipped for that check, so one change never makes two alerts. It isn't tied to the price-drop setting, since setting a target is the opt-in. Store-sale alerts are unchanged.
+
+## SQL — Occasion Dates (migration `20261128020000`, KAM-79)
+
+```sql
+alter table public.wishlists add column occasion_date date, add column reminded_for date;
+alter table public.notifications add column wishlist_id uuid references public.wishlists(id) on delete cascade;
+-- notifications.kind now also allows 'occasion'.
+```
+
+- `create_occasion_reminders(p_today date default current_date)` (SECURITY DEFINER, not executable by app roles) creates one `occasion` alert ("Birthday is in 21 days", linking to the list) for each list whose `occasion_date` is between today and 21 days out and whose `reminded_for` differs, then sets `reminded_for`. A changed date gets a new reminder. pg_cron runs it daily at **16:00 UTC**, an hour before the 17:00 push digest.
+- `get_shared_list_extras()` also returns `occasion_date` for the share page's countdown.
+
+## SQL — Return Windows (migration `20261128030000`, KAM-83)
+
+```sql
+alter table public.items add column return_by date, add column return_reminded_for date;
+-- notifications.kind now also allows 'return_by'.
+```
+
+- `sync_purchased_date()` now also clears `return_by` and `return_reminded_for` when an item is un-purchased. **Mark returned** is just `purchased = false`: the item goes back to the wishlist, `purchased_date` clears, and it leaves spending totals.
+- `create_return_reminders(p_today)` (SECURITY DEFINER, not executable by app roles) creates one `return_by` alert ("Last chance to return Sneakers", "The return window closes in 3 days.") per return date, once it's 3 days away or closer. It runs daily via pg_cron at 16:00 UTC, before the 17:00 digest.
+
+## SQL — Monthly Budget (migration `20261128040000`, KAM-84)
+
+```sql
+alter table public.profiles add column monthly_budget numeric(10,2) check (monthly_budget > 0);
+alter table public.notification_settings add column budget_alerts boolean not null default true;
+-- notifications.kind now also allows 'budget'.
+```
+
+Trigger `items_notify_budget` (after `update of purchased`, when an item becomes purchased) runs `notify_budget()`: it sums this **UTC** month's spending (purchased wishlist items at the price paid, as Totals does). If this purchase crossed 100% or 80% of the budget, it creates one `budget` alert for the highest threshold crossed, at most once per threshold per month (`price` stores 80 or 100 for that check). It's skipped when there's no budget or `budget_alerts` is off.
+
+## SQL — Item Wears (migration `20261128050000`, KAM-85)
+
+```sql
+create table public.item_wears (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  item_id uuid not null references public.items(id) on delete cascade,
+  outfit_id uuid references public.outfits(id) on delete set null, -- logged from an outfit
+  worn_at timestamptz not null default now()
+);
+```
+
+- One row per wear, so undo is exact and per-year counts are a simple filter (Year in Cubby).
+- RLS: select and delete own rows. Insert requires owning the item, and the outfit if one is given (write policies check what a row points to).
+- `log_outfit_wear(outfit_id)` and `undo_outfit_wear(outfit_id)` are SECURITY INVOKER, so RLS still applies. They log one wear per piece in the outfit, and remove the outfit's most recent batch (same outfit, same `worn_at`).
+
+## SQL — Cooling-off Check-in (migration `20261128060000`, KAM-82)
+
+```sql
+alter table public.items add column archived_at timestamptz, add column kept_at timestamptz;
+alter table public.profiles add column checkin_dismissed_at timestamptz;
+alter table public.notification_settings add column cooling_off boolean not null default true;
+```
+
+- **Archived** items (`archived_at` set) are left out of `listItems()` (wishlist, Totals, Stores, Year in Cubby) and the daily price check. Archiving also deletes the item's `wishlist_items` rows, so share pages never show it, and restoring doesn't put it back on lists. Only active items (not purchased or gifted) can be archived.
+- `kept_at`: the last **Keep**. Kept items aren't asked about again for 90 days. Restoring also sets it.
+- Existing RLS on items, wishlist_items and profiles covers all of it. No new policies.
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

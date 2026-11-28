@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  budgetProgress,
   lastMonthKeys,
+  parseBudget,
   monthLabel,
   purchaseYears,
   spendingByMonth,
@@ -96,5 +98,39 @@ describe("monthLabel", () => {
   it("formats short and long labels", () => {
     expect(monthLabel("2026-10")).toBe("Oct");
     expect(monthLabel("2026-10", "long")).toBe("October 2026");
+  });
+});
+
+describe("budgetProgress", () => {
+  const keyOf = (iso: string) => iso.slice(0, 7);
+  const purchases = [
+    { date: "2026-11-02T10:00:00Z", amount: 120 },
+    { date: "2026-11-20T10:00:00Z", amount: 60.5 },
+    { date: "2026-10-30T10:00:00Z", amount: 999 },
+    { date: null, amount: 50 },
+  ];
+
+  it("adds up this month only", () => {
+    expect(budgetProgress(purchases, 300, "2026-11", keyOf)).toEqual({
+      spent: 180.5,
+      budget: 300,
+      percent: 60,
+      left: 119.5,
+    });
+  });
+
+  it("goes past 100% and negative left when over", () => {
+    const over = budgetProgress(purchases, 150, "2026-11", keyOf);
+    expect(over.percent).toBe(120);
+    expect(over.left).toBe(-30.5);
+  });
+});
+
+describe("parseBudget", () => {
+  it("reads dollars, blank clears, rejects nonsense", () => {
+    expect(parseBudget(" $1,200 ")).toEqual({ ok: true, value: 1200 });
+    expect(parseBudget("")).toEqual({ ok: true, value: null });
+    expect(parseBudget("0").ok).toBe(false);
+    expect(parseBudget("lots").ok).toBe(false);
   });
 });

@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getItem, recordPriceCheck } from "@/lib/db/items";
+import { getItem, recordPriceCheck, setTargetPrice } from "@/lib/db/items";
+import { parseTargetPrice } from "@/lib/item-form";
 import {
   applyPriceCheck,
   type FetchedPrices,
@@ -70,4 +71,20 @@ export async function refreshPriceFromPage(
   await recordPriceCheck(supabase, itemId, { price, salePrice });
   revalidatePath("/", "layout");
   redirect("/");
+}
+
+// "Alert me at or under $X" from the details sheet (KAM-81).
+export async function setTargetPriceAction(
+  itemId: string,
+  raw: string,
+): Promise<{ ok: true; target: number | null } | { ok: false; error: string }> {
+  const parsed = parseTargetPrice(raw);
+  if (!parsed.ok) return parsed;
+  try {
+    await setTargetPrice(await createClient(), itemId, parsed.value);
+  } catch {
+    return { ok: false, error: "Couldn't save the alert. Try again." };
+  }
+  revalidatePath("/");
+  return { ok: true, target: parsed.value };
 }

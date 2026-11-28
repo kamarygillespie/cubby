@@ -7,6 +7,7 @@ import { ArrowLeft, Pencil, Shirt } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { getOutfit } from "@/lib/db/outfits";
+import { OutfitWearButton } from "../../closet/wear-controls";
 
 const loadOutfit = cache(async (id: string) =>
   getOutfit(await createClient(), id),
@@ -50,6 +51,7 @@ export default async function OutfitPage({
           Edit
         </Link>
       </div>
+      <OutfitWearButton outfitId={outfit.id} pieceCount={pieces.length} />
 
       <div className="flex flex-col gap-4 sm:flex-row">
         {outfit.photo_url && (

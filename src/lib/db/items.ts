@@ -18,7 +18,7 @@ export type ItemUpdate = Omit<RawItemUpdate, AppReadonlyField>;
 export const ITEM_SELECT =
   "*, item_type:item_types(id, name, category:categories(id, name))";
 
-// Wishlist items only (incl. purchased/gifted). Pieces added straight to the
+// Wishlist items only (incl. purchased/gifted, not archived). Pieces added straight to the
 // closet (source 'closet') are excluded here so they never reach the
 // wishlist tabs or any total — see listClosetItems.
 export async function listItems(supabase: DbClient) {
@@ -26,6 +26,9 @@ export async function listItems(supabase: DbClient) {
     .from("items")
     .select(ITEM_SELECT)
     .eq("source", "wishlist")
+    // Archived in the cooling-off check-in (KAM-82): off the wishlist and
+    // every total until restored.
+    .is("archived_at", null)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -230,4 +233,105 @@ export async function listRecentPriceHighs(supabase: DbClient, days = 30) {
     highs.set(row.item_id, Math.max(highs.get(row.item_id) ?? 0, eff));
   }
   return highs;
+}
+
+// "Alert me at or under $X" (KAM-81). Null clears it. RLS limits it to the
+// caller's own items. The alert itself comes from notify_price_change().
+export async function setTargetPrice(
+  supabase: DbClient,
+  itemId: string,
+  target: number | null,
+) {
+  const { error } = await supabase
+    .from("items")
+    .update({ target_price: target })
+    .eq("id", itemId);
+  if (error) throw error;
+}
+
+// A purchased item's return window (KAM-83), "YYYY-MM-DD" or null. Mark
+// returned is just purchased = false: the purchase trigger clears the date
+// and the window, so it leaves spending totals.
+export async function setReturnBy(
+  supabase: DbClient,
+  itemId: string,
+  date: string | null,
+) {
+  const { error } = await supabase
+    .from("items")
+    .update({ return_by: date })
+    .eq("id", itemId);
+  if (error) throw error;
+}
+
+// Cooling-off check-in (KAM-82). Archiving also takes the item off every
+// list, so share pages never show something set aside. Restoring puts it
+// back on the wishlist (not on its old lists).
+export async function archiveItem(supabase: DbClient, itemId: string) {
+  const { error } = await supabase
+    .from("items")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", itemId)
+    .eq("purchased", false)
+    .eq("gifted", false);
+  if (error) throw error;
+  const { error: listError } = await supabase
+    .from("wishlist_items")
+    .delete()
+    .eq("item_id", itemId);
+  if (listError) throw listError;
+}
+
+export async function keepItem(supabase: DbClient, itemId: string) {
+  const { error } = await supabase
+    .from("items")
+    .update({ kept_at: new Date().toISOString() })
+    .eq("id", itemId);
+  if (error) throw error;
+}
+
+export async function restoreItem(supabase: DbClient, itemId: string) {
+  const { error } = await supabase
+    .from("items")
+    .update({ archived_at: null, kept_at: new Date().toISOString() })
+    .eq("id", itemId);
+  if (error) throw error;
+}
+
+export async function listArchivedItems(supabase: DbClient) {
+  const { data, error } = await supabase
+    .from("items")
+    .select(ITEM_SELECT)
+    .eq("source", "wishlist")
+    .not("archived_at", "is", null)
+    .order("archived_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+// Every item the user has, for the CSV export (KAM-87): wishlist (incl.
+// archived), bought, gifts and closet pieces. RLS limits it to their own.
+export async function listAllItemsForExport(supabase: DbClient) {
+  const { data, error } = await supabase
+    .from("items")
+    .select(ITEM_SELECT)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+// Many new items in one insert (CSV import, KAM-87). Never updates
+// existing rows. RLS checks each row's user and item type. Give every row
+// the same keys: PostgREST sends an explicit NULL (not the column default)
+// for a key missing from some rows of a batch.
+export async function createItems(
+  supabase: DbClient,
+  rows: Database["public"]["Tables"]["items"]["Insert"][],
+) {
+  if (rows.length === 0) return 0;
+  const { error, count } = await supabase
+    .from("items")
+    .insert(rows, { count: "exact" });
+  if (error) throw error;
+  return count ?? rows.length;
 }

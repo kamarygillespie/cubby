@@ -26,6 +26,14 @@ test("copy the wishlist as text, notes only when asked", async ({
   await expect(text).toHaveValue(/E2E Copy Boots \| Madewell \| \$120\.00/);
   await expect(text).not.toHaveValue(/E2E private note/);
 
+  // KAM-93: a price range for the ideas.
+  await dialog.getByRole("button", { name: "$30 to $100" }).click();
+  await expect(text).toHaveValue(
+    /aren't on it, priced between \$30 and \$100\./,
+  );
+  await dialog.getByRole("button", { name: "Under $30" }).click();
+  await expect(text).toHaveValue(/aren't on it, priced under \$100\./);
+
   await dialog.getByRole("checkbox", { name: "Include my notes" }).click();
   await expect(text).toHaveValue(/Notes: E2E private note/);
 

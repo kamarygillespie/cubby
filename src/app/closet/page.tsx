@@ -5,6 +5,10 @@ import { ArrowLeft, Plus, Shirt, Sparkles } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { listClosetItems } from "@/lib/db/items";
+import { listWearCounts } from "@/lib/db/wears";
+import { effectivePrice } from "@/lib/items-view";
+import { WEAR_SORTS, parseWearSort, sortByWear } from "@/lib/wears";
+import { WearControls } from "./wear-controls";
 import { closetOrigin } from "@/lib/closet";
 import { cn } from "cn";
 
@@ -19,18 +23,41 @@ const ORIGIN_LABEL = {
 export default async function ClosetPage({
   searchParams,
 }: PageProps<"/closet">) {
-  const category = (await searchParams).category;
-  const categoryId = typeof category === "string" ? category : null;
-  const items = await listClosetItems(await createClient());
+  const params = await searchParams;
+  const categoryId =
+    typeof params.category === "string" ? params.category : null;
+  // Cost per wear (KAM-85).
+  const sort = parseWearSort(params.sort);
+  const supabase = await createClient();
+  const [items, wears] = await Promise.all([
+    listClosetItems(supabase),
+    listWearCounts(supabase),
+  ]);
+  const paid = (item: (typeof items)[number]) =>
+    item.price === null ? null : effectivePrice(item);
 
   const categories = [
     ...new Map(
       items.map((i) => [i.item_type.category.id, i.item_type.category.name]),
     ),
   ].sort((a, b) => a[1].localeCompare(b[1]));
-  const shown = categoryId
-    ? items.filter((i) => i.item_type.category.id === categoryId)
-    : items;
+  const shown = sortByWear(
+    (categoryId
+      ? items.filter((i) => i.item_type.category.id === categoryId)
+      : items
+    ).map((item) => ({ ...item, price: paid(item) })),
+    wears,
+    sort,
+  );
+  const href = (next: { category?: string | null; sort?: string | null }) => {
+    const q = new URLSearchParams();
+    const c = next.category === undefined ? categoryId : next.category;
+    const s = next.sort === undefined ? sort : next.sort;
+    if (c) q.set("category", c);
+    if (s) q.set("sort", s);
+    const qs = q.toString();
+    return qs ? `/closet?${qs}` : "/closet";
+  };
 
   const chip = (active: boolean) =>
     cn(
@@ -75,16 +102,31 @@ export default async function ClosetPage({
 
       {categories.length > 1 && (
         <nav aria-label="Filter by category" className="flex flex-wrap gap-2">
-          <Link href="/closet" className={chip(!categoryId)}>
+          <Link href={href({ category: null })} className={chip(!categoryId)}>
             All
           </Link>
           {categories.map(([id, name]) => (
             <Link
               key={id}
-              href={`/closet?category=${id}`}
+              href={href({ category: id })}
               className={chip(categoryId === id)}
             >
               {name}
+            </Link>
+          ))}
+        </nav>
+      )}
+
+      {items.length > 1 && (
+        <nav aria-label="Sort by wear" className="flex flex-wrap gap-2">
+          {WEAR_SORTS.map((option) => (
+            <Link
+              key={option.value}
+              href={href({ sort: sort === option.value ? null : option.value })}
+              className={chip(sort === option.value)}
+              aria-current={sort === option.value ? "true" : undefined}
+            >
+              {option.label}
             </Link>
           ))}
         </nav>
@@ -102,7 +144,7 @@ export default async function ClosetPage({
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {shown.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} className="flex flex-col gap-1.5">
               <Link
                 href={`/items/${item.id}/edit?from=closet`}
                 className="group flex flex-col gap-1.5"
@@ -135,6 +177,12 @@ export default async function ClosetPage({
                   {item.store_brand && ` · ${item.store_brand}`}
                 </span>
               </Link>
+              <WearControls
+                itemId={item.id}
+                title={item.title}
+                price={item.price}
+                wears={wears.get(item.id) ?? 0}
+              />
             </li>
           ))}
         </ul>

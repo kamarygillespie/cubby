@@ -1,6 +1,13 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import { RefreshCw } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
@@ -9,6 +16,7 @@ import {
   type PriceCheckOutcome,
 } from "@/lib/price-check";
 import { checkItemPriceAction } from "./items/price-actions";
+import { runPooled } from "@/lib/pool";
 
 const GOOD_NEWS: string[] = ["now_on_sale", "price_dropped"];
 
@@ -72,9 +80,11 @@ export function CheckPriceButton({
   );
 }
 
-// Re-checks every wishlist item with a link, one at a time so stores aren't
-// hammered, with progress and a summary.
-export function useCheckAllPrices(itemIds: string[]) {
+// Re-checks wishlist items with a link, with progress and a summary: all
+// of them, or just some (Select mode, KAM-94). Up to 6 stores at once
+// (KAM-88, KAM-94), but never two at the same store at once, and at least
+// 1.5s between pages from one store, so no store is hit harder than before.
+export function useCheckAllPrices(items: { id: string; store: string }[]) {
   const [progress, setProgress] = useState<{
     done: number;
     total: number;
@@ -82,17 +92,24 @@ export function useCheckAllPrices(itemIds: string[]) {
   const [summary, setSummary] = useState<string | null>(null);
   const cancelled = useRef(false);
 
-  async function run() {
+  async function run(onlyIds?: ReadonlySet<string>) {
     cancelled.current = false;
     setSummary(null);
-    const outcomes: PriceCheckOutcome[] = [];
-    for (let i = 0; i < itemIds.length; i++) {
-      if (cancelled.current) break;
-      setProgress({ done: i, total: itemIds.length });
-      const result = await checkItemPriceAction(itemIds[i]);
-      outcomes.push(result.outcome === "error" ? "unreadable" : result.outcome);
-      if (i < itemIds.length - 1) await new Promise((r) => setTimeout(r, 400));
-    }
+    const chosen = onlyIds ? items.filter((i) => onlyIds.has(i.id)) : items;
+    const total = chosen.length;
+    let done = 0;
+    setProgress({ done, total });
+    const outcomes = await runPooled(chosen, {
+      concurrency: 6,
+      keyOf: (item) => item.store,
+      gapMs: 1500,
+      shouldStop: () => cancelled.current,
+      run: async (item): Promise<PriceCheckOutcome> => {
+        const result = await checkItemPriceAction(item.id);
+        setProgress({ done: ++done, total });
+        return result.outcome === "error" ? "unreadable" : result.outcome;
+      },
+    });
     setProgress(null);
     setSummary(
       (cancelled.current ? "Stopped. " : "Checked. ") +
@@ -108,4 +125,30 @@ export function useCheckAllPrices(itemIds: string[]) {
     progress,
     summary,
   };
+}
+
+// Shares one price-check run between the toolbar ("Check all prices", and
+// the progress line) and the Select bar ("Check price", KAM-94).
+type PriceCheckRun = ReturnType<typeof useCheckAllPrices> & {
+  items: { id: string; store: string }[];
+};
+const PriceCheckContext = createContext<PriceCheckRun | null>(null);
+
+export function PriceCheckProvider({
+  items,
+  children,
+}: {
+  items: { id: string; store: string }[];
+  children: ReactNode;
+}) {
+  const check = useCheckAllPrices(items);
+  return (
+    <PriceCheckContext.Provider value={{ ...check, items }}>
+      {children}
+    </PriceCheckContext.Provider>
+  );
+}
+
+export function usePriceCheck() {
+  return useContext(PriceCheckContext);
 }

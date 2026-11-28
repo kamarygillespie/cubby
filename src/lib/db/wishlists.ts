@@ -27,7 +27,9 @@ export type Wishlist = Awaited<ReturnType<typeof listWishlists>>[number];
 export async function listWishlistsWithPrices(supabase: DbClient) {
   const { data, error } = await supabase
     .from("wishlists")
-    .select("id, name, wishlist_items(item:items(price, sale_price))")
+    .select(
+      "id, name, occasion_date, wishlist_items(item:items(price, sale_price))",
+    )
     .order("name");
 
   if (error) throw error;
@@ -58,7 +60,7 @@ export async function getWishlist(supabase: DbClient, id: string) {
   const { data, error } = await supabase
     .from("wishlists")
     .select(
-      `id, name, share_token, created_at, wishlist_items(added_at, item:items(${ITEM_SELECT}))`,
+      `id, name, share_token, show_sizes, occasion_date, created_at, wishlist_items(added_at, item:items(${ITEM_SELECT}))`,
     )
     .eq("id", id)
     .order("added_at", { referencedTable: "wishlist_items", ascending: false })
@@ -127,5 +129,19 @@ export async function addItemsToWishlists(
     ignoreDuplicates: true,
   });
 
+  if (error) throw error;
+}
+
+// The list's occasion (KAM-79), "YYYY-MM-DD" or null to clear. RLS limits it
+// to the owner's lists.
+export async function setOccasionDate(
+  supabase: DbClient,
+  wishlistId: string,
+  date: string | null,
+) {
+  const { error } = await supabase
+    .from("wishlists")
+    .update({ occasion_date: date })
+    .eq("id", wishlistId);
   if (error) throw error;
 }

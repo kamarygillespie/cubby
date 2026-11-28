@@ -5,6 +5,7 @@ import {
   Bell,
   BookmarkPlus,
   ChevronRight,
+  DatabaseBackup,
   Sparkles,
   Tags,
 } from "lucide-react";
@@ -22,6 +23,7 @@ const LINKS = [
   { href: "/?view=totals", label: "Totals & insights", Icon: BarChart3 },
   { href: "/outfits", label: "Outfits", Icon: Sparkles },
   { href: "/types", label: "Item types", Icon: Tags },
+  { href: "/data", label: "Backup & import", Icon: DatabaseBackup },
 ];
 
 // The phone tab bar's "More" (KAM-51): everything that isn't a main tab.

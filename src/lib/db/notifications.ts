@@ -11,6 +11,8 @@ export type NotificationSettings = {
   price_drops: boolean;
   store_sales: boolean;
   min_drop_percent: number;
+  budget_alerts: boolean;
+  cooling_off: boolean;
 };
 
 // Matches the trigger's defaults when the user has never saved settings.
@@ -18,6 +20,8 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   price_drops: true,
   store_sales: true,
   min_drop_percent: 10,
+  budget_alerts: true,
+  cooling_off: true,
 };
 
 export async function getNotificationSettings(
@@ -25,7 +29,9 @@ export async function getNotificationSettings(
 ): Promise<NotificationSettings> {
   const { data, error } = await supabase
     .from("notification_settings")
-    .select("price_drops, store_sales, min_drop_percent")
+    .select(
+      "price_drops, store_sales, min_drop_percent, budget_alerts, cooling_off",
+    )
     .maybeSingle();
   if (error) throw error;
   return data ?? DEFAULT_NOTIFICATION_SETTINGS;

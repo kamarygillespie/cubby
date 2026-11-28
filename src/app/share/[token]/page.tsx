@@ -1,17 +1,16 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ExternalLink, Gift } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
+import { Gift, Ruler } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getSharedWishlist } from "@/lib/db/wishlists";
 import { getSharedClaims } from "@/lib/db/claims";
-import { ClaimControl } from "./claim-control";
+import { getSharedListExtras } from "@/lib/db/sizes";
+import { SIZE_KINDS, sizeHint } from "@/lib/sizes";
+import { SharedItems, type SharedItemView } from "./shared-items";
+import { OccasionCountdown } from "@/components/occasion-countdown";
 import { GIVER_COOKIE } from "./giver-cookie";
-import { PriceDisplay } from "../../price-display";
 import { GiftCardIdeas } from "@/components/gift-card-ideas";
 import { giftCardIdeas } from "@/lib/stores";
 
@@ -42,16 +41,35 @@ export default async function SharedWishlistPage({
 
   // Gift claims (KAM-77). Empty for the list's owner unless they turned on
   // Show claims, so previewing your own list never spoils a surprise.
+  const supabase = await createClient();
   const giver = (await cookies()).get(GIVER_COOKIE)?.value ?? null;
-  const claims = await getSharedClaims(await createClient(), token, giver);
-  const stateOf = (id: string) => claims.states.get(id) ?? "open";
-  // Items still up for grabs first; same order otherwise.
-  const items = [...wishlist.items].sort(
-    (a, b) =>
-      Number(stateOf(a.id) === "taken") - Number(stateOf(b.id) === "taken"),
-  );
-
+  const [claims, extras] = await Promise.all([
+    getSharedClaims(supabase, token, giver),
+    // Sizes (KAM-78) and Most wanted (KAM-80).
+    getSharedListExtras(supabase, token),
+  ]);
+  const items: SharedItemView[] = wishlist.items.map((item) => {
+    const extra = extras.items.get(item.id);
+    return {
+      id: item.id,
+      title: item.title,
+      image_url: item.image_url,
+      link: item.link,
+      price: item.price,
+      sale_price: item.sale_price,
+      store_brand: item.store_brand,
+      claim: claims.states.get(item.id) ?? "open",
+      mostWanted: extra?.mostWanted ?? false,
+      sizeHint:
+        extras.sizes && extra
+          ? sizeHint(extras.sizes, extra.itemType, extra.category)
+          : null,
+    };
+  });
   const n = items.length;
+  const sizeList = extras.sizes
+    ? SIZE_KINDS.filter((k) => extras.sizes![k.key])
+    : [];
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-4 p-4">
@@ -60,6 +78,9 @@ export default async function SharedWishlistPage({
           <Gift className="size-4" aria-hidden />A wishlist shared with you
         </p>
         <h1 className="text-2xl font-semibold">{wishlist.name}</h1>
+        {extras.occasionDate && (
+          <OccasionCountdown date={extras.occasionDate} />
+        )}
         <p className="text-muted-foreground text-sm">
           {n} item{n === 1 ? "" : "s"}
         </p>
@@ -72,84 +93,36 @@ export default async function SharedWishlistPage({
         )}
       </header>
 
+      {sizeList.length > 0 && (
+        <section
+          aria-label="Sizes"
+          className="bg-muted/50 flex flex-col gap-1 rounded-xl p-3 text-sm"
+        >
+          <p className="flex items-center gap-1.5 font-medium">
+            <Ruler className="size-4" aria-hidden />
+            Sizes
+          </p>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+            {sizeList.map((kind) => (
+              <div key={kind.key} className="contents">
+                <dt className="text-muted-foreground">{kind.label}</dt>
+                <dd>{extras.sizes![kind.key]}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
       {n === 0 ? (
         <p className="text-muted-foreground text-sm">
           Nothing on this list right now. Check back later!
         </p>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {items.map((item) => (
-            <li key={item.id}>
-              <Card
-                className={
-                  stateOf(item.id) === "taken" ? "opacity-70" : undefined
-                }
-              >
-                <CardContent className="flex gap-3">
-                  {item.image_url && (
-                    <Image
-                      src={item.image_url}
-                      alt={item.title}
-                      width={80}
-                      height={80}
-                      className="size-20 shrink-0 rounded-md object-cover"
-                    />
-                  )}
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-                      <span className="font-medium">{item.title}</span>
-                      <PriceDisplay
-                        price={item.price}
-                        salePrice={item.sale_price}
-                      />
-                    </div>
-                    {item.store_brand && (
-                      <p className="text-muted-foreground text-sm">
-                        {item.store_brand}
-                      </p>
-                    )}
-                    {item.link && (
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={buttonVariants({
-                          variant: "outline",
-                          size: "sm",
-                          className: "mt-1 self-start",
-                        })}
-                      >
-                        View item
-                        <ExternalLink />
-                      </a>
-                    )}
-                    {claims.owner ? (
-                      stateOf(item.id) === "taken" && (
-                        <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
-                          <Gift className="size-4" aria-hidden />
-                          Claimed by a giver
-                        </p>
-                      )
-                    ) : (
-                      <ClaimControl
-                        // Remount when the server's answer changes.
-                        key={stateOf(item.id)}
-                        token={token}
-                        itemId={item.id}
-                        title={item.title}
-                        initialState={stateOf(item.id)}
-                      />
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </li>
-          ))}
-        </ul>
+        <SharedItems token={token} items={items} owner={claims.owner} />
       )}
 
       <GiftCardIdeas
-        ideas={giftCardIdeas(items)}
+        ideas={giftCardIdeas(wishlist.items)}
         description="Not sure which to pick? A gift card to one of these stores covers several things on this list."
         limit={3}
       />

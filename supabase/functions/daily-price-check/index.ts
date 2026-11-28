@@ -32,6 +32,8 @@ Deno.serve(async (req) => {
           .not("link", "is", null)
           .eq("purchased", false)
           .eq("gifted", false)
+          // Archived in the cooling-off check-in (KAM-82).
+          .is("archived_at", null)
           .or(`price_checked_at.is.null,price_checked_at.lt.${cutoff}`)
           .order("price_checked_at", { ascending: true, nullsFirst: true })
           .limit(limit);

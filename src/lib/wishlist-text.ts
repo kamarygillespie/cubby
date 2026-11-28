@@ -17,6 +17,8 @@ export type CopyItem = {
 export type CopyOptions = {
   includeNotes: boolean;
   withPrompt: boolean;
+  // Price ranges for the ideas (KAM-93); empty = any price.
+  priceRanges?: readonly PriceRangeKey[];
   // Filters were applied, so this is part of the wishlist.
   filtered?: boolean;
 };
@@ -25,6 +27,43 @@ export const IDEAS_PROMPT =
   "Here's my wishlist. Suggest 10 things I'd probably like that aren't on it. " +
   "For each one, give the product name, the store, roughly what it costs, a " +
   "link if you have one, and one line on why it fits my taste.";
+
+// Price ranges for the ideas (KAM-93). None selected = any price.
+export const PRICE_RANGES = [
+  { key: "under30", label: "Under $30", min: 0, max: 30 },
+  { key: "30to100", label: "$30 to $100", min: 30, max: 100 },
+  { key: "over100", label: "$100+", min: 100, max: Infinity },
+] as const;
+export type PriceRangeKey = (typeof PRICE_RANGES)[number]["key"];
+
+// "under $100", "$30 and up", "between $30 and $100", "under $30 or $100
+// and up"; null for any price. Adjacent ranges merge into one.
+export function priceRangePhrase(
+  selected: readonly PriceRangeKey[],
+): string | null {
+  const chosen = PRICE_RANGES.filter((r) => selected.includes(r.key));
+  if (chosen.length === 0 || chosen.length === PRICE_RANGES.length) return null;
+  const spans: { min: number; max: number }[] = [];
+  for (const r of chosen) {
+    const last = spans.at(-1);
+    if (last && last.max === r.min) last.max = r.max;
+    else spans.push({ min: r.min, max: r.max });
+  }
+  const say = ({ min, max }: { min: number; max: number }) =>
+    min === 0
+      ? `under $${max}`
+      : max === Infinity
+        ? `$${min} and up`
+        : `between $${min} and $${max}`;
+  return spans.map(say).join(" or ");
+}
+
+export function ideasPrompt(selected: readonly PriceRangeKey[] = []): string {
+  const range = priceRangePhrase(selected);
+  return range
+    ? IDEAS_PROMPT.replace("aren't on it.", `aren't on it, priced ${range}.`)
+    : IDEAS_PROMPT;
+}
 
 const onSale = (item: CopyItem) =>
   item.price !== null && item.salePrice !== null && item.salePrice < item.price;
@@ -56,10 +95,10 @@ const oneLine = (text: string) => text.replace(/\s+/g, " ").trim();
 
 export function wishlistAsText(
   items: CopyItem[],
-  { includeNotes, withPrompt, filtered = false }: CopyOptions,
+  { includeNotes, withPrompt, filtered = false, priceRanges = [] }: CopyOptions,
 ): string {
   const lines: string[] = [];
-  if (withPrompt) lines.push(IDEAS_PROMPT, "");
+  if (withPrompt) lines.push(ideasPrompt(priceRanges), "");
 
   const n = items.length;
   const total = items.reduce((sum, item) => sum + (paid(item) ?? 0), 0);

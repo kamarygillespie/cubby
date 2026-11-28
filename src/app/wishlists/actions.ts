@@ -9,9 +9,13 @@ import {
   deleteWishlist,
   removeItemFromWishlist,
   renameWishlist,
+  setOccasionDate,
 } from "@/lib/db/wishlists";
+import { parseOccasionDate } from "@/lib/occasion";
 import { parseWishlistName } from "@/lib/wishlists";
 import { setShowClaims } from "@/lib/db/claims";
+import { saveSizes, setWishlistShowSizes } from "@/lib/db/sizes";
+import { parseSizes } from "@/lib/sizes";
 import { getEffectivePrices } from "@/lib/db/items";
 import {
   SPLIT_MAX_LISTS,
@@ -171,4 +175,42 @@ export async function splitIntoWishlists(input: {
 export async function setShowClaimsAction(show: boolean) {
   await setShowClaims(await createClient(), show);
   revalidatePath("/wishlists", "layout");
+}
+
+// "Your sizes" (KAM-78), shown on share links whose list allows it.
+export async function saveSizesAction(
+  _prev: { message: string } | null,
+  formData: FormData,
+): Promise<{ message: string }> {
+  try {
+    await saveSizes(
+      await createClient(),
+      parseSizes(Object.fromEntries(formData)),
+    );
+    revalidatePath("/wishlists", "layout");
+    return { message: "Sizes saved." };
+  } catch {
+    return { message: "Couldn't save your sizes. Try again." };
+  }
+}
+
+export async function setShowSizesAction(wishlistId: string, show: boolean) {
+  await setWishlistShowSizes(await createClient(), wishlistId, show);
+  revalidatePath(`/wishlists/${wishlistId}`);
+}
+
+// A list's occasion date (KAM-79). Blank clears it.
+export async function setOccasionDateAction(
+  wishlistId: string,
+  raw: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = parseOccasionDate(raw);
+  if (!parsed.ok) return parsed;
+  try {
+    await setOccasionDate(await createClient(), wishlistId, parsed.value);
+  } catch {
+    return { ok: false, error: "Couldn't save the date. Try again." };
+  }
+  revalidatePath("/wishlists", "layout");
+  return { ok: true };
 }

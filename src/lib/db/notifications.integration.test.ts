@@ -1,7 +1,15 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { createItem, recordPriceCheck, updateItem } from "./items";
+import {
+  createItem,
+  recordPriceCheck,
+  setReturnBy,
+  setTargetPrice,
+  updateItem,
+} from "./items";
 import { listItemTypes } from "./item-types";
 import { setFavoriteStore } from "./stores";
+import { createWishlist, setOccasionDate } from "./wishlists";
+import { setMonthlyBudget } from "./profile";
 import {
   countUnreadNotifications,
   deletePushSubscription,
@@ -34,6 +42,176 @@ describe("notifications (integration)", () => {
       ...extra,
     });
 
+  it("a target price alerts once per crossing, instead of a price drop (KAM-81)", async () => {
+    const { client } = await createTestUser();
+    const item = await newItem(client);
+    await setTargetPrice(client, item.id, 70);
+
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: 75 });
+    expect((await listNotifications(client)).map((a) => a.kind)).toEqual([
+      "price_drop",
+    ]); // 25% drop, still above the target
+
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: 65 });
+    let alerts = await listNotifications(client);
+    expect(alerts.map((a) => a.kind)).toEqual(["target_price", "price_drop"]);
+    expect(alerts[0]).toMatchObject({
+      title: "Sneakers hit your target price",
+      body: "Now $65.00 (your target: $70.00).",
+    });
+
+    // Staying below: quiet. Back above, then below again: alerts again.
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: 60 });
+    expect(await listNotifications(client)).toHaveLength(2);
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: null });
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: 69 });
+    alerts = await listNotifications(client);
+    expect(alerts.filter((a) => a.kind === "target_price")).toHaveLength(2);
+
+    // Clearing the target stops target alerts.
+    await setTargetPrice(client, item.id, null);
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: null });
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: 50 });
+    expect(
+      (await listNotifications(client)).filter(
+        (a) => a.kind === "target_price",
+      ),
+    ).toHaveLength(2);
+  });
+
+  it("occasion reminders: once per date, 21 days ahead or closer (KAM-79)", async () => {
+    const { client } = await createTestUser();
+    const soon = await createWishlist(client, "E2E Birthday");
+    const later = await createWishlist(client, "E2E Far Off");
+    const past = await createWishlist(client, "E2E Last Year");
+    await setOccasionDate(client, soon.id, "2026-12-18");
+    await setOccasionDate(client, later.id, "2027-03-01");
+    await setOccasionDate(client, past.id, "2026-01-01");
+
+    const run = async (today: string) => {
+      const { error } = await admin.rpc("create_occasion_reminders", {
+        p_today: today,
+      });
+      if (error) throw error;
+    };
+    await run("2026-11-27"); // 21 days before the 18th
+    let alerts = await listNotifications(client);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({
+      kind: "occasion",
+      title: "E2E Birthday is in 21 days",
+      url: `/wishlists/${soon.id}`,
+    });
+
+    // Not again for the same date...
+    await run("2026-11-28");
+    expect(await listNotifications(client)).toHaveLength(1);
+    // ...but a new date gets its own reminder.
+    await setOccasionDate(client, soon.id, "2026-11-29");
+    await run("2026-11-28");
+    alerts = await listNotifications(client);
+    expect(alerts.map((a) => a.title)).toContain("E2E Birthday is tomorrow");
+    expect(alerts).toHaveLength(2);
+
+    // App users can't run the job themselves.
+    const { error } = await client.rpc("create_occasion_reminders", {
+      p_today: "2026-11-28",
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it("return reminders: 3 days ahead, once; Mark returned clears it (KAM-83)", async () => {
+    const { client } = await createTestUser();
+    const item = await newItem(client);
+    await updateItem(client, item.id, { purchased: true });
+    await setReturnBy(client, item.id, "2026-12-11");
+
+    const run = async (today: string) => {
+      const { error } = await admin.rpc("create_return_reminders", {
+        p_today: today,
+      });
+      if (error) throw error;
+    };
+    await run("2026-12-07"); // 4 days out: too early
+    expect(await listNotifications(client)).toEqual([]);
+    await run("2026-12-08");
+    await run("2026-12-09");
+    const alerts = await listNotifications(client);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({
+      kind: "return_by",
+      title: "Last chance to return Sneakers",
+      body: "The return window closes in 3 days.",
+    });
+
+    // Mark returned = un-purchase: the window and purchase date are cleared.
+    await updateItem(client, item.id, { purchased: false });
+    const { data } = await admin
+      .from("items")
+      .select("return_by, purchased_date")
+      .eq("id", item.id)
+      .single();
+    expect(data).toEqual({ return_by: null, purchased_date: null });
+  });
+
+  it("budget alerts at 80% and 100%, once each per month (KAM-84)", async () => {
+    const { client } = await createTestUser();
+    await setMonthlyBudget(client, 300);
+    const buy = async (price: number) => {
+      const item = await createItem(client, {
+        title: `Buy ${price}`,
+        item_type_id: itemTypeId,
+        price,
+      });
+      await updateItem(client, item.id, { purchased: true });
+      return item;
+    };
+
+    await buy(200); // 67%
+    expect(await listNotifications(client)).toEqual([]);
+    const second = await buy(50); // 83%
+    let alerts = await listNotifications(client);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0].kind).toBe("budget");
+    expect(alerts[0].title).toMatch(/^80% of your \w+ budget$/);
+    expect(alerts[0].body).toBe("$250.00 of $300.00 spent this month.");
+
+    // Un-buy and re-buy: already alerted at 80% this month.
+    await updateItem(client, second.id, { purchased: false });
+    await updateItem(client, second.id, { purchased: true });
+    expect(await listNotifications(client)).toHaveLength(1);
+
+    await buy(100); // 117%
+    alerts = await listNotifications(client);
+    expect(alerts).toHaveLength(2);
+    expect(alerts[0].title).toMatch(/^You've reached your \w+ budget$/);
+
+    // Turned off: no more.
+    await saveNotificationSettings(client, {
+      price_drops: true,
+      store_sales: true,
+      min_drop_percent: 10,
+      budget_alerts: false,
+      cooling_off: true,
+    });
+    const fresh = await createTestUser();
+    await setMonthlyBudget(fresh.client, 10);
+    await saveNotificationSettings(fresh.client, {
+      price_drops: true,
+      store_sales: true,
+      min_drop_percent: 10,
+      budget_alerts: false,
+      cooling_off: true,
+    });
+    const item = await createItem(fresh.client, {
+      title: "Quiet",
+      item_type_id: itemTypeId,
+      price: 50,
+    });
+    await updateItem(fresh.client, item.id, { purchased: true });
+    expect(await listNotifications(fresh.client)).toEqual([]);
+  });
+
   it("a price check that drops the price past the threshold creates one alert", async () => {
     const { client } = await createTestUser();
     const item = await newItem(client);
@@ -64,11 +242,15 @@ describe("notifications (integration)", () => {
       price_drops: true,
       store_sales: true,
       min_drop_percent: 10,
+      budget_alerts: true,
+      cooling_off: true,
     });
     await saveNotificationSettings(client, {
       price_drops: true,
       store_sales: true,
       min_drop_percent: 30,
+      budget_alerts: true,
+      cooling_off: true,
     });
     const item = await newItem(client);
 
@@ -80,6 +262,8 @@ describe("notifications (integration)", () => {
       price_drops: false,
       store_sales: true,
       min_drop_percent: 10,
+      budget_alerts: true,
+      cooling_off: true,
     });
     await recordPriceCheck(client, item.id, { price: 5, salePrice: null });
     expect(await listNotifications(client)).toEqual([]);

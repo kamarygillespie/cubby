@@ -105,3 +105,38 @@ export function monthLabel(key: MonthKey, style: "short" | "long" = "short") {
     ...(style === "long" ? { year: "numeric" } : {}),
   });
 }
+
+// This month's spending against the budget (KAM-84). Months follow the
+// viewer's time zone via `keyOf`, like the chart.
+export function budgetProgress(
+  purchases: Pick<Purchase, "date" | "amount">[],
+  budget: number,
+  monthKey: MonthKey,
+  keyOf: (iso: string) => MonthKey = localMonthKey,
+): { spent: number; budget: number; percent: number; left: number } {
+  const spent = round2(
+    purchases.reduce(
+      (sum, p) => (p.date && keyOf(p.date) === monthKey ? sum + p.amount : sum),
+      0,
+    ),
+  );
+  return {
+    spent,
+    budget,
+    percent: budget > 0 ? Math.round((spent / budget) * 100) : 0,
+    left: round2(budget - spent),
+  };
+}
+
+// The budget field: blank clears it.
+export function parseBudget(
+  raw: string,
+): { ok: true; value: number | null } | { ok: false; error: string } {
+  const trimmed = raw.replace(/[$,\s]/g, "");
+  if (!trimmed) return { ok: true, value: null };
+  const value = Number(trimmed);
+  if (!Number.isFinite(value) || value <= 0 || value >= 10_000_000) {
+    return { ok: false, error: "Enter an amount above $0." };
+  }
+  return { ok: true, value: round2(value) };
+}

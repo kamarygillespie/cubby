@@ -16,9 +16,12 @@ import { AccountMenu } from "@/components/account-menu";
 import { InstallPrompt } from "@/components/install-prompt";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { OnboardingCard } from "@/components/onboarding-card";
-import { getOnboardingState } from "@/lib/db/profile";
+import { getMonthlyBudget, getOnboardingState } from "@/lib/db/profile";
 import { onboardingSteps, showOnboarding } from "@/lib/onboarding";
-import { countUnreadNotifications } from "@/lib/db/notifications";
+import {
+  countUnreadNotifications,
+  getNotificationSettings,
+} from "@/lib/db/notifications";
 import {
   listItems,
   listItemsWithFailedPriceCheck,
@@ -52,6 +55,10 @@ import {
 import { ItemsToolbar } from "./items-toolbar";
 import { ViewTabs } from "./view-tabs";
 import { TotalsDashboard } from "./totals-dashboard";
+import { RecapBanner } from "./recap-banner";
+import { PriceCheckProvider } from "./check-price";
+import { CheckInBanner } from "./check-in-banner";
+import { isCheckInCandidate, showCheckInBanner } from "@/lib/cooling-off";
 import { ItemSelectionProvider } from "./item-selection";
 import { AddToWishlistBar } from "./add-to-wishlist-bar";
 
@@ -167,6 +174,7 @@ export default async function Home({
     unread,
     onboarding,
     failedPriceChecks,
+    alertSettings,
   ] = await Promise.all([
     listItems(supabase),
     listItemTypes(supabase),
@@ -175,7 +183,19 @@ export default async function Home({
     countUnreadNotifications(supabase),
     getOnboardingState(supabase),
     listItemsWithFailedPriceCheck(supabase),
+    getNotificationSettings(supabase),
   ]);
+  // Cooling-off check-in (KAM-82).
+  const now = new Date();
+  const checkInCount = items.filter((item) =>
+    isCheckInCandidate(item, now),
+  ).length;
+  const showCheckIn = showCheckInBanner({
+    candidates: checkInCount,
+    enabled: alertSettings.cooling_off,
+    dismissedAt: onboarding.checkInDismissedAt,
+    now,
+  });
   const onboardingFacts = {
     ...onboarding,
     itemCount: items.length,
@@ -255,6 +275,17 @@ export default async function Home({
   );
   showMoreParams.set("show", String(show + ITEMS_PAGE_SIZE));
 
+  // Price checks (KAM-88, KAM-94): each shown item with a link, and its
+  // store, so checks run in parallel without two at once on one store.
+  const priceChecks = visibleItems.flatMap((i) => {
+    if (!i.link) return [];
+    try {
+      return [{ id: i.id, store: new URL(i.link).hostname }];
+    } catch {
+      return [{ id: i.id, store: i.link }];
+    }
+  });
+
   const highlight = wishlistHighlight(items);
 
   const sectionLinks = [
@@ -316,6 +347,8 @@ export default async function Home({
       <div className="sm:hidden">
         <InstallPrompt variant="card" />
       </div>
+      <RecapBanner />
+      {showCheckIn && <CheckInBanner count={checkInCount} />}
       <ItemsNavigationProvider>
         {showTotals ? (
           <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
@@ -324,106 +357,110 @@ export default async function Home({
               <TotalsDashboard
                 items={items}
                 recentHighs={await listRecentPriceHighs(supabase)}
+                budget={await getMonthlyBudget(supabase)}
               />
             </ItemsPendingContent>
           </div>
         ) : (
           <ItemSelectionProvider key={view}>
-            <ItemsToolbar
-              filterOptions={{
-                categories,
-                itemTypes,
-                hasFavoriteStores: favoriteStores.length > 0,
-                // Wishlist items Cubby couldn't price-check (KAM-90).
-                needsCheckCount: filterByView(items, view).filter((i) =>
-                  failedPriceChecks.has(i.id),
-                ).length,
-                storeName: storeFilter
-                  ? (items.find((i) => storeKey(i.store_brand) === storeFilter)
-                      ?.store_brand ?? storeFilter)
-                  : null,
-              }}
-              showActions={view === "wishlist"}
-              canSelect={shownItems.length > 0}
-              priceCheckIds={visibleItems
-                .filter((i) => i.link)
-                .map((i) => i.id)}
-              // Copy wishlist (KAM-91): the Wishlist tab's matching items.
-              copyItems={
-                view === "wishlist"
-                  ? visibleItems.map((i) => ({
-                      title: i.title,
-                      store: i.store_brand,
-                      price: i.price,
-                      salePrice: i.sale_price,
-                      type: i.item_type.name,
-                      category: i.item_type.category.name,
-                      interest: i.interest_level,
-                      link: i.link,
-                      notes: i.notes,
-                    }))
-                  : []
-              }
-              filtered={Boolean(
-                categoryId ||
-                itemTypeId ||
-                onSaleOnly ||
-                needsCheckOnly ||
-                favoritesOnly ||
-                storeFilter,
-              )}
-            />
-            {view === "wishlist" && (
-              <AddToWishlistBar
-                // Select all = what's on screen.
-                itemIds={shownItems.map((i) => i.id)}
-                itemTypeGroups={groupItemTypesByCategory(itemTypes)}
-                itemInfo={Object.fromEntries(
-                  shownItems.map((i) => [
-                    i.id,
-                    {
-                      title: i.title,
-                      price: i.price === null ? null : effectivePrice(i),
-                    },
-                  ]),
+            <PriceCheckProvider items={priceChecks}>
+              <ItemsToolbar
+                filterOptions={{
+                  categories,
+                  itemTypes,
+                  hasFavoriteStores: favoriteStores.length > 0,
+                  // Wishlist items Cubby couldn't price-check (KAM-90).
+                  needsCheckCount: filterByView(items, view).filter((i) =>
+                    failedPriceChecks.has(i.id),
+                  ).length,
+                  storeName: storeFilter
+                    ? (items.find(
+                        (i) => storeKey(i.store_brand) === storeFilter,
+                      )?.store_brand ?? storeFilter)
+                    : null,
+                }}
+                showActions={view === "wishlist"}
+                canSelect={shownItems.length > 0}
+                // Check all prices (KAM-88): each item's store, so checks can
+                // run in parallel without two at once on the same store.
+                priceChecks={priceChecks}
+                // Copy wishlist (KAM-91): the Wishlist tab's matching items.
+                copyItems={
+                  view === "wishlist"
+                    ? visibleItems.map((i) => ({
+                        title: i.title,
+                        store: i.store_brand,
+                        price: i.price,
+                        salePrice: i.sale_price,
+                        type: i.item_type.name,
+                        category: i.item_type.category.name,
+                        interest: i.interest_level,
+                        link: i.link,
+                        notes: i.notes,
+                      }))
+                    : []
+                }
+                filtered={Boolean(
+                  categoryId ||
+                  itemTypeId ||
+                  onSaleOnly ||
+                  needsCheckOnly ||
+                  favoritesOnly ||
+                  storeFilter,
                 )}
-                wishlists={wishlists.map((w) => ({
-                  id: w.id,
-                  name: w.name,
-                  itemIds: w.wishlist_items.map((wi) => wi.item_id),
-                }))}
               />
-            )}
-            <ItemsPendingContent>
-              {shownGroups ? (
-                <ItemsGroupedList
-                  groups={shownGroups}
-                  listsByItem={listsByItem}
-                  failedPriceChecks={failedPriceChecks}
-                  emptyState={emptyState}
-                />
-              ) : (
-                <ItemsList
-                  items={shownItems}
-                  listsByItem={listsByItem}
-                  failedPriceChecks={failedPriceChecks}
-                  emptyState={emptyState}
+              {view === "wishlist" && (
+                <AddToWishlistBar
+                  // Select all = what's on screen.
+                  itemIds={shownItems.map((i) => i.id)}
+                  itemTypeGroups={groupItemTypesByCategory(itemTypes)}
+                  itemInfo={Object.fromEntries(
+                    shownItems.map((i) => [
+                      i.id,
+                      {
+                        title: i.title,
+                        price: i.price === null ? null : effectivePrice(i),
+                      },
+                    ]),
+                  )}
+                  wishlists={wishlists.map((w) => ({
+                    id: w.id,
+                    name: w.name,
+                    itemIds: w.wishlist_items.map((wi) => wi.item_id),
+                  }))}
                 />
               )}
-              {hiddenCount > 0 && (
-                <Link
-                  href={`/?${showMoreParams.toString()}`}
-                  scroll={false}
-                  className={buttonVariants({
-                    variant: "outline",
-                    className: "self-center",
-                  })}
-                >
-                  Show {Math.min(ITEMS_PAGE_SIZE, hiddenCount)} more (
-                  {hiddenCount} not shown)
-                </Link>
-              )}
-            </ItemsPendingContent>
+              <ItemsPendingContent>
+                {shownGroups ? (
+                  <ItemsGroupedList
+                    groups={shownGroups}
+                    listsByItem={listsByItem}
+                    failedPriceChecks={failedPriceChecks}
+                    emptyState={emptyState}
+                  />
+                ) : (
+                  <ItemsList
+                    items={shownItems}
+                    listsByItem={listsByItem}
+                    failedPriceChecks={failedPriceChecks}
+                    emptyState={emptyState}
+                  />
+                )}
+                {hiddenCount > 0 && (
+                  <Link
+                    href={`/?${showMoreParams.toString()}`}
+                    scroll={false}
+                    className={buttonVariants({
+                      variant: "outline",
+                      className: "self-center",
+                    })}
+                  >
+                    Show {Math.min(ITEMS_PAGE_SIZE, hiddenCount)} more (
+                    {hiddenCount} not shown)
+                  </Link>
+                )}
+              </ItemsPendingContent>
+            </PriceCheckProvider>
           </ItemSelectionProvider>
         )}
       </ItemsNavigationProvider>

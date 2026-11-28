@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Item } from "@/lib/db/items";
 import {
@@ -12,6 +14,7 @@ import { formatCurrency } from "@/lib/format";
 import { giftCardIdeas } from "@/lib/stores";
 import { GiftCardIdeas } from "@/components/gift-card-ideas";
 import { SpendingChart } from "./spending-chart";
+import { BudgetCard } from "./budget-card";
 import { effectivePrice } from "@/lib/items-view";
 import { BuyNextCard, TasteCard } from "./recommendations-cards";
 import { buyNext, tasteProfile, toRecItem } from "@/lib/recommendations";
@@ -61,8 +64,11 @@ function BreakdownList({
 export function TotalsDashboard({
   items,
   recentHighs,
+  budget,
 }: {
   items: Item[];
+  // Monthly budget (KAM-84), null when none is set.
+  budget: number | null;
   // Highest recent price per item, for "price dropped" picks (KAM-52).
   recentHighs: ReadonlyMap<string, number>;
 }) {
@@ -87,6 +93,15 @@ export function TotalsDashboard({
           value={formatCurrency(totalWishlistValue(items))}
         />
       </div>
+      <BudgetCard
+        budget={budget}
+        purchases={items
+          .filter((item) => item.purchased)
+          .map((item) => ({
+            date: item.purchased_date,
+            amount: effectivePrice(item),
+          }))}
+      />
       <SpendingChart
         purchases={items
           .filter((item) => item.purchased)
@@ -102,6 +117,13 @@ export function TotalsDashboard({
         picks={buyNext(active.map(toRecItem), purchased, recentHighs)}
       />
       <TasteCard taste={tasteProfile(purchased)} />
+      <Link
+        href="/recap"
+        className="text-brand flex items-center gap-1.5 self-start text-sm font-medium underline-offset-2 hover:underline"
+      >
+        <Sparkles className="size-4" aria-hidden />
+        Year in Cubby
+      </Link>
       <GiftCardIdeas
         ideas={giftCardIdeas(active)}
         description="Stores with several things on your wishlist: handy when someone asks what to get you."
