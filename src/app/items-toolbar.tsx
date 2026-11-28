@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { CopyItem } from "@/lib/wishlist-text";
-import { useCheckAllPrices } from "./check-price";
+import { usePriceCheck } from "./check-price";
 import { CopyWishlistDialog } from "./copy-wishlist-dialog";
 import { ActiveFilters, FilterSheet, type FilterOptions } from "./filter-sheet";
 import { useItemSelection } from "./item-selection";
@@ -36,7 +36,14 @@ export function ItemsToolbar({
   const selection = useItemSelection();
   const [menuOpen, setMenuOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
-  const priceCheck = useCheckAllPrices(priceChecks);
+  // Shared with the Select bar's Check price (KAM-94).
+  const shared = usePriceCheck();
+  const priceCheck = shared ?? {
+    progress: null,
+    summary: null,
+    run: async () => {},
+    stop: () => {},
+  };
   const hasActions =
     showActions &&
     (canSelect || priceChecks.length > 0 || copyItems.length > 0);

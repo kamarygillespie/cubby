@@ -1,6 +1,13 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import { RefreshCw } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
@@ -73,10 +80,10 @@ export function CheckPriceButton({
   );
 }
 
-// Re-checks every wishlist item with a link, with progress and a summary.
-// Up to 4 at once (KAM-88), but never two at the same store at once, and
-// at least 1.5s between pages from one store, so no store is hit harder
-// than before.
+// Re-checks wishlist items with a link, with progress and a summary: all
+// of them, or just some (Select mode, KAM-94). Up to 6 stores at once
+// (KAM-88, KAM-94), but never two at the same store at once, and at least
+// 1.5s between pages from one store, so no store is hit harder than before.
 export function useCheckAllPrices(items: { id: string; store: string }[]) {
   const [progress, setProgress] = useState<{
     done: number;
@@ -85,14 +92,15 @@ export function useCheckAllPrices(items: { id: string; store: string }[]) {
   const [summary, setSummary] = useState<string | null>(null);
   const cancelled = useRef(false);
 
-  async function run() {
+  async function run(onlyIds?: ReadonlySet<string>) {
     cancelled.current = false;
     setSummary(null);
-    const total = items.length;
+    const chosen = onlyIds ? items.filter((i) => onlyIds.has(i.id)) : items;
+    const total = chosen.length;
     let done = 0;
     setProgress({ done, total });
-    const outcomes = await runPooled(items, {
-      concurrency: 4,
+    const outcomes = await runPooled(chosen, {
+      concurrency: 6,
       keyOf: (item) => item.store,
       gapMs: 1500,
       shouldStop: () => cancelled.current,
@@ -117,4 +125,30 @@ export function useCheckAllPrices(items: { id: string; store: string }[]) {
     progress,
     summary,
   };
+}
+
+// Shares one price-check run between the toolbar ("Check all prices", and
+// the progress line) and the Select bar ("Check price", KAM-94).
+type PriceCheckRun = ReturnType<typeof useCheckAllPrices> & {
+  items: { id: string; store: string }[];
+};
+const PriceCheckContext = createContext<PriceCheckRun | null>(null);
+
+export function PriceCheckProvider({
+  items,
+  children,
+}: {
+  items: { id: string; store: string }[];
+  children: ReactNode;
+}) {
+  const check = useCheckAllPrices(items);
+  return (
+    <PriceCheckContext.Provider value={{ ...check, items }}>
+      {children}
+    </PriceCheckContext.Provider>
+  );
+}
+
+export function usePriceCheck() {
+  return useContext(PriceCheckContext);
 }

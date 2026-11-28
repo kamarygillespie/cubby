@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ListPlus } from "lucide-react";
+import { ListPlus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -19,6 +19,7 @@ import { addToWishlists } from "./wishlists/actions";
 import { useItemSelection } from "./item-selection";
 import { ChangeTypeButton } from "./change-type-dialog";
 import { DeleteSelectedButton } from "./delete-selected-dialog";
+import { usePriceCheck } from "./check-price";
 import { SplitButton, type SplitItemInfo } from "./split-dialog";
 import type { ItemTypeGroup } from "./item-type-select";
 
@@ -76,11 +77,13 @@ export function AddToWishlistBar({
       </div>
 
       <div className="bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))]">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 p-4">
-          <p className="text-sm" aria-live="polite">
-            {count} selected
+        {/* Tighter on phones so all five actions fit at 320px (KAM-94). */}
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 p-4 max-sm:gap-1.5 max-sm:px-3">
+          <p className="shrink-0 text-sm" aria-live="polite">
+            {count}
+            <span className="max-[359px]:sr-only"> selected</span>
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 max-sm:gap-1.5">
             <SplitButton
               selectedIds={[...selection.selected]}
               itemInfo={itemInfo}
@@ -95,6 +98,13 @@ export function AddToWishlistBar({
               onDone={(message) => {
                 selection.stop();
                 setNotice(message);
+              }}
+            />
+            <CheckSelectedPricesButton
+              selectedIds={selection.selected}
+              onStart={() => {
+                selection.stop();
+                setNotice(null);
               }}
             />
             <DeleteSelectedButton
@@ -270,5 +280,38 @@ function AddToWishlistDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// "Check price" for the selected items (KAM-94). Runs through the shared
+// price check, so its progress and summary show above the grid.
+function CheckSelectedPricesButton({
+  selectedIds,
+  onStart,
+}: {
+  selectedIds: ReadonlySet<string>;
+  onStart: () => void;
+}) {
+  const check = usePriceCheck();
+  if (!check) return null;
+  const checkable = check.items.filter((i) => selectedIds.has(i.id)).length;
+  return (
+    <Button
+      variant="outline"
+      disabled={checkable === 0 || check.progress !== null}
+      aria-label={
+        checkable === 0
+          ? "Check price (none of the selected items have a link)"
+          : `Check price of ${checkable} selected item${checkable === 1 ? "" : "s"}`
+      }
+      onClick={() => {
+        const ids = new Set(selectedIds);
+        onStart();
+        void check.run(ids);
+      }}
+    >
+      <RefreshCw />
+      <span className="max-sm:sr-only">Check price</span>
+    </Button>
   );
 }
