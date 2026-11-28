@@ -92,7 +92,8 @@ export function yearRecap(
     bought: bought.length,
     spent: round2(spent),
     saved: round2(saved),
-    topStore: top([...added, ...bought].map((i) => i.store)),
+    // Each item once, whether it was added, bought or both this year.
+    topStore: top([...new Set([...added, ...bought])].map((i) => i.store)),
     topCategory: top(added.map((i) => i.category)),
     cameTrue: cameTrue
       ? { title: cameTrue.title, interest: cameTrue.interest ?? 0 }

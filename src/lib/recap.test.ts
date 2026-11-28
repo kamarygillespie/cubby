@@ -67,7 +67,8 @@ describe("yearRecap", () => {
 
   it("finds the top store (ignoring case) and category", () => {
     const recap = yearRecap(items, [], 2026, yearOf);
-    expect(recap.topStore).toEqual({ name: "Madewell", count: 4 });
+    // Boots and Tee, each counted once though both were added and bought.
+    expect(recap.topStore).toEqual({ name: "Madewell", count: 2 });
     expect(recap.topCategory).toEqual({ name: "Clothing", count: 3 });
   });
 
