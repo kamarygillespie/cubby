@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Store, TrendingDown } from "lucide-react";
+import { ArrowLeft, BellRing, Store, TrendingDown } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -60,7 +60,12 @@ export default async function NotificationsPage() {
       ) : (
         <ul className="divide-y rounded-xl border" aria-label="Alerts">
           {alerts.map((alert) => {
-            const Icon = alert.kind === "store_sale" ? Store : TrendingDown;
+            const Icon =
+              alert.kind === "store_sale"
+                ? Store
+                : alert.kind === "target_price"
+                  ? BellRing
+                  : TrendingDown;
             return (
               <li key={alert.id}>
                 {/* A plain <a>: the route marks it read, then redirects. */}

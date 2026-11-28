@@ -24,13 +24,18 @@ import {
 } from "@/components/ui/sheet";
 import type { listItems } from "@/lib/db/items";
 import { formatCurrency } from "@/lib/format";
-import { displayDiscountPercent, itemMetaParts } from "@/lib/items-view";
+import {
+  displayDiscountPercent,
+  effectivePrice,
+  itemMetaParts,
+} from "@/lib/items-view";
 import { formatTimeAgo } from "@/lib/relative-time";
 import { CheckPriceButton } from "./check-price";
 import { ItemSelectCheckbox, useItemSelection } from "./item-selection";
 import { setItemFlag } from "./items/status-actions";
 import { DeleteItemButton } from "./items/[id]/edit/delete-item-button";
 import { PriceDisplay } from "./price-display";
+import { TargetPriceField } from "./target-price";
 
 export type Item = Awaited<ReturnType<typeof listItems>>[number];
 type ItemList = { id: string; name: string };
@@ -317,6 +322,15 @@ function ItemSheet({
             />
           )}
         </div>
+
+        {canCheckPrice && (
+          <TargetPriceField
+            itemId={item.id}
+            title={item.title}
+            target={item.target_price}
+            currentPrice={item.price === null ? null : effectivePrice(item)}
+          />
+        )}
 
         <div className="flex justify-center border-t pt-3">
           <DeleteItemButton

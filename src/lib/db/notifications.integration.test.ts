@@ -1,5 +1,10 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { createItem, recordPriceCheck, updateItem } from "./items";
+import {
+  createItem,
+  recordPriceCheck,
+  setTargetPrice,
+  updateItem,
+} from "./items";
 import { listItemTypes } from "./item-types";
 import { setFavoriteStore } from "./stores";
 import {
@@ -33,6 +38,43 @@ describe("notifications (integration)", () => {
       link: "https://shop.example/sneakers",
       ...extra,
     });
+
+  it("a target price alerts once per crossing, instead of a price drop (KAM-81)", async () => {
+    const { client } = await createTestUser();
+    const item = await newItem(client);
+    await setTargetPrice(client, item.id, 70);
+
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: 75 });
+    expect((await listNotifications(client)).map((a) => a.kind)).toEqual([
+      "price_drop",
+    ]); // 25% drop, still above the target
+
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: 65 });
+    let alerts = await listNotifications(client);
+    expect(alerts.map((a) => a.kind)).toEqual(["target_price", "price_drop"]);
+    expect(alerts[0]).toMatchObject({
+      title: "Sneakers hit your target price",
+      body: "Now $65.00 (your target: $70.00).",
+    });
+
+    // Staying below: quiet. Back above, then below again: alerts again.
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: 60 });
+    expect(await listNotifications(client)).toHaveLength(2);
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: null });
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: 69 });
+    alerts = await listNotifications(client);
+    expect(alerts.filter((a) => a.kind === "target_price")).toHaveLength(2);
+
+    // Clearing the target stops target alerts.
+    await setTargetPrice(client, item.id, null);
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: null });
+    await recordPriceCheck(client, item.id, { price: 100, salePrice: 50 });
+    expect(
+      (await listNotifications(client)).filter(
+        (a) => a.kind === "target_price",
+      ),
+    ).toHaveLength(2);
+  });
 
   it("a price check that drops the price past the threshold creates one alert", async () => {
     const { client } = await createTestUser();

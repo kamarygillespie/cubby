@@ -217,6 +217,7 @@ export type Database = {
           sale_price: number | null;
           source: string;
           store_brand: string | null;
+          target_price: number | null;
           title: string;
           updated_at: string;
           user_id: string;
@@ -238,6 +239,7 @@ export type Database = {
           sale_price?: number | null;
           source?: string;
           store_brand?: string | null;
+          target_price?: number | null;
           title: string;
           updated_at?: string;
           user_id: string;
@@ -259,6 +261,7 @@ export type Database = {
           sale_price?: number | null;
           source?: string;
           store_brand?: string | null;
+          target_price?: number | null;
           title?: string;
           updated_at?: string;
           user_id?: string;

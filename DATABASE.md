@@ -495,6 +495,15 @@ alter table public.wishlists add column show_sizes boolean not null default true
 - `sizes` keys: `tops, bottoms, dresses, shoes, rings, bras, other`, validated in `src/lib/sizes.ts` (20 chars each, 80 for `other`). Own row only, via profiles' existing RLS.
 - `get_shared_list_extras(token)` (SECURITY DEFINER, token-gated like `get_shared_wishlist`) → `{sizes | null, items: [{item_id, item_type, category, most_wanted}]}` for the list's visible items. `sizes` is null when the list has `show_sizes` off. Only `most_wanted` (interest = 5) is shared; other interest levels stay private.
 
+## SQL — Target Price Alerts (migration `20261128010000`, KAM-81)
+
+```sql
+alter table public.items add column target_price numeric(10,2) check (target_price > 0);
+-- notifications.kind now allows 'target_price' too.
+```
+
+`notify_price_change()` gains one rule, checked first: when the effective price **crosses** `target_price` (above it or unknown before the check, at or below it after), it creates a `target_price` alert ("Sneakers hit your target price", "Now $65.00 (your target: $70.00)."). It fires once per crossing, and again only after the price goes back above and drops again. When it fires, the `price_drop` rule is skipped for that check, so one change never makes two alerts. It isn't tied to the price-drop setting, since setting a target is the opt-in. Store-sale alerts are unchanged.
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

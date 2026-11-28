@@ -159,3 +159,16 @@ export function normalizeProductLink(raw: string): string | null {
     ? removeTrackingParams(sharedLinkFromParams({ url: `https://${value}` }))
     : null;
 }
+
+// "Alert me at or under $X" (KAM-81). Blank clears the target.
+export function parseTargetPrice(
+  raw: string,
+): { ok: true; value: number | null } | { ok: false; error: string } {
+  const trimmed = raw.replace(/[$,\s]/g, "");
+  if (!trimmed) return { ok: true, value: null };
+  const value = Number(trimmed);
+  if (!Number.isFinite(value) || value <= 0 || value >= 10_000_000) {
+    return { ok: false, error: "Enter a price above $0." };
+  }
+  return { ok: true, value: Math.round(value * 100) / 100 };
+}

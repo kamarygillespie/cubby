@@ -231,3 +231,17 @@ export async function listRecentPriceHighs(supabase: DbClient, days = 30) {
   }
   return highs;
 }
+
+// "Alert me at or under $X" (KAM-81). Null clears it. RLS limits it to the
+// caller's own items. The alert itself comes from notify_price_change().
+export async function setTargetPrice(
+  supabase: DbClient,
+  itemId: string,
+  target: number | null,
+) {
+  const { error } = await supabase
+    .from("items")
+    .update({ target_price: target })
+    .eq("id", itemId);
+  if (error) throw error;
+}
