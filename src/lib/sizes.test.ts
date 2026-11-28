@@ -42,6 +42,10 @@ describe("sizeKindsFor", () => {
     ["Wide Leg Jeans", "Clothing", ["bottoms"]],
     ["Midi Dresses", "Clothing", ["dresses"]],
     ["Makeup", "Beauty", []],
+    ["Bootcut Jeans", "Clothing", ["bottoms"]],
+    ["Flat Iron", "Beauty", []],
+    ["Flats", "Shoes", ["shoes"]],
+    ["Ankle Boots", "Misc", ["shoes"]],
   ])("%s (%s) → %j", (type, category, expected) => {
     expect(sizeKindsFor(type, category)).toEqual(expected);
   });

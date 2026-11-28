@@ -43,7 +43,9 @@ export function hasSizes(sizes: Sizes | null | undefined): boolean {
 export function sizeKindsFor(itemType: string, category: string): SizeKind[] {
   const text = `${itemType} ${category}`.toLowerCase();
   if (
-    /\bshoes?\b|sneaker|boot|flat|loafer|clog|heel|sandal|slipper/.test(text)
+    /\bshoes?\b|sneaker|\bboots?\b|\bflats\b|loafer|clog|\bheels?\b|sandal|slipper/.test(
+      text,
+    )
   ) {
     return ["shoes"];
   }
