@@ -24,6 +24,8 @@ export type SharedItemView = {
   price: number | null;
   sale_price: number | null;
   store_brand: string | null;
+  // The owner's notes (size, color…), when the list shares them (KAM-101).
+  notes: string | null;
   claim: ClaimState;
   mostWanted: boolean;
   sizeHint: string | null;
@@ -167,6 +169,11 @@ export function SharedItems({
                             {item.sizeHint}
                           </span>
                         )}
+                      </p>
+                    )}
+                    {item.notes && (
+                      <p className="text-sm whitespace-pre-line">
+                        {item.notes}
                       </p>
                     )}
                     {item.soldOut && (

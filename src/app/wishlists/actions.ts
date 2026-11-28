@@ -10,6 +10,7 @@ import {
   removeItemFromWishlist,
   renameWishlist,
   setOccasionDate,
+  setWishlistShowNotes,
 } from "@/lib/db/wishlists";
 import { parseOccasionDate } from "@/lib/occasion";
 import { parseWishlistName } from "@/lib/wishlists";
@@ -213,4 +214,10 @@ export async function setOccasionDateAction(
   }
   revalidatePath("/wishlists", "layout");
   return { ok: true };
+}
+
+// Notes on the share link (KAM-101).
+export async function setShowNotesAction(wishlistId: string, show: boolean) {
+  await setWishlistShowNotes(await createClient(), wishlistId, show);
+  revalidatePath(`/wishlists/${wishlistId}`);
 }

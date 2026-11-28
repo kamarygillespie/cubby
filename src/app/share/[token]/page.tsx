@@ -58,6 +58,7 @@ export default async function SharedWishlistPage({
       price: item.price,
       sale_price: item.sale_price,
       store_brand: item.store_brand,
+      notes: item.notes,
       claim: claims.states.get(item.id) ?? "open",
       mostWanted: extra?.mostWanted ?? false,
       sizeHint:

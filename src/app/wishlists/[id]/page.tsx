@@ -12,6 +12,7 @@ import { getShowClaims, listClaimsOnMyItems } from "@/lib/db/claims";
 import { getSizes } from "@/lib/db/sizes";
 import { hasSizes } from "@/lib/sizes";
 import { ShowSizesToggle } from "./show-sizes-toggle";
+import { ShowNotesToggle } from "./show-notes-toggle";
 import { OccasionDateField } from "./occasion-date-field";
 import { effectivePrice } from "@/lib/items-view";
 import { formatCurrency } from "@/lib/format";
@@ -83,6 +84,7 @@ export default async function WishlistPage({
         wishlistId={wishlist.id}
         date={wishlist.occasion_date}
       />
+      <ShowNotesToggle wishlistId={wishlist.id} show={wishlist.show_notes} />
       <ShowSizesToggle
         wishlistId={wishlist.id}
         show={wishlist.show_sizes}

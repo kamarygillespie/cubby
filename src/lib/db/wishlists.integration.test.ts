@@ -9,6 +9,7 @@ import {
   listWishlists,
   removeItemFromWishlist,
   renameWishlist,
+  setWishlistShowNotes,
 } from "./wishlists";
 import { createItem, getItem, updateItem } from "./items";
 import {
@@ -197,8 +198,11 @@ describe("lib/db/wishlists (integration)", () => {
     expect(shared?.name).toBe("Birthday");
     expect(shared?.items.map((i) => i.title)).toEqual(["Still wanted"]);
     expect(shared?.items[0].price).toBe(50);
-    // Owner's notes are private (KAM-38).
-    expect(shared?.items[0].notes).toBeNull();
+    // Notes show by default (KAM-101: size, color), and a list can hide them.
+    expect(shared?.items[0].notes).toBe("wait for a sale");
+    await setWishlistShowNotes(client, list.id, false);
+    const hidden = await getSharedWishlist(createAnonClient(), share_token);
+    expect(hidden?.items[0].notes).toBeNull();
   });
 
   test("share link: an empty list still resolves (not a 404)", async () => {
