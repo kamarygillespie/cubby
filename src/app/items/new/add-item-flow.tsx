@@ -44,6 +44,7 @@ export function AddItemFlow({
   action,
   sharedLink = null,
   captured = null,
+  lookingFor = null,
 }: {
   itemTypesByCategory: { category: string; itemTypes: ItemTypeOption[] }[];
   categories: { id: string; name: string }[];
@@ -52,6 +53,14 @@ export function AddItemFlow({
   sharedLink?: string | null;
   // Details read from the page the user is viewing (Save to Cubby, KAM-65).
   captured?: CapturedProduct | null;
+  // "Found it" from the Looking for list (KAM-102): starts with its notes
+  // and type, and ticks it off once saved.
+  lookingFor?: {
+    id: string;
+    title: string;
+    notes: string | null;
+    itemTypeId: string | null;
+  } | null;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
 
@@ -77,8 +86,10 @@ export function AddItemFlow({
   );
   const [storeBrand, setStoreBrand] = useState(captured?.store ?? "");
   const [link, setLink] = useState(captured?.link ?? "");
-  const [notes, setNotes] = useState("");
-  const [itemTypeId, setItemTypeId] = useState<string | null>(null);
+  const [notes, setNotes] = useState(lookingFor?.notes ?? "");
+  const [itemTypeId, setItemTypeId] = useState<string | null>(
+    lookingFor?.itemTypeId ?? null,
+  );
   const [suggestions, setSuggestions] = useState<ItemTypeOption[]>(() =>
     captured
       ? suggestItemTypes(
@@ -244,10 +255,14 @@ export function AddItemFlow({
       <div className="flex flex-col gap-6 pt-6 sm:pt-12">
         <div className="flex flex-col gap-1.5">
           <h1 className="text-2xl font-semibold tracking-tight">
-            Add something you love
+            {lookingFor
+              ? `Found your ${lookingFor.title.toLowerCase()}?`
+              : "Add something you love"}
           </h1>
           <p className="text-muted-foreground">
-            Paste a product link and Cubby will find the details.
+            {lookingFor
+              ? "Paste its link and Cubby will find the details. It comes off your Looking for list once it's saved."
+              : "Paste a product link and Cubby will find the details."}
           </p>
         </div>
         <form
@@ -310,6 +325,14 @@ export function AddItemFlow({
         >
           Add without a link
         </Button>
+        {!lookingFor && (
+          <Link
+            href="/looking-for"
+            className="text-muted-foreground self-center text-sm underline-offset-2 hover:underline"
+          >
+            Haven&apos;t found one yet? Add it to Looking for
+          </Link>
+        )}
       </div>
     );
   }
@@ -376,6 +399,9 @@ export function AddItemFlow({
         name="autofill_image_url"
         value={fetchedImage ?? ""}
       />
+      {lookingFor && (
+        <input type="hidden" name="looking_for_id" value={lookingFor.id} />
+      )}
 
       {showPreview ? (
         <section

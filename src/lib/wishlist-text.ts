@@ -1,6 +1,7 @@
 // "Copy wishlist" (KAM-91): the wishlist as plain text, readable by a person
 // and ready to paste into an AI chat for ideas.
 import { formatCurrency } from "@/lib/format";
+import { lookingForLine, type LookingForEntry } from "@/lib/looking-for";
 
 export type CopyItem = {
   title: string;
@@ -19,6 +20,8 @@ export type CopyOptions = {
   withPrompt: boolean;
   // Price ranges for the ideas (KAM-93); empty = any price.
   priceRanges?: readonly PriceRangeKey[];
+  // Things wanted but not found yet (KAM-102).
+  lookingFor?: LookingForEntry[];
   // Filters were applied, so this is part of the wishlist.
   filtered?: boolean;
 };
@@ -95,10 +98,24 @@ const oneLine = (text: string) => text.replace(/\s+/g, " ").trim();
 
 export function wishlistAsText(
   items: CopyItem[],
-  { includeNotes, withPrompt, filtered = false, priceRanges = [] }: CopyOptions,
+  {
+    includeNotes,
+    withPrompt,
+    filtered = false,
+    priceRanges = [],
+    lookingFor = [],
+  }: CopyOptions,
 ): string {
   const lines: string[] = [];
-  if (withPrompt) lines.push(ideasPrompt(priceRanges), "");
+  if (withPrompt) {
+    lines.push(
+      ideasPrompt(priceRanges) +
+        (lookingFor.length
+          ? " Also suggest 2 or 3 specific products for each thing I'm still looking for, listed at the end."
+          : ""),
+      "",
+    );
+  }
 
   const n = items.length;
   const total = items.reduce((sum, item) => sum + (paid(item) ?? 0), 0);
@@ -135,6 +152,10 @@ export function wishlistAsText(
         lines.push(`  Notes: ${oneLine(item.notes)}`);
       }
     }
+  }
+  if (lookingFor.length) {
+    lines.push("", "## Still looking for");
+    for (const entry of lookingFor) lines.push(`- ${lookingForLine(entry)}`);
   }
   return lines.join("\n");
 }

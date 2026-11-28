@@ -11,6 +11,7 @@ import { sharedLinkFromParams } from "@/lib/item-form";
 import { parseCapture } from "@/lib/page-capture";
 import { findItemByProductLink } from "@/lib/db/items";
 import { RefreshPrice } from "./refresh-price";
+import { getLookingFor } from "@/lib/db/looking-for";
 
 export const metadata: Metadata = { title: "Add item" };
 
@@ -27,11 +28,15 @@ export default async function NewItemPage({
   const rawCapture = one(params.capture);
   const captured = parseCapture(rawCapture);
   const supabase = await createClient();
-  const [itemTypes, categories, existing] = await Promise.all([
+  const [itemTypes, categories, existing, lookingFor] = await Promise.all([
     listItemTypes(supabase),
     listCategories(supabase),
     captured && one(params.new) !== "1"
       ? findItemByProductLink(supabase, captured.link)
+      : null,
+    // "Found it" from the Looking for list (KAM-102).
+    one(params.lookingFor)
+      ? getLookingFor(supabase, one(params.lookingFor)!)
       : null,
   ]);
 
@@ -65,6 +70,16 @@ export default async function NewItemPage({
           action={addItem}
           sharedLink={captured ? null : sharedLink}
           captured={captured}
+          lookingFor={
+            lookingFor && !lookingFor.found_at
+              ? {
+                  id: lookingFor.id,
+                  title: lookingFor.title,
+                  notes: lookingFor.notes,
+                  itemTypeId: lookingFor.item_type_id,
+                }
+              : null
+          }
         />
       )}
     </div>

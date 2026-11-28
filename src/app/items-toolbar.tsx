@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { CopyItem } from "@/lib/wishlist-text";
+import type { LookingForEntry } from "@/lib/looking-for";
 import { usePriceCheck } from "./check-price";
 import { CopyWishlistDialog } from "./copy-wishlist-dialog";
 import { ActiveFilters, FilterSheet, type FilterOptions } from "./filter-sheet";
@@ -22,6 +23,7 @@ export function ItemsToolbar({
   canSelect,
   priceChecks,
   copyItems = [],
+  lookingFor = [],
   filtered = false,
 }: {
   filterOptions: FilterOptions;
@@ -31,6 +33,8 @@ export function ItemsToolbar({
   priceChecks: { id: string; store: string }[];
   // What "Copy wishlist" copies: the matching items, filters applied.
   copyItems?: CopyItem[];
+  // Open "Looking for" entries, for Copy wishlist (KAM-102).
+  lookingFor?: LookingForEntry[];
   filtered?: boolean;
 }) {
   const selection = useItemSelection();
@@ -124,6 +128,7 @@ export function ItemsToolbar({
           open={copyOpen}
           onOpenChange={setCopyOpen}
           items={copyItems}
+          lookingFor={lookingFor}
           filtered={filtered}
         />
       )}

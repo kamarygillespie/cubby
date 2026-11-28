@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "cn";
+import type { LookingForEntry } from "@/lib/looking-for";
 import {
   PRICE_RANGES,
   wishlistAsText,
@@ -28,11 +29,13 @@ export function CopyWishlistDialog({
   onOpenChange,
   items,
   filtered,
+  lookingFor = [],
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   items: CopyItem[];
   filtered: boolean;
+  lookingFor?: LookingForEntry[];
 }) {
   const [includeNotes, setIncludeNotes] = useState(false);
   const [withPrompt, setWithPrompt] = useState(true);
@@ -46,8 +49,9 @@ export function CopyWishlistDialog({
         withPrompt,
         filtered,
         priceRanges: ranges,
+        lookingFor: withPrompt ? lookingFor : [],
       }),
-    [items, includeNotes, withPrompt, filtered, ranges],
+    [items, includeNotes, withPrompt, filtered, ranges, lookingFor],
   );
   const n = items.length;
 

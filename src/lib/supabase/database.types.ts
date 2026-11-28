@@ -336,6 +336,57 @@ export type Database = {
           },
         ];
       };
+      looking_for: {
+        Row: {
+          budget: number | null;
+          created_at: string;
+          found_at: string | null;
+          found_item_id: string | null;
+          id: string;
+          item_type_id: string | null;
+          notes: string | null;
+          title: string;
+          user_id: string;
+        };
+        Insert: {
+          budget?: number | null;
+          created_at?: string;
+          found_at?: string | null;
+          found_item_id?: string | null;
+          id?: string;
+          item_type_id?: string | null;
+          notes?: string | null;
+          title: string;
+          user_id?: string;
+        };
+        Update: {
+          budget?: number | null;
+          created_at?: string;
+          found_at?: string | null;
+          found_item_id?: string | null;
+          id?: string;
+          item_type_id?: string | null;
+          notes?: string | null;
+          title?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "looking_for_found_item_id_fkey";
+            columns: ["found_item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "looking_for_item_type_id_fkey";
+            columns: ["item_type_id"];
+            isOneToOne: false;
+            referencedRelation: "item_types";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notification_settings: {
         Row: {
           budget_alerts: boolean;

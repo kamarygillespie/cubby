@@ -4,6 +4,7 @@ import {
   Gift,
   Heart,
   ListChecks,
+  Search,
   SearchX,
   Shirt,
   ShoppingBag,
@@ -56,6 +57,7 @@ import { ItemsToolbar } from "./items-toolbar";
 import { ViewTabs } from "./view-tabs";
 import { TotalsDashboard } from "./totals-dashboard";
 import { RecapBanner } from "./recap-banner";
+import { listLookingFor } from "@/lib/db/looking-for";
 import { PriceCheckProvider } from "./check-price";
 import { CheckInBanner } from "./check-in-banner";
 import { isCheckInCandidate, showCheckInBanner } from "@/lib/cooling-off";
@@ -176,6 +178,7 @@ export default async function Home({
     onboarding,
     failedPriceChecks,
     alertSettings,
+    lookingForEntries,
   ] = await Promise.all([
     listItems(supabase),
     listItemTypes(supabase),
@@ -185,6 +188,7 @@ export default async function Home({
     getOnboardingState(supabase),
     listItemsWithFailedPriceCheck(supabase),
     getNotificationSettings(supabase),
+    listLookingFor(supabase),
   ]);
   // Cooling-off check-in (KAM-82).
   const now = new Date();
@@ -295,6 +299,7 @@ export default async function Home({
     { href: "/wishlists", label: "Lists", Icon: ListChecks },
     { href: "/stores", label: "Stores", Icon: Store },
     { href: "/closet", label: "Closet", Icon: Shirt },
+    { href: "/looking-for", label: "Looking for", Icon: Search },
   ];
 
   return (
@@ -392,6 +397,13 @@ export default async function Home({
                 // run in parallel without two at once on the same store.
                 priceChecks={priceChecks}
                 // Copy wishlist (KAM-91): the Wishlist tab's matching items.
+                lookingFor={lookingForEntries
+                  .filter((e) => !e.found_at)
+                  .map((e) => ({
+                    title: e.title,
+                    notes: e.notes,
+                    budget: e.budget,
+                  }))}
                 copyItems={
                   view === "wishlist"
                     ? visibleItems.map((i) => ({
