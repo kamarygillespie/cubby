@@ -1,8 +1,12 @@
-import { test, expect, seedItems } from "./fixtures";
+import { test, expect, seedItems, seedWishlist } from "./fixtures";
 import { admin } from "../src/lib/db/integration-test-utils";
 
 // KAM-75: a sold-out size shows on the card; a restock sends an alert.
-test("sold out in my size, then back in stock", async ({ page, user }) => {
+test("sold out in my size, then back in stock", async ({
+  page,
+  user,
+  browser,
+}) => {
   const [pants] = await seedItems(user.id, [
     { title: "E2E Stock Pants", price: 50 },
   ]);
@@ -27,6 +31,17 @@ test("sold out in my size, then back in stock", async ({ page, user }) => {
     .getByRole("listitem")
     .filter({ hasText: "E2E Stock Pants" });
   await expect(card.getByText("Sold out in M")).toBeVisible();
+
+  // Givers see it too, so nobody buys something sold out in that size.
+  const listId = await seedWishlist(user.id, "E2E Stock List", [pants.id]);
+  const { data: list } = await admin
+    .from("wishlists")
+    .select("share_token")
+    .eq("id", listId)
+    .single();
+  const giver = await (await browser.newContext()).newPage();
+  await giver.goto(`${new URL(page.url()).origin}/share/${list!.share_token}`);
+  await expect(giver.getByText("Sold out in M")).toBeVisible();
 
   await check(true);
   await page.reload();

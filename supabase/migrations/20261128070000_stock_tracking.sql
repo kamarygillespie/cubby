@@ -160,3 +160,33 @@ create trigger items_notify_price_change
   for each row
   when (new.price_checked_at is distinct from old.price_checked_at)
   execute function public.notify_price_change();
+
+
+-- The share page shows "Sold out in M" so givers don't pick something they
+-- can't buy. Same function as 20261128020000, plus each item's stock.
+create or replace function public.get_shared_list_extras(token uuid)
+returns jsonb as $$
+  select jsonb_build_object(
+    'sizes', case when w.show_sizes then p.sizes end,
+    'occasion_date', w.occasion_date,
+    'items', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'item_id', i.id,
+        'item_type', t.name,
+        'category', c.name,
+        'most_wanted', coalesce(i.interest_level, 0) = 5,
+        'in_stock', i.in_stock,
+        'stock_size', i.stock_size
+      ))
+      from public.wishlist_items wi
+      join public.items i
+        on i.id = wi.item_id and not i.purchased and not i.gifted
+      join public.item_types t on t.id = i.item_type_id
+      join public.categories c on c.id = t.category_id
+      where wi.wishlist_id = w.id
+    ), '[]'::jsonb)
+  )
+  from public.wishlists w
+  left join public.profiles p on p.id = w.user_id
+  where w.share_token = token;
+$$ language sql security definer stable set search_path = '';

@@ -86,7 +86,14 @@ export type ListExtras = {
   occasionDate: string | null;
   items: Map<
     string,
-    { itemType: string; category: string; mostWanted: boolean }
+    {
+      itemType: string;
+      category: string;
+      mostWanted: boolean;
+      // Stock (KAM-75): false = sold out (in stockSize, if set).
+      inStock: boolean | null;
+      stockSize: string | null;
+    }
   >;
 };
 
@@ -121,6 +128,9 @@ export function parseListExtras(raw: unknown): ListExtras {
         itemType: typeof e.item_type === "string" ? e.item_type : "",
         category: typeof e.category === "string" ? e.category : "",
         mostWanted: e.most_wanted === true,
+        inStock: typeof e.in_stock === "boolean" ? e.in_stock : null,
+        stockSize:
+          typeof e.stock_size === "string" ? e.stock_size.slice(0, 20) : null,
       });
     }
   }

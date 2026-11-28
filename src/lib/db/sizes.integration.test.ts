@@ -53,6 +53,8 @@ describe("share page sizes and most wanted (integration)", () => {
       itemType: "Boots",
       category: "Shoes",
       mostWanted: true,
+      inStock: null,
+      stockSize: null,
     });
     expect(extras.items.get(liked.id)?.mostWanted).toBe(false);
     // Purchased items aren't on the share page, so nothing about them is.

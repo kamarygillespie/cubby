@@ -572,7 +572,7 @@ alter table public.item_price_checks add column in_stock boolean;
 ```
 
 - `record_price_check(item, price, sale_price, p_in_stock default null, p_stock_size default null)` replaces the 3-argument version. Callers sending only prices still work. A readable page sets `in_stock`/`stock_size` to what it said (null = the page doesn't say). An unreadable page leaves them alone.
-- `notify_price_change()` gains **back in stock**: `in_stock` went false → true on a check, for the same `stock_size`, so a changed size in the notes isn't a restock. It creates "<title> is back in stock" / "Available again in size M."
+- `notify_price_change()` gains **back in stock**: `in_stock` went false → true on a check, for the same `stock_size`, so a changed size in the notes isn't a restock. It creates "<title> is back in stock" / "Available again in size M." `get_shared_list_extras()` also returns each item's `in_stock` and `stock_size`, so share pages can say "Sold out in M".
 
 ## SQL — Seed Data (Default Taxonomy)
 

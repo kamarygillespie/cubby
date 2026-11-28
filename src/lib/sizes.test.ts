@@ -86,6 +86,8 @@ describe("parseListExtras", () => {
           item_type: "Makeup",
           category: "Beauty",
           most_wanted: false,
+          in_stock: false,
+          stock_size: "m",
         },
         { nope: true },
       ],
@@ -96,8 +98,14 @@ describe("parseListExtras", () => {
       itemType: "Boots",
       category: "Shoes",
       mostWanted: true,
+      inStock: null,
+      stockSize: null,
     });
     expect(extras.items.size).toBe(2);
+    expect(extras.items.get("b")).toMatchObject({
+      inStock: false,
+      stockSize: "m",
+    });
   });
 
   it("reads a valid occasion date only", () => {

@@ -64,6 +64,10 @@ export default async function SharedWishlistPage({
         extras.sizes && extra
           ? sizeHint(extras.sizes, extra.itemType, extra.category)
           : null,
+      soldOut:
+        extra?.inStock === false
+          ? `Sold out${extra.stockSize ? ` in ${extra.stockSize.toUpperCase()}` : ""}`
+          : null,
     };
   });
   const n = items.length;
