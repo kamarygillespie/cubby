@@ -158,13 +158,21 @@ export async function deleteItems(supabase: DbClient, ids: string[]) {
 export async function recordPriceCheck(
   supabase: DbClient,
   itemId: string,
-  fetched: { price: number | null; salePrice: number | null },
+  fetched: {
+    price: number | null;
+    salePrice: number | null;
+    // Stock (KAM-75); omitted = the page didn't say.
+    inStock?: boolean | null;
+    stockSize?: string | null;
+  },
 ) {
   const { error } = await supabase.rpc("record_price_check", {
     p_item_id: itemId,
     // Generated types mark args non-null; SQL accepts null (unreadable page).
     p_price: fetched.price as number,
     p_sale_price: fetched.salePrice as number,
+    ...(fetched.inStock == null ? {} : { p_in_stock: fetched.inStock }),
+    ...(fetched.stockSize ? { p_stock_size: fetched.stockSize } : {}),
   });
   if (error) throw error;
 }

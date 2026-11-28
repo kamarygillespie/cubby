@@ -10,6 +10,10 @@ export type AutofillResult = {
   category: string | null;
   // The store refused the request, as opposed to a page we couldn't parse.
   blocked: boolean;
+  // Stock (KAM-75): any size buyable, or null when the page doesn't say.
+  inStock: boolean | null;
+  // Per size, when the page lists sizes ("m", "8.5").
+  sizes: { size: string; inStock: boolean }[];
 };
 
 export const EMPTY_RESULT: AutofillResult = {
@@ -20,6 +24,8 @@ export const EMPTY_RESULT: AutofillResult = {
   store: null,
   category: null,
   blocked: false,
+  inStock: null,
+  sizes: [],
 };
 
 export function parsePrice(value: string | undefined | null): number | null {
@@ -42,7 +48,26 @@ type PageData = {
   image: string | null;
   store: string | null;
   category: string | null;
+  inStock: boolean | null;
+  sizes: { size: string; inStock: boolean }[];
 } & PriceSignals;
+
+// schema.org availability ("https://schema.org/InStock") or Open Graph's
+// ("in stock", "instock") → buyable or not. Pre-orders and back-orders can
+// be bought, so they count as in stock. Null when it's missing or unknown.
+export function parseAvailability(value: unknown): boolean | null {
+  if (typeof value !== "string") return null;
+  const v = value.toLowerCase().replace(/[^a-z]/g, "");
+  if (/(outofstock|soldout|discontinued)$/.test(v)) return false;
+  if (
+    /(instock|limitedavailability|onlineonly|instoreonly|preorder|presale|backorder)$/.test(
+      v,
+    )
+  ) {
+    return true;
+  }
+  return null;
+}
 
 // "PUMA | Official Site" → "PUMA".
 function cleanStoreName(name: string | null | undefined): string | null {
@@ -129,6 +154,9 @@ export function extractOpenGraph($: cheerio.CheerioAPI): Partial<PageData> {
         metaContent("og:site_name"),
     ),
     category: metaContent("product:category"),
+    inStock: parseAvailability(
+      metaContent("product:availability") ?? metaContent("og:availability"),
+    ),
     currency:
       metaContent("product:price:currency")?.toUpperCase() ??
       metaContent("og:price:currency")?.toUpperCase() ??
@@ -243,7 +271,46 @@ export function extractSchemaOrg($: cheerio.CheerioAPI): Partial<PageData> {
     image: imageFor(product),
     store: brandName(product.brand),
     category: typeof product.category === "string" ? product.category : null,
+    ...stockFor(product),
     ...offerPrices(offerFor(product)),
+  };
+}
+
+// Stock from a Product's offer, or from each variant of a ProductGroup
+// (Gymshark lists every size with its own availability).
+function stockFor(product: Record<string, unknown>): {
+  inStock: boolean | null;
+  sizes: { size: string; inStock: boolean }[];
+} {
+  const availabilityOf = (node: Record<string, unknown>) => {
+    const offers = [node.offers].flat();
+    for (const offer of offers) {
+      const o = offer as Record<string, unknown> | null;
+      const direct = parseAvailability(o?.availability);
+      if (direct !== null) return direct;
+      const nested = [o?.offers].flat()[0] as
+        Record<string, unknown> | undefined;
+      const inner = parseAvailability(nested?.availability);
+      if (inner !== null) return inner;
+    }
+    return null;
+  };
+
+  const variants = [product.hasVariant]
+    .flat()
+    .filter((v): v is Record<string, unknown> => !!v && typeof v === "object");
+  const sizes = variants.flatMap((v) => {
+    const inStock = availabilityOf(v);
+    const size = typeof v.size === "string" ? v.size.trim() : "";
+    return size && inStock !== null ? [{ size, inStock }] : [];
+  });
+  const variantStock = variants
+    .map(availabilityOf)
+    .filter((v): v is boolean => v !== null);
+  const own = availabilityOf(product);
+  return {
+    inStock: own ?? (variantStock.length ? variantStock.some(Boolean) : null),
+    sizes,
   };
 }
 
@@ -407,6 +474,8 @@ export function extractFromHtml(html: string): AutofillResult {
     store: schemaOrg.store ?? openGraph.store ?? null,
     category: schemaOrg.category ?? openGraph.category ?? null,
     blocked: false,
+    inStock: schemaOrg.inStock ?? openGraph.inStock ?? null,
+    sizes: schemaOrg.sizes ?? [],
     ...resolvePrices(signals),
   };
 }

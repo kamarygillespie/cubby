@@ -7,6 +7,7 @@ import { getItem, recordPriceCheck, setTargetPrice } from "@/lib/db/items";
 import { parseTargetPrice } from "@/lib/item-form";
 import {
   applyPriceCheck,
+  stockMessage,
   type FetchedPrices,
   type PriceCheckOutcome,
 } from "@/lib/price-check";
@@ -29,8 +30,15 @@ export async function checkItemPriceAction(
   }
 
   const { data, error } = await supabase.functions.invoke<
-    FetchedPrices & { blocked?: boolean; store?: string | null }
-  >("link-autofill", { body: { url: item.link, pricesOnly: true } });
+    FetchedPrices & {
+      blocked?: boolean;
+      store?: string | null;
+      // Stock for the size in the notes (KAM-75).
+      stock?: { inStock: boolean | null; size: string | null };
+    }
+  >("link-autofill", {
+    body: { url: item.link, pricesOnly: true, notes: item.notes },
+  });
   if (error || !data) {
     return { outcome: "unreadable", message: "Couldn't reach this page." };
   }
@@ -38,6 +46,8 @@ export async function checkItemPriceAction(
   const fetched = {
     price: data.price ?? null,
     salePrice: data.salePrice ?? null,
+    inStock: data.stock?.inStock ?? null,
+    stockSize: data.stock?.size ?? null,
   };
   // The message is worked out here; the write (incl. "never wipe a known
   // price") happens in the database's record_price_check().
@@ -48,7 +58,14 @@ export async function checkItemPriceAction(
     outcome: result.outcome,
     message: data.blocked
       ? `${data.store ?? "This store"} doesn't let apps check its prices.`
-      : result.message,
+      : [
+          result.message,
+          fetched.price === null
+            ? null
+            : stockMessage(item.in_stock, fetched.inStock, fetched.stockSize),
+        ]
+          .filter(Boolean)
+          .join(" "),
   };
 }
 

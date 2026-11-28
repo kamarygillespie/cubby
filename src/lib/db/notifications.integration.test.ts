@@ -212,6 +212,52 @@ describe("notifications (integration)", () => {
     expect(await listNotifications(fresh.client)).toEqual([]);
   });
 
+  it("back in stock alerts once, for the same size only (KAM-75)", async () => {
+    const { client } = await createTestUser();
+    const item = await newItem(client);
+    const check = (inStock: boolean | null, stockSize: string | null = "m") =>
+      recordPriceCheck(client, item.id, {
+        price: 100,
+        salePrice: null,
+        inStock,
+        stockSize,
+      });
+
+    await check(false);
+    expect(await listNotifications(client)).toEqual([]);
+    const { data: soldOut } = await admin
+      .from("items")
+      .select("in_stock, stock_size")
+      .eq("id", item.id)
+      .single();
+    expect(soldOut).toEqual({ in_stock: false, stock_size: "m" });
+
+    await check(true);
+    const alerts = await listNotifications(client);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({
+      kind: "back_in_stock",
+      title: "Sneakers is back in stock",
+      body: "Available again in size M.",
+    });
+
+    // Staying in stock: quiet. A different size isn't a restock.
+    await check(true);
+    await check(false, "s");
+    await check(true, "m");
+    expect(await listNotifications(client)).toHaveLength(1);
+
+    // An unreadable page leaves stock alone.
+    await check(false);
+    await recordPriceCheck(client, item.id, { price: null, salePrice: null });
+    const { data: after } = await admin
+      .from("items")
+      .select("in_stock")
+      .eq("id", item.id)
+      .single();
+    expect(after?.in_stock).toBe(false);
+  });
+
   it("a price check that drops the price past the threshold creates one alert", async () => {
     const { client } = await createTestUser();
     const item = await newItem(client);

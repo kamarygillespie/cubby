@@ -118,3 +118,16 @@ export function summarizePriceChecks(outcomes: PriceCheckOutcome[]): string {
     );
   return text.length ? text.join(", ") + "." : "Nothing to check.";
 }
+
+// Stock news to add to a Check price message (KAM-75): "Sold out in M.",
+// "Back in stock!", or nothing when the page doesn't say.
+export function stockMessage(
+  was: boolean | null,
+  now: boolean | null,
+  size: string | null,
+): string | null {
+  const inSize = size ? ` in ${size.toUpperCase()}` : "";
+  if (now === false) return `Sold out${inSize}.`;
+  if (now === true && was === false) return `Back in stock${inSize}!`;
+  return null;
+}

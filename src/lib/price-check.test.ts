@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyPriceCheck, summarizePriceChecks } from "./price-check";
+import {
+  applyPriceCheck,
+  summarizePriceChecks,
+  stockMessage,
+} from "./price-check";
 
 describe("applyPriceCheck", () => {
   it("detects a new sale (the PUMA case)", () => {
@@ -107,5 +111,18 @@ describe("summarizePriceChecks", () => {
       ]),
     ).toBe("2 now on sale, 1 price drop, 1 unchanged, 1 couldn't be read.");
     expect(summarizePriceChecks([])).toBe("Nothing to check.");
+  });
+});
+
+describe("stockMessage", () => {
+  it("says when it's sold out, for the size if known", () => {
+    expect(stockMessage(true, false, "m")).toBe("Sold out in M.");
+    expect(stockMessage(null, false, null)).toBe("Sold out.");
+  });
+
+  it("celebrates a restock, and stays quiet otherwise", () => {
+    expect(stockMessage(false, true, "xl")).toBe("Back in stock in XL!");
+    expect(stockMessage(true, true, null)).toBeNull();
+    expect(stockMessage(null, null, null)).toBeNull();
   });
 });

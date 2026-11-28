@@ -9,6 +9,7 @@ import {
   TrendingDown,
   Wallet,
   PackageOpen,
+  PackageCheck,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
@@ -79,7 +80,9 @@ export default async function NotificationsPage() {
                       ? PackageOpen
                       : alert.kind === "budget"
                         ? Wallet
-                        : TrendingDown;
+                        : alert.kind === "back_in_stock"
+                          ? PackageCheck
+                          : TrendingDown;
             return (
               <li key={alert.id}>
                 {/* A plain <a>: the route marks it read, then redirects. */}

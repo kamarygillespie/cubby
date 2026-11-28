@@ -137,6 +137,13 @@ export function ItemCard({
           {item.purchased && !item.gifted && item.return_by && (
             <ReturnByLabel date={item.return_by} />
           )}
+          {/* Stock (KAM-75): only once a check found it sold out. */}
+          {item.in_stock === false && !item.purchased && !item.gifted && (
+            <span className="text-destructive text-xs font-medium">
+              Sold out
+              {item.stock_size ? ` in ${item.stock_size.toUpperCase()}` : ""}
+            </span>
+          )}
           {/* Under the price, not on the photo, so it never collides with
               the sale badge on a narrow card. */}
           {needsManualCheck && (
