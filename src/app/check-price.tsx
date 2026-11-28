@@ -15,6 +15,7 @@ import {
   summarizePriceChecks,
   type PriceCheckOutcome,
 } from "@/lib/price-check";
+import { useRouter } from "next/navigation";
 import { checkItemPriceAction } from "./items/price-actions";
 import { runPooled } from "@/lib/pool";
 
@@ -88,9 +89,12 @@ export function useCheckAllPrices(items: { id: string; store: string }[]) {
   const [progress, setProgress] = useState<{
     done: number;
     total: number;
+    // Checks running right now (KAM-99), so the parallelism is visible.
+    running: number;
   } | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const cancelled = useRef(false);
+  const router = useRouter();
 
   async function run(onlyIds?: ReadonlySet<string>) {
     cancelled.current = false;
@@ -98,18 +102,41 @@ export function useCheckAllPrices(items: { id: string; store: string }[]) {
     const chosen = onlyIds ? items.filter((i) => onlyIds.has(i.id)) : items;
     const total = chosen.length;
     let done = 0;
-    setProgress({ done, total });
+    let running = 0;
+    const report = () => setProgress({ done, total, running });
+    report();
     const outcomes = await runPooled(chosen, {
       concurrency: 6,
       keyOf: (item) => item.store,
       gapMs: 1500,
       shouldStop: () => cancelled.current,
       run: async (item): Promise<PriceCheckOutcome> => {
-        const result = await checkItemPriceAction(item.id);
-        setProgress({ done: ++done, total });
-        return result.outcome === "error" ? "unreadable" : result.outcome;
+        running++;
+        report();
+        try {
+          // A route handler, not a Server Action: those run one at a time
+          // per browser, which would undo the parallel pool (KAM-99).
+          const response = await fetch("/api/check-price", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ itemId: item.id }),
+          });
+          if (!response.ok) return "unreadable";
+          const result = (await response.json()) as {
+            outcome: PriceCheckOutcome | "error";
+          };
+          return result.outcome === "error" ? "unreadable" : result.outcome;
+        } catch {
+          return "unreadable";
+        } finally {
+          running--;
+          done++;
+          report();
+        }
       },
     });
+    // Route handlers don't refresh the page by themselves.
+    router.refresh();
     setProgress(null);
     setSummary(
       (cancelled.current ? "Stopped. " : "Checked. ") +
