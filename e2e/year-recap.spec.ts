@@ -27,7 +27,8 @@ test("Year in Cubby recaps the year and shares it", async ({ page, user }) => {
     page.getByRole("heading", { name: `Your ${year} in Cubby` }),
   ).toBeVisible();
   const cards = page.getByRole("list", { name: `Your ${year} in Cubby` });
-  await expect(cards.getByText("2 things")).toBeVisible();
+  await expect(cards.getByText("2 things", { exact: true })).toBeVisible();
+  await expect(cards.getByText("2 things from there this year.")).toBeVisible();
   await expect(
     cards.getByText("and saved $50.00 by waiting for sales."),
   ).toBeVisible();
