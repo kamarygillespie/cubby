@@ -1,6 +1,11 @@
 import type { Item } from "@/lib/db/items";
 
-export type SortOption = "interest_desc" | "price_desc" | "price_asc";
+export type SortOption =
+  | "interest_desc"
+  | "price_desc"
+  | "price_asc"
+  // Biggest discount first (KAM-96); items not on sale keep their order after.
+  | "discount_desc";
 
 export type ItemFilters = {
   categoryId?: string | null;
@@ -9,6 +14,8 @@ export type ItemFilters = {
   // KAM-90: only items whose latest price check couldn't read the page.
   needsCheckOnly?: boolean;
   needsCheck?: ReadonlySet<string>;
+  // KAM-96: leave out items a check found sold out.
+  hideSoldOut?: boolean;
 };
 
 type Prices = Pick<Item, "price" | "sale_price">;
@@ -56,6 +63,9 @@ export function filterItems(items: Item[], filters: ItemFilters): Item[] {
     if (filters.needsCheckOnly && !filters.needsCheck?.has(item.id)) {
       return false;
     }
+    if (filters.hideSoldOut && item.in_stock === false) {
+      return false;
+    }
     return true;
   });
 }
@@ -74,6 +84,12 @@ export function sortItems(items: Item[], sort: SortOption | null): Item[] {
     case "price_asc":
       sorted.sort((a, b) => effectivePrice(a) - effectivePrice(b));
       break;
+    case "discount_desc": {
+      const off = (i: Item) =>
+        displayDiscountPercent(i.price, i.sale_price) ?? -1;
+      sorted.sort((a, b) => off(b) - off(a));
+      break;
+    }
   }
   return sorted;
 }

@@ -158,6 +158,7 @@ export default async function Home({
   const itemTypeId = firstParam(params.itemType) ?? null;
   const onSaleOnly = firstParam(params.onSale) === "1";
   const needsCheckOnly = firstParam(params.check) === "1";
+  const hideSoldOut = firstParam(params.instock) === "1";
   const sort = (firstParam(params.sort) as SortOption | undefined) ?? null;
   const group = firstParam(params.group);
   const show = parseShowCount(firstParam(params.show));
@@ -215,6 +216,7 @@ export default async function Home({
         itemTypeId ||
         onSaleOnly ||
         needsCheckOnly ||
+        hideSoldOut ||
         favoritesOnly ||
         storeFilter,
       )}
@@ -241,6 +243,7 @@ export default async function Home({
       onSaleOnly,
       needsCheckOnly,
       needsCheck: failedPriceChecks,
+      hideSoldOut,
     }).filter((item) => {
       // Store filters (KAM-49): ?store=<key> from the Stores page, and the
       // "Favorite stores" toggle.
@@ -373,6 +376,10 @@ export default async function Home({
                   needsCheckCount: filterByView(items, view).filter((i) =>
                     failedPriceChecks.has(i.id),
                   ).length,
+                  // KAM-96: shows the Hide sold out toggle.
+                  soldOutCount: filterByView(items, view).filter(
+                    (i) => i.in_stock === false,
+                  ).length,
                   storeName: storeFilter
                     ? (items.find(
                         (i) => storeKey(i.store_brand) === storeFilter,
@@ -405,6 +412,7 @@ export default async function Home({
                   itemTypeId ||
                   onSaleOnly ||
                   needsCheckOnly ||
+                  hideSoldOut ||
                   favoritesOnly ||
                   storeFilter,
                 )}

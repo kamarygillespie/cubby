@@ -29,6 +29,7 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 - Filter by category, item type
 - Sort by interest level (high→low) and price (high→low / low→high), globally or within a filtered view
 - Filter to on-sale items
+- **Biggest discount sort and Hide sold out (KAM-96):** the Filter sheet's sorts include **Biggest discount** (percent off, highest first, with full-price items after). **Hide sold out** (`?instock=1`) appears in Show once any item is sold out, and leaves those items out
 
 ### Sale detection (V1 scope)
 

@@ -28,6 +28,8 @@ export type FilterOptions = {
   // Items whose latest price check couldn't read the page (KAM-90). The
   // toggle shows only when there are some, or while it's on.
   needsCheckCount?: number;
+  // KAM-96: the Hide sold out toggle appears once anything is sold out.
+  soldOutCount?: number;
 };
 
 const ALL = "__all__";
@@ -43,6 +45,7 @@ const SORT_OPTIONS = [
   { value: "interest_desc", label: "Interest: high to low" },
   { value: "price_desc", label: "Price: high to low" },
   { value: "price_asc", label: "Price: low to high" },
+  { value: "discount_desc", label: "Biggest discount" },
 ];
 
 const labelFor = (options: { value: string; label: string }[], value: string) =>
@@ -90,6 +93,7 @@ function useItemFilters({
   const sort = searchParams.get("sort") ?? ALL;
   const onSale = searchParams.get("onSale") === "1";
   const needsCheck = searchParams.get("check") === "1";
+  const hideSoldOut = searchParams.get("instock") === "1";
   const favoritesOnly = searchParams.get("fav") === "1";
   const store = searchParams.get("store");
 
@@ -123,6 +127,7 @@ function useItemFilters({
       : []),
     ...(onSale ? [{ key: "onSale", label: "On sale" }] : []),
     ...(needsCheck ? [{ key: "check", label: "Needs a manual check" }] : []),
+    ...(hideSoldOut ? [{ key: "instock", label: "Hide sold out" }] : []),
     ...(favoritesOnly ? [{ key: "fav", label: "Favorite stores" }] : []),
     ...(group !== ALL
       ? [{ key: "group", label: labelFor(GROUP_OPTIONS, group) }]
@@ -139,6 +144,7 @@ function useItemFilters({
     sort,
     onSale,
     needsCheck,
+    hideSoldOut,
     favoritesOnly,
     active,
     setParam,
@@ -185,6 +191,7 @@ export function FilterSheet(options: FilterOptions) {
     itemTypes,
     hasFavoriteStores = false,
     needsCheckCount = 0,
+    soldOutCount = 0,
   } = options;
   const [open, setOpen] = useState(false);
   const filters = useItemFilters(options);
@@ -242,6 +249,16 @@ export function FilterSheet(options: FilterOptions) {
                 }
               >
                 Needs a manual check ({needsCheckCount})
+              </Chip>
+            )}
+            {(soldOutCount > 0 || filters.hideSoldOut) && (
+              <Chip
+                pressed={filters.hideSoldOut}
+                onClick={() =>
+                  filters.setParam("instock", filters.hideSoldOut ? null : "1")
+                }
+              >
+                Hide sold out
               </Chip>
             )}
             {hasFavoriteStores && (
