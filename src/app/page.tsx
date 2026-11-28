@@ -52,6 +52,7 @@ import {
 import { ItemsToolbar } from "./items-toolbar";
 import { ViewTabs } from "./view-tabs";
 import { TotalsDashboard } from "./totals-dashboard";
+import { RecapBanner } from "./recap-banner";
 import { ItemSelectionProvider } from "./item-selection";
 import { AddToWishlistBar } from "./add-to-wishlist-bar";
 
@@ -316,6 +317,7 @@ export default async function Home({
       <div className="sm:hidden">
         <InstallPrompt variant="card" />
       </div>
+      <RecapBanner />
       <ItemsNavigationProvider>
         {showTotals ? (
           <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">

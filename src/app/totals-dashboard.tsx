@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Item } from "@/lib/db/items";
 import {
@@ -115,6 +117,13 @@ export function TotalsDashboard({
         picks={buyNext(active.map(toRecItem), purchased, recentHighs)}
       />
       <TasteCard taste={tasteProfile(purchased)} />
+      <Link
+        href="/recap"
+        className="text-brand flex items-center gap-1.5 self-start text-sm font-medium underline-offset-2 hover:underline"
+      >
+        <Sparkles className="size-4" aria-hidden />
+        Year in Cubby
+      </Link>
       <GiftCardIdeas
         ideas={giftCardIdeas(active)}
         description="Stores with several things on your wishlist: handy when someone asks what to get you."
