@@ -131,7 +131,11 @@ export function ItemsToolbar({
       {priceCheck.progress && (
         <div className="flex items-center justify-between gap-2">
           <p aria-live="polite" className="text-muted-foreground text-sm">
-            Checked {priceCheck.progress.done} of {priceCheck.progress.total}…
+            Checked {priceCheck.progress.done} of {priceCheck.progress.total}
+            {priceCheck.progress.running > 1
+              ? ` · ${priceCheck.progress.running} at once`
+              : ""}
+            …
           </p>
           <Button size="sm" variant="ghost" onClick={priceCheck.stop}>
             Stop
