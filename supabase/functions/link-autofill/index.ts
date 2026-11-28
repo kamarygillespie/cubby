@@ -2,6 +2,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { stockForNotes } from "../_shared/stock.ts";
 import {
   fetchProductData,
   isBlockedUrl,
@@ -60,7 +61,15 @@ const handler = {
   fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
     // pricesOnly: used by "Check price" on an existing item, which only
     // needs prices; skips downloading/copying the image into Storage.
-    let body: { url?: unknown; pricesOnly?: unknown; imageUrl?: unknown };
+    let body: {
+      url?: unknown;
+      pricesOnly?: unknown;
+      imageUrl?: unknown;
+      // The item's notes, to find the wanted size for stock (KAM-75).
+      notes?: unknown;
+      // The saved size for its type when the notes don't say (KAM-97).
+      size?: unknown;
+    };
     try {
       body = await req.json();
     } catch {
@@ -101,7 +110,17 @@ const handler = {
     const result = await fetchProductData(parsedUrl);
 
     if (body.pricesOnly === true) {
-      return Response.json({ ...result, image: null });
+      const notes =
+        typeof body.notes === "string" ? body.notes.slice(0, 2000) : null;
+      return Response.json({
+        ...result,
+        image: null,
+        stock: stockForNotes(
+          result,
+          notes,
+          typeof body.size === "string" ? body.size.slice(0, 20) : null,
+        ),
+      });
     }
 
     if (result.image && ctx.userClaims) {

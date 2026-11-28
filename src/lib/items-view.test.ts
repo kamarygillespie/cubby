@@ -95,6 +95,17 @@ describe("filterItems", () => {
     expect(result).toEqual([techItem]);
   });
 
+  test("hides items a check found sold out (KAM-96)", () => {
+    const soldOut = makeItem({ id: "x", in_stock: false });
+    const inStock = makeItem({ id: "y", in_stock: true });
+    const unknown = makeItem({ id: "z", in_stock: null });
+    expect(
+      filterItems([soldOut, inStock, unknown], { hideSoldOut: true }).map(
+        (i) => i.id,
+      ),
+    ).toEqual(["y", "z"]);
+  });
+
   test("filters to items that need a manual price check (KAM-90)", () => {
     const a = makeItem({ id: "a" });
     const b = makeItem({ id: "b" });
@@ -412,5 +423,22 @@ describe("wishlistHighlight", () => {
     expect(
       wishlistHighlight([item({ price: 50, sale_price: 60 })]).onSaleCount,
     ).toBe(0);
+  });
+});
+
+describe("sort by biggest discount (KAM-96)", () => {
+  test("puts the largest percent off first, full-price items after", () => {
+    const items = [
+      makeItem({ id: "full", price: 100, sale_price: null }),
+      makeItem({ id: "ten", price: 100, sale_price: 90 }),
+      makeItem({ id: "forty", price: 50, sale_price: 30 }),
+      makeItem({ id: "none", price: null, sale_price: null }),
+    ];
+    expect(sortItems(items, "discount_desc").map((i) => i.id)).toEqual([
+      "forty",
+      "ten",
+      "full",
+      "none",
+    ]);
   });
 });

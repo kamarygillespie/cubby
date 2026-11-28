@@ -38,33 +38,13 @@ export function hasSizes(sizes: Sizes | null | undefined): boolean {
   return Boolean(sizes && Object.keys(sizes).length > 0);
 }
 
-// Which sizes matter for an item, from its type and category names. Works
-// for the built-in types and most custom ones ("Wide Leg Jeans" → bottoms).
-export function sizeKindsFor(itemType: string, category: string): SizeKind[] {
-  const text = `${itemType} ${category}`.toLowerCase();
-  if (
-    /\bshoes?\b|sneaker|\bboots?\b|\bflats\b|loafer|clog|\bheels?\b|sandal|slipper/.test(
-      text,
-    )
-  ) {
-    return ["shoes"];
-  }
-  if (/\bbras?\b/.test(text)) return ["bras"];
-  if (/\brings?\b/.test(text)) return ["rings"];
-  if (/\bdress/.test(text)) return ["dresses"];
-  const tops =
-    /\btops?\b|blouse|sweater|shirt|\btee\b|hoodie|jacket|coat|cardigan/.test(
-      text,
-    );
-  const bottoms =
-    /\bbottoms?\b|pant|jean|legging|jogger|skirt|\bshorts\b|trouser|underwear/.test(
-      text,
-    );
-  return [
-    ...(tops ? ["tops" as const] : []),
-    ...(bottoms ? ["bottoms" as const] : []),
-  ];
-}
+// Which sizes matter for an item: shared with the Edge Functions' stock
+// checks, so both use the same matching.
+import {
+  savedSizeFor,
+  sizeKindsFor,
+} from "../../supabase/functions/_shared/size-kinds";
+export { savedSizeFor, sizeKindsFor };
 
 // "Size M" or "Tops M · Bottoms 6" for one item; null when nothing matches.
 export function sizeHint(
@@ -86,7 +66,14 @@ export type ListExtras = {
   occasionDate: string | null;
   items: Map<
     string,
-    { itemType: string; category: string; mostWanted: boolean }
+    {
+      itemType: string;
+      category: string;
+      mostWanted: boolean;
+      // Stock (KAM-75): false = sold out (in stockSize, if set).
+      inStock: boolean | null;
+      stockSize: string | null;
+    }
   >;
 };
 
@@ -121,6 +108,9 @@ export function parseListExtras(raw: unknown): ListExtras {
         itemType: typeof e.item_type === "string" ? e.item_type : "",
         category: typeof e.category === "string" ? e.category : "",
         mostWanted: e.most_wanted === true,
+        inStock: typeof e.in_stock === "boolean" ? e.in_stock : null,
+        stockSize:
+          typeof e.stock_size === "string" ? e.stock_size.slice(0, 20) : null,
       });
     }
   }

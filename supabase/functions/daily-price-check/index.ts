@@ -3,6 +3,8 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "@supabase/supabase-js";
 import { fetchProductData, isBlockedUrl } from "../_shared/fetch-page.ts";
 import { runPriceChecks } from "./run.ts";
+import { stockForNotes } from "../_shared/stock.ts";
+import { savedSizeFor } from "../_shared/size-kinds.ts";
 
 // Called hourly by pg_cron (migration 20261109000000) with a shared secret
 // header. It re-checks prices for everyone's active wishlist items, so it
@@ -28,7 +30,9 @@ Deno.serve(async (req) => {
         const cutoff = new Date(Date.now() - 20 * 3600_000).toISOString();
         const { data, error } = await supabase
           .from("items")
-          .select("id, link")
+          .select(
+            "id, link, notes, user_id, item_type:item_types(name, category:categories(name))",
+          )
           .not("link", "is", null)
           .eq("purchased", false)
           .eq("gifted", false)
@@ -38,18 +42,58 @@ Deno.serve(async (req) => {
           .order("price_checked_at", { ascending: true, nullsFirst: true })
           .limit(limit);
         if (error) throw error;
-        return data as { id: string; link: string }[];
+        // Saved sizes (KAM-97), one query for everyone in this batch.
+        const rows = data as unknown as {
+          id: string;
+          link: string;
+          notes: string | null;
+          user_id: string;
+          item_type: {
+            name: string;
+            category: { name: string } | null;
+          } | null;
+        }[];
+        const userIds = [...new Set(rows.map((r) => r.user_id))];
+        const { data: profiles } = userIds.length
+          ? await supabase
+              .from("profiles")
+              .select("id, sizes")
+              .in("id", userIds)
+          : { data: [] };
+        const sizesByUser = new Map(
+          (
+            (profiles ?? []) as { id: string; sizes: Record<string, string> }[]
+          ).map((p) => [p.id, p.sizes]),
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          link: r.link,
+          notes: r.notes,
+          savedSize: savedSizeFor(
+            sizesByUser.get(r.user_id),
+            r.item_type?.name ?? "",
+            r.item_type?.category?.name ?? "",
+          ),
+        }));
       },
-      fetchPrices: async (url) => {
+      fetchPrices: async (url, item) => {
         if (isBlockedUrl(url)) return { price: null, salePrice: null };
-        const { price, salePrice } = await fetchProductData(url);
-        return { price, salePrice };
+        const page = await fetchProductData(url);
+        const stock = stockForNotes(page, item.notes, item.savedSize);
+        return {
+          price: page.price,
+          salePrice: page.salePrice,
+          inStock: stock.inStock,
+          stockSize: stock.size,
+        };
       },
       record: async (itemId, prices) => {
         const { error } = await supabase.rpc("record_price_check", {
           p_item_id: itemId,
           p_price: prices.price,
           p_sale_price: prices.salePrice,
+          p_in_stock: prices.inStock ?? null,
+          p_stock_size: prices.stockSize ?? null,
         });
         if (error) throw error;
       },

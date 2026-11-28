@@ -563,6 +563,17 @@ alter table public.notification_settings add column cooling_off boolean not null
 - `kept_at`: the last **Keep**. Kept items aren't asked about again for 90 days. Restoring also sets it.
 - Existing RLS on items, wishlist_items and profiles covers all of it. No new policies.
 
+## SQL — Stock Tracking (migration `20261128070000`, KAM-75)
+
+```sql
+alter table public.items add column in_stock boolean, add column stock_size text;
+alter table public.item_price_checks add column in_stock boolean;
+-- notifications.kind now also allows 'back_in_stock'.
+```
+
+- `record_price_check(item, price, sale_price, p_in_stock default null, p_stock_size default null)` replaces the 3-argument version. Callers sending only prices still work. A readable page sets `in_stock`/`stock_size` to what it said (null = the page doesn't say). An unreadable page leaves them alone.
+- `notify_price_change()` gains **back in stock**: `in_stock` went false → true on a check, for the same `stock_size`, so a changed size in the notes isn't a restock. It creates "<title> is back in stock" / "Available again in size M." `get_shared_list_extras()` also returns each item's `in_stock` and `stock_size`, so share pages can say "Sold out in M".
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

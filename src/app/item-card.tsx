@@ -36,6 +36,7 @@ import { setItemFlag } from "./items/status-actions";
 import { DeleteItemButton } from "./items/[id]/edit/delete-item-button";
 import { PriceDisplay } from "./price-display";
 import { TargetPriceField } from "./target-price";
+import { PriceHistory } from "./price-history-chart";
 import { ReturnByLabel, ReturnWindowField } from "./return-window";
 
 export type Item = Awaited<ReturnType<typeof listItems>>[number];
@@ -136,6 +137,13 @@ export function ItemCard({
           )}
           {item.purchased && !item.gifted && item.return_by && (
             <ReturnByLabel date={item.return_by} />
+          )}
+          {/* Stock (KAM-75): only once a check found it sold out. */}
+          {item.in_stock === false && !item.purchased && !item.gifted && (
+            <span className="text-destructive text-xs font-medium">
+              Sold out
+              {item.stock_size ? ` in ${item.stock_size.toUpperCase()}` : ""}
+            </span>
           )}
           {/* Under the price, not on the photo, so it never collides with
               the sale badge on a narrow card. */}
@@ -336,6 +344,8 @@ function ItemSheet({
             onReturned={() => onOpenChange(false)}
           />
         )}
+
+        {item.link && <PriceHistory itemId={item.id} />}
 
         {canCheckPrice && (
           <TargetPriceField

@@ -96,6 +96,8 @@ Deno.test("returns all-null result for a page with no structured data", () => {
     store: null,
     category: null,
     blocked: false,
+    inStock: null,
+    sizes: [],
   });
 });
 

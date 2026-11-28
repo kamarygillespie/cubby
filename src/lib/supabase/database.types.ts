@@ -130,6 +130,7 @@ export type Database = {
         Row: {
           checked_at: string;
           id: string;
+          in_stock: boolean | null;
           item_id: string;
           price: number | null;
           sale_price: number | null;
@@ -139,6 +140,7 @@ export type Database = {
         Insert: {
           checked_at?: string;
           id?: string;
+          in_stock?: boolean | null;
           item_id: string;
           price?: number | null;
           sale_price?: number | null;
@@ -148,6 +150,7 @@ export type Database = {
         Update: {
           checked_at?: string;
           id?: string;
+          in_stock?: boolean | null;
           item_id?: string;
           price?: number | null;
           sale_price?: number | null;
@@ -246,6 +249,7 @@ export type Database = {
           gifted: boolean;
           id: string;
           image_url: string | null;
+          in_stock: boolean | null;
           interest_level: number | null;
           item_type_id: string;
           kept_at: string | null;
@@ -259,6 +263,7 @@ export type Database = {
           return_reminded_for: string | null;
           sale_price: number | null;
           source: string;
+          stock_size: string | null;
           store_brand: string | null;
           target_price: number | null;
           title: string;
@@ -272,6 +277,7 @@ export type Database = {
           gifted?: boolean;
           id?: string;
           image_url?: string | null;
+          in_stock?: boolean | null;
           interest_level?: number | null;
           item_type_id: string;
           kept_at?: string | null;
@@ -285,6 +291,7 @@ export type Database = {
           return_reminded_for?: string | null;
           sale_price?: number | null;
           source?: string;
+          stock_size?: string | null;
           store_brand?: string | null;
           target_price?: number | null;
           title: string;
@@ -298,6 +305,7 @@ export type Database = {
           gifted?: boolean;
           id?: string;
           image_url?: string | null;
+          in_stock?: boolean | null;
           interest_level?: number | null;
           item_type_id?: string;
           kept_at?: string | null;
@@ -311,6 +319,7 @@ export type Database = {
           return_reminded_for?: string | null;
           sale_price?: number | null;
           source?: string;
+          stock_size?: string | null;
           store_brand?: string | null;
           target_price?: number | null;
           title?: string;
@@ -652,7 +661,13 @@ export type Database = {
         Returns: number;
       };
       record_price_check: {
-        Args: { p_item_id: string; p_price: number; p_sale_price: number };
+        Args: {
+          p_in_stock?: boolean;
+          p_item_id: string;
+          p_price: number;
+          p_sale_price: number;
+          p_stock_size?: string;
+        };
         Returns: undefined;
       };
       save_push_subscription: {

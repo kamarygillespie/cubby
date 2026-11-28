@@ -27,6 +27,8 @@ export type SharedItemView = {
   claim: ClaimState;
   mostWanted: boolean;
   sizeHint: string | null;
+  // "Sold out in M" (KAM-75), null when it can be bought or we don't know.
+  soldOut: string | null;
 };
 
 const SORTS: { value: ShareSort; label: string }[] = [
@@ -165,6 +167,11 @@ export function SharedItems({
                             {item.sizeHint}
                           </span>
                         )}
+                      </p>
+                    )}
+                    {item.soldOut && (
+                      <p className="text-destructive text-sm font-medium">
+                        {item.soldOut}
                       </p>
                     )}
                     {item.link && (

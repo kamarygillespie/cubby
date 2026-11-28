@@ -1,12 +1,24 @@
 // The scheduled price-check loop, with its I/O injected so it can be tested
 // without a network or database (run.test.ts).
 
-export type DueItem = { id: string; link: string };
-export type Prices = { price: number | null; salePrice: number | null };
+export type DueItem = {
+  id: string;
+  link: string;
+  notes?: string | null;
+  // The owner's saved size for this item's type (KAM-97).
+  savedSize?: string | null;
+};
+export type Prices = {
+  price: number | null;
+  salePrice: number | null;
+  // Stock (KAM-75), for the size in the notes when the page lists sizes.
+  inStock?: boolean | null;
+  stockSize?: string | null;
+};
 
 export type RunDeps = {
   listDue: (limit: number) => Promise<DueItem[]>;
-  fetchPrices: (url: URL) => Promise<Prices>;
+  fetchPrices: (url: URL, item: DueItem) => Promise<Prices>;
   record: (itemId: string, prices: Prices) => Promise<void>;
   sleep: (ms: number) => Promise<void>;
   now: () => number;
@@ -52,7 +64,7 @@ export async function runPriceChecks(
       continue;
     }
     try {
-      const prices = await deps.fetchPrices(url);
+      const prices = await deps.fetchPrices(url, item);
       await deps.record(item.id, prices);
       summary.checked++;
       if (prices.price === null) summary.unreadable++;

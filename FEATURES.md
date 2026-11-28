@@ -29,11 +29,14 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 - Filter by category, item type
 - Sort by interest level (high→low) and price (high→low / low→high), globally or within a filtered view
 - Filter to on-sale items
+- **Biggest discount sort and Hide sold out (KAM-96):** the Filter sheet's sorts include **Biggest discount** (percent off, highest first, with full-price items after). **Hide sold out** (`?instock=1`) appears in Show once any item is sold out, and leaves those items out
 
 ### Sale detection (V1 scope)
 
 - Sale price + discount % captured at add-time or on manual refresh: **Check price** in the details of any wishlist item with a link, and **Check all prices** in the Wishlist tab's **…** menu (checks what the tab is showing, with a summary like "2 now on sale, 5 unchanged"). **Faster (KAM-88):** up to 4 items at once, but never two from the same store at once and at least 1.5s between one store's pages. That's about 3–4× faster for a typical wishlist, with no more load on any store. **Check price in Select mode (KAM-94):** checks just the selected items that have a link, with the same progress, Stop and summary above the grid. Up to 6 stores at once (from 4). On phones the Select bar's actions are icons, plus "Add". Under 360px the count shows without "selected", so all five fit at 320px
 - Visual "on sale" indicator
+- **Price history (KAM-95):** an item's details show its price over the last 90 days as a step line (the price paid, so the sale price when on sale) once there are 2+ readable checks. It has a hover or arrow-key readout of each change and a summary: "Lowest $140.00 on Nov 7 · now $150.00", or "Lowest price since Oct 18" when it's at its low. A screen-reader table carries every value
+- **Stock (KAM-75):** price checks (daily and Check price) read whether an item can be bought, for **your size** when the store lists sizes and the notes say one ("size M"), or otherwise **your saved size for that type** from Your sizes (KAM-97: tops size for sweaters, shoe size for sneakers; the notes win). A sold-out item's card says "Sold out" or "Sold out in M", and Check price adds "Sold out in M." or "Back in stock!". A restock creates a **back in stock** alert through the bell and daily push, once per restock and only for the same size. Share pages show "Sold out in M" too, so givers don't pick something they can't buy
 - **Added on sale (KAM-74):** when a store lists only the sale price in its standard product data, Cubby reads the original price from the store's own page data (e.g. Gymshark's `compareAtPrice`), so an item added on sale shows "$30, was $50, 40% off". This applies to autofill, Save to Cubby, Check price and the daily checks. Items already saved at only their sale price correct themselves on their next price check
 
 ### Wishlist sharing

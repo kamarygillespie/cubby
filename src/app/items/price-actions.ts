@@ -3,10 +3,19 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getItem, recordPriceCheck, setTargetPrice } from "@/lib/db/items";
+import {
+  getItem,
+  listItemPriceHistory,
+  recordPriceCheck,
+  setTargetPrice,
+} from "@/lib/db/items";
+import { pricePoints } from "@/lib/price-history";
+import { getSizes } from "@/lib/db/sizes";
+import { savedSizeFor } from "@/lib/sizes";
 import { parseTargetPrice } from "@/lib/item-form";
 import {
   applyPriceCheck,
+  stockMessage,
   type FetchedPrices,
   type PriceCheckOutcome,
 } from "@/lib/price-check";
@@ -29,8 +38,25 @@ export async function checkItemPriceAction(
   }
 
   const { data, error } = await supabase.functions.invoke<
-    FetchedPrices & { blocked?: boolean; store?: string | null }
-  >("link-autofill", { body: { url: item.link, pricesOnly: true } });
+    FetchedPrices & {
+      blocked?: boolean;
+      store?: string | null;
+      // Stock for the size in the notes (KAM-75).
+      stock?: { inStock: boolean | null; size: string | null };
+    }
+  >("link-autofill", {
+    body: {
+      url: item.link,
+      pricesOnly: true,
+      notes: item.notes,
+      // The saved size for its type, when the notes don't say (KAM-97).
+      size: savedSizeFor(
+        await getSizes(supabase),
+        item.item_type.name,
+        item.item_type.category.name,
+      ),
+    },
+  });
   if (error || !data) {
     return { outcome: "unreadable", message: "Couldn't reach this page." };
   }
@@ -38,6 +64,8 @@ export async function checkItemPriceAction(
   const fetched = {
     price: data.price ?? null,
     salePrice: data.salePrice ?? null,
+    inStock: data.stock?.inStock ?? null,
+    stockSize: data.stock?.size ?? null,
   };
   // The message is worked out here; the write (incl. "never wipe a known
   // price") happens in the database's record_price_check().
@@ -48,7 +76,14 @@ export async function checkItemPriceAction(
     outcome: result.outcome,
     message: data.blocked
       ? `${data.store ?? "This store"} doesn't let apps check its prices.`
-      : result.message,
+      : [
+          result.message,
+          fetched.price === null
+            ? null
+            : stockMessage(item.in_stock, fetched.inStock, fetched.stockSize),
+        ]
+          .filter(Boolean)
+          .join(" "),
   };
 }
 
@@ -87,4 +122,15 @@ export async function setTargetPriceAction(
   }
   revalidatePath("/");
   return { ok: true, target: parsed.value };
+}
+
+// Price history for an item's details (KAM-95).
+export async function priceHistoryAction(itemId: string) {
+  try {
+    return pricePoints(
+      await listItemPriceHistory(await createClient(), itemId),
+    );
+  } catch {
+    return [];
+  }
 }
