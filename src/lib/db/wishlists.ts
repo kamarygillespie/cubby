@@ -60,7 +60,7 @@ export async function getWishlist(supabase: DbClient, id: string) {
   const { data, error } = await supabase
     .from("wishlists")
     .select(
-      `id, name, share_token, show_sizes, occasion_date, created_at, wishlist_items(added_at, item:items(${ITEM_SELECT}))`,
+      `id, name, share_token, show_sizes, show_notes, occasion_date, created_at, wishlist_items(added_at, item:items(${ITEM_SELECT}))`,
     )
     .eq("id", id)
     .order("added_at", { referencedTable: "wishlist_items", ascending: false })
@@ -142,6 +142,19 @@ export async function setOccasionDate(
   const { error } = await supabase
     .from("wishlists")
     .update({ occasion_date: date })
+    .eq("id", wishlistId);
+  if (error) throw error;
+}
+
+// Show item notes on this list's share page (KAM-101). On by default.
+export async function setWishlistShowNotes(
+  supabase: DbClient,
+  wishlistId: string,
+  show: boolean,
+) {
+  const { error } = await supabase
+    .from("wishlists")
+    .update({ show_notes: show })
     .eq("id", wishlistId);
   if (error) throw error;
 }

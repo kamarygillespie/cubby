@@ -3,14 +3,7 @@
 import { useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deleteOutfitAction } from "../../actions";
 
 export function DeleteOutfitButton({
@@ -28,30 +21,19 @@ export function DeleteOutfitButton({
         <Trash2 />
         Delete outfit
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete “{name}”?</DialogTitle>
-            <DialogDescription>
-              The outfit and its photo go away. The pieces stay in your closet.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={pending}
-              onClick={() =>
-                startTransition(() => deleteOutfitAction(outfitId))
-              }
-            >
-              {pending ? "Deleting…" : "Delete outfit"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Delete this outfit?"
+        confirmLabel="Delete outfit"
+        pending={pending}
+        onConfirm={() => startTransition(() => deleteOutfitAction(outfitId))}
+      >
+        <span className="text-foreground font-medium">{name}</span>
+        <span>
+          The outfit and its photo go away. The pieces stay in your closet.
+        </span>
+      </ConfirmDialog>
     </>
   );
 }

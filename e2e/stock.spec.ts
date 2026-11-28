@@ -42,6 +42,19 @@ test("sold out in my size, then back in stock", async ({
   const giver = await (await browser.newContext()).newPage();
   await giver.goto(`${new URL(page.url()).origin}/share/${list!.share_token}`);
   await expect(giver.getByText("Sold out in M")).toBeVisible();
+  // KAM-101: notes (size, color) show to givers by default...
+  await expect(giver.getByText("size M", { exact: true })).toBeVisible();
+  // ...and the list can hide them.
+  await page.goto(`/wishlists/${listId}`);
+  await page
+    .getByRole("checkbox", { name: "Show my notes on the share link" })
+    .click();
+  await expect(async () => {
+    await giver.reload();
+    await expect(giver.getByText("size M", { exact: true })).toHaveCount(0, {
+      timeout: 1000,
+    });
+  }).toPass();
 
   await check(true);
   await page.reload();

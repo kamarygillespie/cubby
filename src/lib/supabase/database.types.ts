@@ -590,6 +590,7 @@ export type Database = {
           occasion_date: string | null;
           reminded_for: string | null;
           share_token: string;
+          show_notes: boolean;
           show_sizes: boolean;
           user_id: string;
         };
@@ -600,6 +601,7 @@ export type Database = {
           occasion_date?: string | null;
           reminded_for?: string | null;
           share_token?: string;
+          show_notes?: boolean;
           show_sizes?: boolean;
           user_id: string;
         };
@@ -610,6 +612,7 @@ export type Database = {
           occasion_date?: string | null;
           reminded_for?: string | null;
           share_token?: string;
+          show_notes?: boolean;
           show_sizes?: boolean;
           user_id?: string;
         };

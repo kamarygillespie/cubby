@@ -459,7 +459,7 @@ alter table public.profiles add column onboarding_dismissed_at timestamptz;
 
 ## SQL — Share Page Hides Notes (migration `20261109080000`, KAM-38)
 
-`get_shared_wishlist()` keeps its signature but always returns `notes` as null: the owner's notes are private (decided Nov 9, 2026).
+`get_shared_wishlist()` keeps its signature but always returns `notes` as null: the owner's notes are private (decided Nov 9, 2026). **Superseded by `20261128080000` (KAM-101):** `wishlists.show_notes boolean not null default true`, and `get_shared_wishlist()` returns notes when the list's `show_notes` is on.
 
 ## SQL — Gift Claims (migration `20261127000000`, KAM-77)
 
