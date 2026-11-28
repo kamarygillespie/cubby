@@ -367,9 +367,16 @@ export default async function Home({
               }}
               showActions={view === "wishlist"}
               canSelect={shownItems.length > 0}
-              priceCheckIds={visibleItems
-                .filter((i) => i.link)
-                .map((i) => i.id)}
+              // Check all prices (KAM-88): each item's store, so checks can
+              // run in parallel without two at once on the same store.
+              priceChecks={visibleItems.flatMap((i) => {
+                if (!i.link) return [];
+                try {
+                  return [{ id: i.id, store: new URL(i.link).hostname }];
+                } catch {
+                  return [{ id: i.id, store: i.link }];
+                }
+              })}
               // Copy wishlist (KAM-91): the Wishlist tab's matching items.
               copyItems={
                 view === "wishlist"
