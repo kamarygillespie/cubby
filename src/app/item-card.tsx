@@ -36,6 +36,7 @@ import { setItemFlag } from "./items/status-actions";
 import { DeleteItemButton } from "./items/[id]/edit/delete-item-button";
 import { PriceDisplay } from "./price-display";
 import { TargetPriceField } from "./target-price";
+import { PriceHistory } from "./price-history-chart";
 import { ReturnByLabel, ReturnWindowField } from "./return-window";
 
 export type Item = Awaited<ReturnType<typeof listItems>>[number];
@@ -343,6 +344,8 @@ function ItemSheet({
             onReturned={() => onOpenChange(false)}
           />
         )}
+
+        {item.link && <PriceHistory itemId={item.id} />}
 
         {canCheckPrice && (
           <TargetPriceField

@@ -3,7 +3,13 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getItem, recordPriceCheck, setTargetPrice } from "@/lib/db/items";
+import {
+  getItem,
+  listItemPriceHistory,
+  recordPriceCheck,
+  setTargetPrice,
+} from "@/lib/db/items";
+import { pricePoints } from "@/lib/price-history";
 import { parseTargetPrice } from "@/lib/item-form";
 import {
   applyPriceCheck,
@@ -104,4 +110,15 @@ export async function setTargetPriceAction(
   }
   revalidatePath("/");
   return { ok: true, target: parsed.value };
+}
+
+// Price history for an item's details (KAM-95).
+export async function priceHistoryAction(itemId: string) {
+  try {
+    return pricePoints(
+      await listItemPriceHistory(await createClient(), itemId),
+    );
+  } catch {
+    return [];
+  }
 }

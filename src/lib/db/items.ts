@@ -343,3 +343,23 @@ export async function createItems(
   if (error) throw error;
   return count ?? rows.length;
 }
+
+// One item's readable price checks over the last `days` days (KAM-95),
+// oldest first. RLS limits it to the caller's own items.
+export async function listItemPriceHistory(
+  supabase: DbClient,
+  itemId: string,
+  days = 90,
+) {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const { data, error } = await supabase
+    .from("item_price_checks")
+    .select("checked_at, price, sale_price")
+    .eq("item_id", itemId)
+    .eq("status", "ok")
+    .gte("checked_at", since)
+    .order("checked_at", { ascending: true })
+    .limit(500);
+  if (error) throw error;
+  return data;
+}
