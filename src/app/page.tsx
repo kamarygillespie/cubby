@@ -161,6 +161,7 @@ export default async function Home({
   const onSaleOnly = firstParam(params.onSale) === "1";
   const needsCheckOnly = firstParam(params.check) === "1";
   const hideSoldOut = firstParam(params.instock) === "1";
+  const unlistedOnly = firstParam(params.unlisted) === "1";
   const sort = (firstParam(params.sort) as SortOption | undefined) ?? null;
   const group = firstParam(params.group);
   const show = parseShowCount(firstParam(params.show));
@@ -221,12 +222,17 @@ export default async function Home({
         onSaleOnly ||
         needsCheckOnly ||
         hideSoldOut ||
+        unlistedOnly ||
         favoritesOnly ||
         storeFilter,
       )}
     />
   );
 
+  // Items on any list (KAM-103: the Not on a list filter).
+  const listedIds = new Set(
+    wishlists.flatMap((w) => w.wishlist_items.map((wi) => wi.item_id)),
+  );
   const listsByItem = new Map<string, { id: string; name: string }[]>();
   for (const list of wishlists) {
     for (const { item_id } of list.wishlist_items) {
@@ -248,6 +254,8 @@ export default async function Home({
       needsCheckOnly,
       needsCheck: failedPriceChecks,
       hideSoldOut,
+      unlistedOnly,
+      listed: listedIds,
     }).filter((item) => {
       // Store filters (KAM-49): ?store=<key> from the Stores page, and the
       // "Favorite stores" toggle.
@@ -293,6 +301,10 @@ export default async function Home({
     }
   });
 
+  // Each item's price paid, for list totals (KAM-103).
+  const priceById = new Map(
+    items.map((i) => [i.id, i.price === null ? 0 : effectivePrice(i)]),
+  );
   const highlight = wishlistHighlight(items);
 
   const sectionLinks = [
@@ -381,6 +393,11 @@ export default async function Home({
                   needsCheckCount: filterByView(items, view).filter((i) =>
                     failedPriceChecks.has(i.id),
                   ).length,
+                  // KAM-103: Not on a list.
+                  hasLists: wishlists.length > 0,
+                  unlistedCount: filterByView(items, view).filter(
+                    (i) => !listedIds.has(i.id),
+                  ).length,
                   // KAM-96: shows the Hide sold out toggle.
                   soldOutCount: filterByView(items, view).filter(
                     (i) => i.in_stock === false,
@@ -425,6 +442,7 @@ export default async function Home({
                   onSaleOnly ||
                   needsCheckOnly ||
                   hideSoldOut ||
+                  unlistedOnly ||
                   favoritesOnly ||
                   storeFilter,
                 )}
@@ -443,11 +461,20 @@ export default async function Home({
                       },
                     ]),
                   )}
-                  wishlists={wishlists.map((w) => ({
-                    id: w.id,
-                    name: w.name,
-                    itemIds: w.wishlist_items.map((wi) => wi.item_id),
-                  }))}
+                  wishlists={wishlists.map((w) => {
+                    const ids = w.wishlist_items.map((wi) => wi.item_id);
+                    return {
+                      id: w.id,
+                      name: w.name,
+                      itemIds: ids,
+                      // Split into lists I have (KAM-103) starts from these.
+                      total: ids.reduce(
+                        (sum, id) =>
+                          sum + (priceById.has(id) ? priceById.get(id)! : 0),
+                        0,
+                      ),
+                    };
+                  })}
                 />
               )}
               <ItemsPendingContent>

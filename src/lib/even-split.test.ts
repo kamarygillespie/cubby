@@ -45,3 +45,53 @@ describe("splitEvenly", () => {
     expect(() => splitEvenly(items(1), 0)).toThrow();
   });
 });
+
+describe("splitting into lists that already have items (KAM-103)", () => {
+  it("fills the list that's behind first", () => {
+    const lists = splitEvenly(
+      [
+        { id: "a", price: 30 },
+        { id: "b", price: 20 },
+        { id: "c", price: 10 },
+      ],
+      2,
+      [
+        { total: 100, count: 4 },
+        { total: 60, count: 2 },
+      ],
+    );
+    // $30 → the $60 list (now $90); $20 → still the lower one ($90 → $110);
+    // $10 → the $100 list ($110). Both end at $110.
+    expect(lists[1].itemIds).toEqual(["a", "b"]);
+    expect(lists[0].itemIds).toEqual(["c"]);
+    expect(lists.map((l) => l.total)).toEqual([110, 110]);
+    expect(lists.map((l) => l.count)).toEqual([5, 4]);
+  });
+
+  it("puts everything on the far-behind list when that keeps it even", () => {
+    const lists = splitEvenly(
+      [
+        { id: "a", price: 15 },
+        { id: "b", price: 10 },
+      ],
+      2,
+      [
+        { total: 200, count: 5 },
+        { total: 50, count: 1 },
+      ],
+    );
+    expect(lists[0].itemIds).toEqual([]);
+    expect(lists[1].itemIds).toEqual(["a", "b"]);
+  });
+
+  it("without starting totals, behaves as before", () => {
+    const fresh = splitEvenly(
+      [
+        { id: "a", price: 10 },
+        { id: "b", price: 10 },
+      ],
+      2,
+    );
+    expect(fresh.map((l) => l.itemIds)).toEqual([["a"], ["b"]]);
+  });
+});

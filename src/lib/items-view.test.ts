@@ -442,3 +442,16 @@ describe("sort by biggest discount (KAM-96)", () => {
     ]);
   });
 });
+
+describe("not on a list (KAM-103)", () => {
+  test("keeps only items that aren't on any list", () => {
+    const a = makeItem({ id: "a" });
+    const b = makeItem({ id: "b" });
+    expect(
+      filterItems([a, b], { unlistedOnly: true, listed: new Set(["a"]) }).map(
+        (i) => i.id,
+      ),
+    ).toEqual(["b"]);
+    expect(filterItems([a, b], { listed: new Set(["a"]) })).toHaveLength(2);
+  });
+});
