@@ -574,6 +574,24 @@ alter table public.item_price_checks add column in_stock boolean;
 - `record_price_check(item, price, sale_price, p_in_stock default null, p_stock_size default null)` replaces the 3-argument version. Callers sending only prices still work. A readable page sets `in_stock`/`stock_size` to what it said (null = the page doesn't say). An unreadable page leaves them alone.
 - `notify_price_change()` gains **back in stock**: `in_stock` went false → true on a check, for the same `stock_size`, so a changed size in the notes isn't a restock. It creates "<title> is back in stock" / "Available again in size M." `get_shared_list_extras()` also returns each item's `in_stock` and `stock_size`, so share pages can say "Sold out in M".
 
+## SQL — Looking For (migration `20261128090000`, KAM-102)
+
+```sql
+create table public.looking_for (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title text not null check (char_length(btrim(title)) between 1 and 120),
+  notes text check (char_length(notes) <= 500),
+  budget numeric(10,2) check (budget > 0),
+  item_type_id uuid references public.item_types(id) on delete set null,
+  found_item_id uuid references public.items(id) on delete set null,  -- "Found it"
+  found_at timestamptz,
+  created_at timestamptz not null default now()
+);
+```
+
+RLS: own rows only for select, insert, update and delete. Insert and update also require that `item_type_id` is a type the owner can see, and that `found_item_id` is the owner's own item. Separate from `items`, so entries never reach totals, price checks or spending.
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

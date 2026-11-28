@@ -6,6 +6,7 @@ import {
   BookmarkPlus,
   ChevronRight,
   DatabaseBackup,
+  Search,
   Sparkles,
   Tags,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const LINKS = [
   { href: "/save-to-cubby", label: "Save to Cubby button", Icon: BookmarkPlus },
   { href: "/notifications", label: "Notifications", Icon: Bell },
   { href: "/?view=totals", label: "Totals & insights", Icon: BarChart3 },
+  { href: "/looking-for", label: "Looking for", Icon: Search },
   { href: "/outfits", label: "Outfits", Icon: Sparkles },
   { href: "/types", label: "Item types", Icon: Tags },
   { href: "/data", label: "Backup & import", Icon: DatabaseBackup },

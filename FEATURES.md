@@ -59,6 +59,10 @@ Scope is deliberately tight for V1 so Oct 10 is achievable, with everything else
 - Installable PWA (mobile + desktop)
 - Theme picker: Light / Dim / Dark / System. "Dim" is the in-between option — a soft slate palette with lower contrast than dark; System (the default) follows the OS setting. Saved per device, not per account (see `ARCHITECTURE.md` → Theming)
 
+### Looking for (KAM-102)
+
+- `/looking-for` (desktop header, More, and "Haven't found one yet?" on Add item) lists things wanted before a product is found: a name, plus an optional budget ("up to $60") and notes. **Found it** opens Add item with the notes and type carried over ("Found your desk lamp?"), and saving ticks the entry off into **Found** ("→ the item it became"). **Copy wishlist** adds a "Still looking for" section, and its ideas prompt asks for 2 or 3 specific products for each. Entries never count toward totals, price checks or spending. Showing them to gift-givers on share links is not built yet
+
 ## V1.5 — Post-Launch Hardening (no fixed date)
 
 - Scheduled sale-price re-checks (not just at add-time): **built (KAM-43)**. Every active wishlist item with a link is re-checked about once a day automatically; cards show "Checked 3h ago"; every check is kept as price history

@@ -22,6 +22,7 @@ import { deletedItemsMessage } from "@/lib/wishlists";
 import type { BulkResult } from "../types/actions";
 import type { ItemFormState } from "./item-form-state";
 import { checkItemPriceAction } from "./price-actions";
+import { markLookingForFound } from "@/lib/db/looking-for";
 
 function chosenFile(formData: FormData): File | null {
   const file = formData.get("image");
@@ -65,6 +66,12 @@ export async function addItem(
       ...parsed.values,
       image_url: imageUrl,
     });
+    // "Found it" from the Looking for list (KAM-102): tick the entry off.
+    const lookingForId = String(formData.get("looking_for_id") ?? "");
+    if (lookingForId) {
+      await markLookingForFound(supabase, lookingForId, item.id);
+      revalidatePath("/looking-for");
+    }
     // KAM-98: once the item is saved and the page has moved on, run the
     // same check as "Check price", so the saved price and sale always match
     // what Check price would say, however the item was added (pasted link,

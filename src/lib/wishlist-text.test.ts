@@ -138,3 +138,34 @@ describe("price ranges for ideas (KAM-93)", () => {
     ).toContain("aren't on it, priced under $30.");
   });
 });
+
+describe("still looking for (KAM-102)", () => {
+  const lookingFor = [
+    { title: "Essential oil diffuser", budget: 60, notes: "white or wood" },
+    { title: "Desk lamp", budget: null, notes: null },
+  ];
+
+  it("lists them at the end and asks for products for them", () => {
+    const text = wishlistAsText([], {
+      includeNotes: false,
+      withPrompt: true,
+      lookingFor,
+    });
+    expect(text).toContain("Also suggest 2 or 3 specific products");
+    expect(
+      text.endsWith(
+        [
+          "## Still looking for",
+          "- Essential oil diffuser (under $60.00): white or wood",
+          "- Desk lamp",
+        ].join("\n"),
+      ),
+    ).toBe(true);
+  });
+
+  it("leaves both out when there's nothing", () => {
+    const text = wishlistAsText([], { includeNotes: false, withPrompt: true });
+    expect(text).not.toContain("Still looking for");
+    expect(text).not.toContain("Also suggest");
+  });
+});
