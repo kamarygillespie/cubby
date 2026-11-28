@@ -16,6 +16,9 @@ export type ItemFilters = {
   needsCheck?: ReadonlySet<string>;
   // KAM-96: leave out items a check found sold out.
   hideSoldOut?: boolean;
+  // KAM-103: only items that aren't on any list yet.
+  unlistedOnly?: boolean;
+  listed?: ReadonlySet<string>;
 };
 
 type Prices = Pick<Item, "price" | "sale_price">;
@@ -64,6 +67,9 @@ export function filterItems(items: Item[], filters: ItemFilters): Item[] {
       return false;
     }
     if (filters.hideSoldOut && item.in_stock === false) {
+      return false;
+    }
+    if (filters.unlistedOnly && filters.listed?.has(item.id)) {
       return false;
     }
     return true;

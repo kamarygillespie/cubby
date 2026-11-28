@@ -28,7 +28,7 @@ export async function listWishlistsWithPrices(supabase: DbClient) {
   const { data, error } = await supabase
     .from("wishlists")
     .select(
-      "id, name, occasion_date, wishlist_items(item:items(price, sale_price))",
+      "id, name, occasion_date, wishlist_items(item_id, item:items(price, sale_price))",
     )
     .order("name");
 

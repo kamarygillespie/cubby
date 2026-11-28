@@ -13,17 +13,22 @@ export const SPLIT_MAX_LISTS = 6;
 export type SplitItem = { id: string; price: number | null };
 export type SplitList = { itemIds: string[]; total: number; count: number };
 
+// `start` (KAM-103): what each list already holds, when splitting into lists
+// that exist. New items then go to whichever list is behind, so the lists
+// end up even overall, not just in what was added. The returned totals and
+// counts include the starting amounts; itemIds are only the new items.
 export function splitEvenly(
   items: SplitItem[],
   listCount: number,
+  start?: { total: number; count: number }[],
 ): SplitList[] {
   if (!Number.isInteger(listCount) || listCount < 1) {
     throw new Error("listCount must be a positive integer");
   }
-  const lists: SplitList[] = Array.from({ length: listCount }, () => ({
+  const lists: SplitList[] = Array.from({ length: listCount }, (_, i) => ({
     itemIds: [],
-    total: 0,
-    count: 0,
+    total: start?.[i]?.total ?? 0,
+    count: start?.[i]?.count ?? 0,
   }));
   const byId = (a: SplitItem, b: SplitItem) =>
     a.id < b.id ? -1 : a.id > b.id ? 1 : 0;

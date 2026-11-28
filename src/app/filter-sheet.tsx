@@ -30,6 +30,9 @@ export type FilterOptions = {
   needsCheckCount?: number;
   // KAM-96: the Hide sold out toggle appears once anything is sold out.
   soldOutCount?: number;
+  // KAM-103: items on no list yet; the toggle shows once lists exist.
+  unlistedCount?: number;
+  hasLists?: boolean;
 };
 
 const ALL = "__all__";
@@ -94,6 +97,7 @@ function useItemFilters({
   const onSale = searchParams.get("onSale") === "1";
   const needsCheck = searchParams.get("check") === "1";
   const hideSoldOut = searchParams.get("instock") === "1";
+  const unlisted = searchParams.get("unlisted") === "1";
   const favoritesOnly = searchParams.get("fav") === "1";
   const store = searchParams.get("store");
 
@@ -128,6 +132,7 @@ function useItemFilters({
     ...(onSale ? [{ key: "onSale", label: "On sale" }] : []),
     ...(needsCheck ? [{ key: "check", label: "Needs a manual check" }] : []),
     ...(hideSoldOut ? [{ key: "instock", label: "Hide sold out" }] : []),
+    ...(unlisted ? [{ key: "unlisted", label: "Not on a list" }] : []),
     ...(favoritesOnly ? [{ key: "fav", label: "Favorite stores" }] : []),
     ...(group !== ALL
       ? [{ key: "group", label: labelFor(GROUP_OPTIONS, group) }]
@@ -145,6 +150,7 @@ function useItemFilters({
     onSale,
     needsCheck,
     hideSoldOut,
+    unlisted,
     favoritesOnly,
     active,
     setParam,
@@ -192,6 +198,8 @@ export function FilterSheet(options: FilterOptions) {
     hasFavoriteStores = false,
     needsCheckCount = 0,
     soldOutCount = 0,
+    unlistedCount = 0,
+    hasLists = false,
   } = options;
   const [open, setOpen] = useState(false);
   const filters = useItemFilters(options);
@@ -259,6 +267,16 @@ export function FilterSheet(options: FilterOptions) {
                 }
               >
                 Hide sold out
+              </Chip>
+            )}
+            {(hasLists || filters.unlisted) && (
+              <Chip
+                pressed={filters.unlisted}
+                onClick={() =>
+                  filters.setParam("unlisted", filters.unlisted ? null : "1")
+                }
+              >
+                Not on a list ({unlistedCount})
               </Chip>
             )}
             {hasFavoriteStores && (

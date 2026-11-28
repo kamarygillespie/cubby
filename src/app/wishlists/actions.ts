@@ -7,6 +7,7 @@ import {
   addItemsToWishlists,
   createWishlist,
   deleteWishlist,
+  listWishlistsWithPrices,
   removeItemFromWishlist,
   renameWishlist,
   setOccasionDate,
@@ -18,6 +19,7 @@ import { setShowClaims } from "@/lib/db/claims";
 import { saveSizes, setWishlistShowSizes } from "@/lib/db/sizes";
 import { parseSizes } from "@/lib/sizes";
 import { getEffectivePrices } from "@/lib/db/items";
+import { effectivePrice } from "@/lib/items-view";
 import {
   SPLIT_MAX_LISTS,
   SPLIT_MIN_LISTS,
@@ -220,4 +222,65 @@ export async function setOccasionDateAction(
 export async function setShowNotesAction(wishlistId: string, show: boolean) {
   await setWishlistShowNotes(await createClient(), wishlistId, show);
   revalidatePath(`/wishlists/${wishlistId}`);
+}
+
+// Split selected items into lists that already exist (KAM-103), e.g. two
+// Christmas lists, keeping totals even by counting what each list already
+// holds. Items already on one of the chosen lists stay where they are. The
+// server works from database prices and list contents, not the preview.
+export async function splitIntoExistingWishlists(input: {
+  itemIds: string[];
+  wishlistIds: string[];
+}): Promise<AddToWishlistsResult> {
+  const wishlistIds = [...new Set(input.wishlistIds)];
+  if (wishlistIds.length < SPLIT_MIN_LISTS) {
+    return { ok: false, error: "Pick at least 2 lists." };
+  }
+  const supabase = await createClient();
+  try {
+    // Only the caller's own lists come back (RLS).
+    const lists = (await listWishlistsWithPrices(supabase)).filter((l) =>
+      wishlistIds.includes(l.id),
+    );
+    if (lists.length !== wishlistIds.length) {
+      return { ok: false, error: "One of those lists no longer exists." };
+    }
+    const onChosen = new Set(
+      lists.flatMap((l) => l.wishlist_items.map((wi) => wi.item_id)),
+    );
+    const newIds = input.itemIds.filter((id) => !onChosen.has(id));
+    if (newIds.length === 0) {
+      return { ok: false, error: "Those items are already on these lists." };
+    }
+    const prices = await getEffectivePrices(supabase, newIds);
+    const split = splitEvenly(
+      prices,
+      lists.length,
+      lists.map((l) => ({
+        total: l.wishlist_items.reduce(
+          (sum, wi) => sum + (wi.item ? effectivePrice(wi.item) : 0),
+          0,
+        ),
+        count: l.wishlist_items.length,
+      })),
+    );
+    for (const [i, list] of lists.entries()) {
+      if (split[i].itemIds.length) {
+        await addItemsToWishlists(supabase, split[i].itemIds, [list.id]);
+      }
+    }
+    revalidatePath("/");
+    revalidatePath("/wishlists", "layout");
+    const kept = input.itemIds.length - newIds.length;
+    return {
+      ok: true,
+      message:
+        `Split ${newIds.length} item${newIds.length === 1 ? "" : "s"} into ` +
+        lists.map((l) => l.name).join(" and ") +
+        "." +
+        (kept ? ` ${kept} already on one of them stayed put.` : ""),
+    };
+  } catch {
+    return { ok: false, error: "Couldn't split the items. Try again." };
+  }
 }

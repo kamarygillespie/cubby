@@ -23,7 +23,13 @@ import { usePriceCheck } from "./check-price";
 import { SplitButton, type SplitItemInfo } from "./split-dialog";
 import type { ItemTypeGroup } from "./item-type-select";
 
-type WishlistOption = { id: string; name: string; itemIds: string[] };
+type WishlistOption = {
+  id: string;
+  name: string;
+  itemIds: string[];
+  // What's on the list now (KAM-103).
+  total: number;
+};
 
 export function AddToWishlistBar({
   itemIds,
@@ -87,6 +93,7 @@ export function AddToWishlistBar({
             <SplitButton
               selectedIds={[...selection.selected]}
               itemInfo={itemInfo}
+              lists={wishlists}
               onDone={(message) => {
                 selection.stop();
                 setNotice(message);
