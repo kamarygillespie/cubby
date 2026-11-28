@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  addDays,
   countdownLabel,
   daysUntil,
   formatOccasionDate,
@@ -44,5 +45,11 @@ describe("occasion dates", () => {
     expect(parseOccasionDate("  ")).toEqual({ ok: true, value: null });
     expect(parseOccasionDate("2026-02-31").ok).toBe(false);
     expect(parseOccasionDate("Christmas").ok).toBe(false);
+  });
+
+  it("adds days across months and years", () => {
+    expect(addDays("2026-11-27", 14)).toBe("2026-12-11");
+    expect(addDays("2026-12-20", 30)).toBe("2027-01-19");
+    expect(addDays("nope", 1)).toBeNull();
   });
 });

@@ -65,3 +65,11 @@ export function parseOccasionDate(
     ? { ok: true, value }
     : { ok: false, error: "Pick a valid date." };
 }
+
+// "2026-11-27" + 14 → "2026-12-11" (return windows, KAM-83).
+export function addDays(date: string, days: number): string | null {
+  const day = dayNumber(date);
+  return day === null
+    ? null
+    : new Date((day + days) * 86_400_000).toISOString().slice(0, 10);
+}

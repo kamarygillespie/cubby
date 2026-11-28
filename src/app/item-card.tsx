@@ -36,6 +36,7 @@ import { setItemFlag } from "./items/status-actions";
 import { DeleteItemButton } from "./items/[id]/edit/delete-item-button";
 import { PriceDisplay } from "./price-display";
 import { TargetPriceField } from "./target-price";
+import { ReturnByLabel, ReturnWindowField } from "./return-window";
 
 export type Item = Awaited<ReturnType<typeof listItems>>[number];
 type ItemList = { id: string; name: string };
@@ -132,6 +133,9 @@ export function ItemCard({
                 </span>
               )}
             </span>
+          )}
+          {item.purchased && !item.gifted && item.return_by && (
+            <ReturnByLabel date={item.return_by} />
           )}
           {/* Under the price, not on the photo, so it never collides with
               the sale badge on a narrow card. */}
@@ -322,6 +326,16 @@ function ItemSheet({
             />
           )}
         </div>
+
+        {item.purchased && !item.gifted && (
+          <ReturnWindowField
+            itemId={item.id}
+            title={item.title}
+            returnBy={item.return_by}
+            purchasedAt={item.purchased_date}
+            onReturned={() => onOpenChange(false)}
+          />
+        )}
 
         {canCheckPrice && (
           <TargetPriceField

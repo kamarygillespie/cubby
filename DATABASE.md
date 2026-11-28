@@ -515,6 +515,16 @@ alter table public.notifications add column wishlist_id uuid references public.w
 - `create_occasion_reminders(p_today date default current_date)` (SECURITY DEFINER, not executable by app roles) creates one `occasion` alert ("Birthday is in 21 days", linking to the list) for each list whose `occasion_date` is between today and 21 days out and whose `reminded_for` differs, then sets `reminded_for`. A changed date gets a new reminder. pg_cron runs it daily at **16:00 UTC**, an hour before the 17:00 push digest.
 - `get_shared_list_extras()` also returns `occasion_date` for the share page's countdown.
 
+## SQL — Return Windows (migration `20261128030000`, KAM-83)
+
+```sql
+alter table public.items add column return_by date, add column return_reminded_for date;
+-- notifications.kind now also allows 'return_by'.
+```
+
+- `sync_purchased_date()` now also clears `return_by` and `return_reminded_for` when an item is un-purchased. **Mark returned** is just `purchased = false`: the item goes back to the wishlist, `purchased_date` clears, and it leaves spending totals.
+- `create_return_reminders(p_today)` (SECURITY DEFINER, not executable by app roles) creates one `return_by` alert ("Last chance to return Sneakers", "The return window closes in 3 days.") per return date, once it's 3 days away or closer. It runs daily via pg_cron at 16:00 UTC, before the 17:00 digest.
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

@@ -245,3 +245,18 @@ export async function setTargetPrice(
     .eq("id", itemId);
   if (error) throw error;
 }
+
+// A purchased item's return window (KAM-83), "YYYY-MM-DD" or null. Mark
+// returned is just purchased = false: the purchase trigger clears the date
+// and the window, so it leaves spending totals.
+export async function setReturnBy(
+  supabase: DbClient,
+  itemId: string,
+  date: string | null,
+) {
+  const { error } = await supabase
+    .from("items")
+    .update({ return_by: date })
+    .eq("id", itemId);
+  if (error) throw error;
+}

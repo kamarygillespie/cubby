@@ -12,7 +12,7 @@ import {
 // The viewer's calendar day in the browser; null while rendering on the
 // server, so the server's day can't disagree with the viewer's.
 const noSubscribe = () => () => {};
-const useLocalToday = () =>
+export const useLocalToday = () =>
   useSyncExternalStore(noSubscribe, localToday, () => null);
 
 // A list's occasion (KAM-79), counted in the viewer's own time zone.

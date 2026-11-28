@@ -214,6 +214,8 @@ export type Database = {
           price_checked_at: string | null;
           purchased: boolean;
           purchased_date: string | null;
+          return_by: string | null;
+          return_reminded_for: string | null;
           sale_price: number | null;
           source: string;
           store_brand: string | null;
@@ -236,6 +238,8 @@ export type Database = {
           price_checked_at?: string | null;
           purchased?: boolean;
           purchased_date?: string | null;
+          return_by?: string | null;
+          return_reminded_for?: string | null;
           sale_price?: number | null;
           source?: string;
           store_brand?: string | null;
@@ -258,6 +262,8 @@ export type Database = {
           price_checked_at?: string | null;
           purchased?: boolean;
           purchased_date?: string | null;
+          return_by?: string | null;
+          return_reminded_for?: string | null;
           sale_price?: number | null;
           source?: string;
           store_brand?: string | null;
@@ -561,6 +567,7 @@ export type Database = {
         Args: { p_today?: string };
         Returns: number;
       };
+      create_return_reminders: { Args: { p_today?: string }; Returns: number };
       get_shared_claims: {
         Args: { p_claimer_key: string; token: string };
         Returns: Json;

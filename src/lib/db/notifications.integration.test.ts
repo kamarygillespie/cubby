@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import {
   createItem,
   recordPriceCheck,
+  setReturnBy,
   setTargetPrice,
   updateItem,
 } from "./items";
@@ -116,6 +117,40 @@ describe("notifications (integration)", () => {
       p_today: "2026-11-28",
     });
     expect(error).not.toBeNull();
+  });
+
+  it("return reminders: 3 days ahead, once; Mark returned clears it (KAM-83)", async () => {
+    const { client } = await createTestUser();
+    const item = await newItem(client);
+    await updateItem(client, item.id, { purchased: true });
+    await setReturnBy(client, item.id, "2026-12-11");
+
+    const run = async (today: string) => {
+      const { error } = await admin.rpc("create_return_reminders", {
+        p_today: today,
+      });
+      if (error) throw error;
+    };
+    await run("2026-12-07"); // 4 days out: too early
+    expect(await listNotifications(client)).toEqual([]);
+    await run("2026-12-08");
+    await run("2026-12-09");
+    const alerts = await listNotifications(client);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({
+      kind: "return_by",
+      title: "Last chance to return Sneakers",
+      body: "The return window closes in 3 days.",
+    });
+
+    // Mark returned = un-purchase: the window and purchase date are cleared.
+    await updateItem(client, item.id, { purchased: false });
+    const { data } = await admin
+      .from("items")
+      .select("return_by, purchased_date")
+      .eq("id", item.id)
+      .single();
+    expect(data).toEqual({ return_by: null, purchased_date: null });
   });
 
   it("a price check that drops the price past the threshold creates one alert", async () => {
