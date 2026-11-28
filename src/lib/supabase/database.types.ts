@@ -199,6 +199,45 @@ export type Database = {
           },
         ];
       };
+      item_wears: {
+        Row: {
+          id: string;
+          item_id: string;
+          outfit_id: string | null;
+          user_id: string;
+          worn_at: string;
+        };
+        Insert: {
+          id?: string;
+          item_id: string;
+          outfit_id?: string | null;
+          user_id?: string;
+          worn_at?: string;
+        };
+        Update: {
+          id?: string;
+          item_id?: string;
+          outfit_id?: string | null;
+          user_id?: string;
+          worn_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "item_wears_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "item_wears_outfit_id_fkey";
+            columns: ["outfit_id"];
+            isOneToOne: false;
+            referencedRelation: "outfits";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       items: {
         Row: {
           created_at: string;
@@ -595,6 +634,7 @@ export type Database = {
       };
       is_visible_category: { Args: { category: string }; Returns: boolean };
       is_visible_item_type: { Args: { item_type: string }; Returns: boolean };
+      log_outfit_wear: { Args: { p_outfit_id: string }; Returns: number };
       merge_item_type: {
         Args: { p_source: string; p_target: string };
         Returns: number;
@@ -618,6 +658,7 @@ export type Database = {
         Args: { p_claimer_key: string; p_item_id: string; token: string };
         Returns: boolean;
       };
+      undo_outfit_wear: { Args: { p_outfit_id: string }; Returns: number };
     };
     Enums: {
       [_ in never]: never;

@@ -535,6 +535,22 @@ alter table public.notification_settings add column budget_alerts boolean not nu
 
 Trigger `items_notify_budget` (after `update of purchased`, when an item becomes purchased) runs `notify_budget()`: it sums this **UTC** month's spending (purchased wishlist items at the price paid, as Totals does). If this purchase crossed 100% or 80% of the budget, it creates one `budget` alert for the highest threshold crossed, at most once per threshold per month (`price` stores 80 or 100 for that check). It's skipped when there's no budget or `budget_alerts` is off.
 
+## SQL — Item Wears (migration `20261128050000`, KAM-85)
+
+```sql
+create table public.item_wears (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  item_id uuid not null references public.items(id) on delete cascade,
+  outfit_id uuid references public.outfits(id) on delete set null, -- logged from an outfit
+  worn_at timestamptz not null default now()
+);
+```
+
+- One row per wear, so undo is exact and per-year counts are a simple filter (Year in Cubby).
+- RLS: select and delete own rows. Insert requires owning the item, and the outfit if one is given (write policies check what a row points to).
+- `log_outfit_wear(outfit_id)` and `undo_outfit_wear(outfit_id)` are SECURITY INVOKER, so RLS still applies. They log one wear per piece in the outfit, and remove the outfit's most recent batch (same outfit, same `worn_at`).
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql
