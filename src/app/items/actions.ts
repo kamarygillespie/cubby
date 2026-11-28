@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   createItem,
@@ -20,6 +21,7 @@ import { parseItemForm } from "@/lib/item-form";
 import { deletedItemsMessage } from "@/lib/wishlists";
 import type { BulkResult } from "../types/actions";
 import type { ItemFormState } from "./item-form-state";
+import { checkItemPriceAction } from "./price-actions";
 
 function chosenFile(formData: FormData): File | null {
   const file = formData.get("image");
@@ -59,7 +61,24 @@ export async function addItem(
       ? await uploadItemImage(supabase, user.id, file)
       : autofillImageUrl;
 
-    await createItem(supabase, { ...parsed.values, image_url: imageUrl });
+    const item = await createItem(supabase, {
+      ...parsed.values,
+      image_url: imageUrl,
+    });
+    // KAM-98: once the item is saved and the page has moved on, run the
+    // same check as "Check price", so the saved price and sale always match
+    // what Check price would say, however the item was added (pasted link,
+    // Save to Cubby, share). An unreadable page never overwrites a price.
+    if (item.link) {
+      const itemId = item.id;
+      after(async () => {
+        try {
+          await checkItemPriceAction(itemId);
+        } catch {
+          // Best effort: the item is saved either way.
+        }
+      });
+    }
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Failed to add item.",
