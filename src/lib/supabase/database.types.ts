@@ -240,6 +240,7 @@ export type Database = {
       };
       items: {
         Row: {
+          archived_at: string | null;
           created_at: string;
           discount_percent: number | null;
           gifted: boolean;
@@ -247,6 +248,7 @@ export type Database = {
           image_url: string | null;
           interest_level: number | null;
           item_type_id: string;
+          kept_at: string | null;
           link: string | null;
           notes: string | null;
           price: number | null;
@@ -264,6 +266,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          archived_at?: string | null;
           created_at?: string;
           discount_percent?: number | null;
           gifted?: boolean;
@@ -271,6 +274,7 @@ export type Database = {
           image_url?: string | null;
           interest_level?: number | null;
           item_type_id: string;
+          kept_at?: string | null;
           link?: string | null;
           notes?: string | null;
           price?: number | null;
@@ -288,6 +292,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          archived_at?: string | null;
           created_at?: string;
           discount_percent?: number | null;
           gifted?: boolean;
@@ -295,6 +300,7 @@ export type Database = {
           image_url?: string | null;
           interest_level?: number | null;
           item_type_id?: string;
+          kept_at?: string | null;
           link?: string | null;
           notes?: string | null;
           price?: number | null;
@@ -324,6 +330,7 @@ export type Database = {
       notification_settings: {
         Row: {
           budget_alerts: boolean;
+          cooling_off: boolean;
           min_drop_percent: number;
           price_drops: boolean;
           store_sales: boolean;
@@ -332,6 +339,7 @@ export type Database = {
         };
         Insert: {
           budget_alerts?: boolean;
+          cooling_off?: boolean;
           min_drop_percent?: number;
           price_drops?: boolean;
           store_sales?: boolean;
@@ -340,6 +348,7 @@ export type Database = {
         };
         Update: {
           budget_alerts?: boolean;
+          cooling_off?: boolean;
           min_drop_percent?: number;
           price_drops?: boolean;
           store_sales?: boolean;
@@ -473,6 +482,7 @@ export type Database = {
       };
       profiles: {
         Row: {
+          checkin_dismissed_at: string | null;
           created_at: string;
           display_name: string | null;
           id: string;
@@ -482,6 +492,7 @@ export type Database = {
           sizes: Json;
         };
         Insert: {
+          checkin_dismissed_at?: string | null;
           created_at?: string;
           display_name?: string | null;
           id: string;
@@ -491,6 +502,7 @@ export type Database = {
           sizes?: Json;
         };
         Update: {
+          checkin_dismissed_at?: string | null;
           created_at?: string;
           display_name?: string | null;
           id?: string;

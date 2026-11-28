@@ -551,6 +551,18 @@ create table public.item_wears (
 - RLS: select and delete own rows. Insert requires owning the item, and the outfit if one is given (write policies check what a row points to).
 - `log_outfit_wear(outfit_id)` and `undo_outfit_wear(outfit_id)` are SECURITY INVOKER, so RLS still applies. They log one wear per piece in the outfit, and remove the outfit's most recent batch (same outfit, same `worn_at`).
 
+## SQL — Cooling-off Check-in (migration `20261128060000`, KAM-82)
+
+```sql
+alter table public.items add column archived_at timestamptz, add column kept_at timestamptz;
+alter table public.profiles add column checkin_dismissed_at timestamptz;
+alter table public.notification_settings add column cooling_off boolean not null default true;
+```
+
+- **Archived** items (`archived_at` set) are left out of `listItems()` (wishlist, Totals, Stores, Year in Cubby) and the daily price check. Archiving also deletes the item's `wishlist_items` rows, so share pages never show it, and restoring doesn't put it back on lists. Only active items (not purchased or gifted) can be archived.
+- `kept_at`: the last **Keep**. Kept items aren't asked about again for 90 days. Restoring also sets it.
+- Existing RLS on items, wishlist_items and profiles covers all of it. No new policies.
+
 ## SQL — Seed Data (Default Taxonomy)
 
 ```sql

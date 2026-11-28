@@ -18,7 +18,10 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { OnboardingCard } from "@/components/onboarding-card";
 import { getMonthlyBudget, getOnboardingState } from "@/lib/db/profile";
 import { onboardingSteps, showOnboarding } from "@/lib/onboarding";
-import { countUnreadNotifications } from "@/lib/db/notifications";
+import {
+  countUnreadNotifications,
+  getNotificationSettings,
+} from "@/lib/db/notifications";
 import {
   listItems,
   listItemsWithFailedPriceCheck,
@@ -53,6 +56,8 @@ import { ItemsToolbar } from "./items-toolbar";
 import { ViewTabs } from "./view-tabs";
 import { TotalsDashboard } from "./totals-dashboard";
 import { RecapBanner } from "./recap-banner";
+import { CheckInBanner } from "./check-in-banner";
+import { isCheckInCandidate, showCheckInBanner } from "@/lib/cooling-off";
 import { ItemSelectionProvider } from "./item-selection";
 import { AddToWishlistBar } from "./add-to-wishlist-bar";
 
@@ -168,6 +173,7 @@ export default async function Home({
     unread,
     onboarding,
     failedPriceChecks,
+    alertSettings,
   ] = await Promise.all([
     listItems(supabase),
     listItemTypes(supabase),
@@ -176,7 +182,19 @@ export default async function Home({
     countUnreadNotifications(supabase),
     getOnboardingState(supabase),
     listItemsWithFailedPriceCheck(supabase),
+    getNotificationSettings(supabase),
   ]);
+  // Cooling-off check-in (KAM-82).
+  const now = new Date();
+  const checkInCount = items.filter((item) =>
+    isCheckInCandidate(item, now),
+  ).length;
+  const showCheckIn = showCheckInBanner({
+    candidates: checkInCount,
+    enabled: alertSettings.cooling_off,
+    dismissedAt: onboarding.checkInDismissedAt,
+    now,
+  });
   const onboardingFacts = {
     ...onboarding,
     itemCount: items.length,
@@ -318,6 +336,7 @@ export default async function Home({
         <InstallPrompt variant="card" />
       </div>
       <RecapBanner />
+      {showCheckIn && <CheckInBanner count={checkInCount} />}
       <ItemsNavigationProvider>
         {showTotals ? (
           <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">

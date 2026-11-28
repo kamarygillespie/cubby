@@ -3,11 +3,15 @@ import {
   createItem,
   deleteItem,
   deleteItems,
+  archiveItem,
+  listArchivedItems,
+  restoreItem,
   getItem,
   listItems,
   updateItem,
 } from "./items";
 import { listItemTypes } from "./item-types";
+import { addItemsToWishlists, createWishlist, getWishlist } from "./wishlists";
 import { admin, createTestUser } from "./integration-test-utils";
 
 // Runs against a real local Supabase instance (`supabase start`) — see
@@ -146,5 +150,45 @@ describe("lib/db/items (integration)", () => {
     expect(await getItem(owner.client, mine[2].id)).not.toBeNull();
     expect(await getItem(other.client, theirs.id)).not.toBeNull();
     expect(await deleteItems(owner.client, [])).toEqual([]);
+  });
+
+  test("archive hides an item and takes it off lists; restore brings it back (KAM-82)", async () => {
+    const owner = await createTestUser();
+    const item = await createItem(owner.client, {
+      title: "Lukewarm Lamp",
+      item_type_id: itemTypeId,
+    });
+    const list = await createWishlist(owner.client, "Home");
+    await addItemsToWishlists(owner.client, [item.id], [list.id]);
+
+    // Someone else can't archive it.
+    const stranger = await createTestUser();
+    await archiveItem(stranger.client, item.id);
+    expect((await listItems(owner.client)).map((i) => i.id)).toContain(item.id);
+
+    await archiveItem(owner.client, item.id);
+    expect((await listItems(owner.client)).map((i) => i.id)).not.toContain(
+      item.id,
+    );
+    expect((await listArchivedItems(owner.client)).map((i) => i.id)).toEqual([
+      item.id,
+    ]);
+    const onList = await getWishlist(owner.client, list.id);
+    expect(onList?.wishlist_items).toEqual([]);
+
+    await restoreItem(owner.client, item.id);
+    expect((await listItems(owner.client)).map((i) => i.id)).toContain(item.id);
+    expect(await listArchivedItems(owner.client)).toEqual([]);
+  });
+
+  test("purchased items can't be archived", async () => {
+    const { client } = await createTestUser();
+    const item = await createItem(client, {
+      title: "Bought",
+      item_type_id: itemTypeId,
+    });
+    await updateItem(client, item.id, { purchased: true });
+    await archiveItem(client, item.id);
+    expect(await listArchivedItems(client)).toEqual([]);
   });
 });

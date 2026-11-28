@@ -192,6 +192,7 @@ describe("notifications (integration)", () => {
       store_sales: true,
       min_drop_percent: 10,
       budget_alerts: false,
+      cooling_off: true,
     });
     const fresh = await createTestUser();
     await setMonthlyBudget(fresh.client, 10);
@@ -200,6 +201,7 @@ describe("notifications (integration)", () => {
       store_sales: true,
       min_drop_percent: 10,
       budget_alerts: false,
+      cooling_off: true,
     });
     const item = await createItem(fresh.client, {
       title: "Quiet",
@@ -241,12 +243,14 @@ describe("notifications (integration)", () => {
       store_sales: true,
       min_drop_percent: 10,
       budget_alerts: true,
+      cooling_off: true,
     });
     await saveNotificationSettings(client, {
       price_drops: true,
       store_sales: true,
       min_drop_percent: 30,
       budget_alerts: true,
+      cooling_off: true,
     });
     const item = await newItem(client);
 
@@ -259,6 +263,7 @@ describe("notifications (integration)", () => {
       store_sales: true,
       min_drop_percent: 10,
       budget_alerts: true,
+      cooling_off: true,
     });
     await recordPriceCheck(client, item.id, { price: 5, salePrice: null });
     expect(await listNotifications(client)).toEqual([]);

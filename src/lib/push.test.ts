@@ -18,6 +18,7 @@ describe("parseNotificationSettings", () => {
       store_sales: false,
       min_drop_percent: 25,
       budget_alerts: false,
+      cooling_off: false,
     });
     expect(
       parseNotificationSettings(form({ budget_alerts: "on" })).budget_alerts,

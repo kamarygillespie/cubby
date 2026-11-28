@@ -8,7 +8,10 @@ type DbClient = SupabaseClient<Database>;
 // already load: whether it was hidden, and whether any device has push on.
 export async function getOnboardingState(supabase: DbClient) {
   const [profile, devices] = await Promise.all([
-    supabase.from("profiles").select("onboarding_dismissed_at").maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("onboarding_dismissed_at, checkin_dismissed_at")
+      .maybeSingle(),
     supabase
       .from("push_subscriptions")
       .select("id", { count: "exact", head: true }),
@@ -17,6 +20,8 @@ export async function getOnboardingState(supabase: DbClient) {
   if (devices.error) throw devices.error;
   return {
     dismissed: Boolean(profile.data?.onboarding_dismissed_at),
+    // Cooling-off check-in banner (KAM-82), hidden for the month.
+    checkInDismissedAt: profile.data?.checkin_dismissed_at ?? null,
     hasPushDevice: (devices.count ?? 0) > 0,
   };
 }
@@ -50,6 +55,15 @@ export async function setMonthlyBudget(
   const { error } = await supabase
     .from("profiles")
     .update({ monthly_budget: budget })
+    .eq("id", userId);
+  if (error) throw error;
+}
+
+export async function dismissCheckIn(supabase: DbClient) {
+  const userId = await requireUserId(supabase);
+  const { error } = await supabase
+    .from("profiles")
+    .update({ checkin_dismissed_at: new Date().toISOString() })
     .eq("id", userId);
   if (error) throw error;
 }

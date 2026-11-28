@@ -21,6 +21,7 @@ export function parseNotificationSettings(form: {
     price_drops: form.get("price_drops") === "on",
     store_sales: form.get("store_sales") === "on",
     budget_alerts: form.get("budget_alerts") === "on",
+    cooling_off: form.get("cooling_off") === "on",
     min_drop_percent: Number.isFinite(pct)
       ? Math.min(90, Math.max(1, Math.round(pct)))
       : 10,

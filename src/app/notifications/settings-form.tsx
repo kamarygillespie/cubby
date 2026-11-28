@@ -54,6 +54,16 @@ export function SettingsForm({ settings }: { settings: NotificationSettings }) {
           At 80% and 100% of my monthly budget
         </Label>
       </div>
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="cooling_off"
+          name="cooling_off"
+          defaultChecked={settings.cooling_off}
+        />
+        <Label htmlFor="cooling_off">
+          A monthly &ldquo;Still want these?&rdquo; check-in
+        </Label>
+      </div>
       <div className="flex items-center gap-3">
         <Button type="submit" size="sm" disabled={pending}>
           Save
